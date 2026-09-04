@@ -1,9 +1,8 @@
-import { createInterface } from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
 import { usernameSchema, displayNameSchema, passwordSchema } from '@trindade/shared';
 import { anyUserExists, createUserWithRole } from '../db/users.js';
 import { closePool } from '../db/index.js';
 import { hashPassword } from '../lib/password.js';
+import { createPrompter } from '../lib/prompt.js';
 
 /**
  * Cria o primeiro admin. O cadastro exige convite e convite exige alguém
@@ -12,47 +11,7 @@ import { hashPassword } from '../lib/password.js';
  *
  * O mesmo script serve para o disaster recovery da fase 8.
  */
-
-const rl = createInterface({ input: stdin, output: stdout });
-
-/** Lê sem eco. A senha não pode ficar no scrollback do terminal. */
-async function askHidden(prompt: string): Promise<string> {
-  stdout.write(prompt);
-  const wasRaw = stdin.isRaw ?? false;
-  if (stdin.isTTY) stdin.setRawMode(true);
-
-  return new Promise((resolve, reject) => {
-    let value = '';
-    const onData = (chunk: Buffer) => {
-      const char = chunk.toString('utf8');
-      switch (char) {
-        case '\n':
-        case '\r':
-        case '\u0004':
-          cleanup();
-          stdout.write('\n');
-          resolve(value);
-          break;
-        case '\u0003':
-          cleanup();
-          stdout.write('\n');
-          reject(new Error('cancelado'));
-          break;
-        case '\u007f':
-        case '\b':
-          value = value.slice(0, -1);
-          break;
-        default:
-          if (char >= ' ') value += char;
-      }
-    };
-    const cleanup = () => {
-      stdin.off('data', onData);
-      if (stdin.isTTY) stdin.setRawMode(wasRaw);
-    };
-    stdin.on('data', onData);
-  });
-}
+const prompter = createPrompter();
 
 async function main(): Promise<number> {
   if (await anyUserExists()) {
@@ -60,28 +19,28 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const usernameRaw = (await rl.question('usuário (3-24, a-z 0-9 _): ')).trim().toLowerCase();
+  const usernameRaw = (await prompter.ask('usuário (3-24, a-z 0-9 _): ')).trim().toLowerCase();
   const username = usernameSchema.safeParse(usernameRaw);
   if (!username.success) {
     console.error(username.error.issues[0]?.message ?? 'usuário inválido');
     return 1;
   }
 
-  const displayNameRaw = (await rl.question('nome de exibição: ')).trim();
+  const displayNameRaw = (await prompter.ask('nome de exibição: ')).trim();
   const displayName = displayNameSchema.safeParse(displayNameRaw);
   if (!displayName.success) {
     console.error('nome de exibição: 1 a 32 caracteres');
     return 1;
   }
 
-  const passwordRaw = await askHidden('senha (mínimo 12): ');
+  const passwordRaw = await prompter.askHidden('senha (mínimo 12): ');
   const password = passwordSchema.safeParse(passwordRaw);
   if (!password.success) {
     console.error(password.error.issues[0]?.message ?? 'senha inválida');
     return 1;
   }
 
-  const confirm = await askHidden('repita a senha: ');
+  const confirm = await prompter.askHidden('repita a senha: ');
   if (confirm !== password.data) {
     console.error('as senhas não conferem');
     return 1;
@@ -107,7 +66,7 @@ try {
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
 } finally {
-  rl.close();
+  prompter.close();
   await closePool();
 }
 process.exit(exitCode);

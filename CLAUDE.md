@@ -122,7 +122,7 @@ docker compose up -d  # postgres, minio, livekit, coturn
 
 Atualizar esta seção ao fim de cada fase.
 
-- [ ] Fase 1 — fundação
+- [x] Fase 1 — fundação
 - [ ] Fase 2 — autenticação
 - [ ] Fase 3 — design system
 - [ ] Fase 4 — shell da aplicação
@@ -162,13 +162,18 @@ Tomadas no Passo 0. Não reabrir sem me perguntar.
   uma camada de abstração em `packages/web/src/lib/`, nunca chamadas diretas
   espalhadas pelos componentes.
 
-### Fase 1 — pendente de verificação
+### Fase 1 — concluída
 
-O código está escrito e commitado. Verificado: `pnpm typecheck` e `pnpm lint`
-limpos, `pnpm dev` sobe API e web, `/api/health` responde `{ok:true,db:false}`
-pelos dois lados, log sem IP.
+Aceite percorrido inteiro com Postgres e MinIO no ar: `docker compose ps` com os
+dois `healthy`, as 10 migrations aplicadas, desfeitas e refeitas, `db:true` no
+health check pela API e pelo proxy do Vite, seeds conferidos no `psql`
+(`Membro` 1823, `Admin` 4611686018427387904, `#geral`), `pnpm bootstrap` criando
+o admin com Argon2id e recusando a segunda execução com `USERS_EXIST`.
+`typecheck`, `lint` e `build` limpos nos três pacotes; log da API sem IP.
 
-Falta rodar, e só depende do banco: `pnpm migrate up`/`down`, os seeds
-(`Membro`, `Admin`, `#geral`), `db:true` no health check e `pnpm bootstrap`.
-WSL2 e Docker Desktop foram instalados; a Plataforma de Máquina Virtual exige
-**reiniciar o Windows** antes do primeiro `docker compose up -d`.
+Decidido diferente do prompt: Node 24.18 em vez do 20 LTS (`engines: >=20`), por
+já estar instalado e ter compilado tudo, inclusive o argon2 nativo. `Channel` e
+`Attachment` foram derivados de `docs/03-modelo-de-dados.md` porque o contrato
+da API os cita sem definir. Não verificado por mim: a renderização da página em
+`localhost:5173` num navegador de verdade — só o build, o transform dos módulos
+e a resposta da API por trás dela.
