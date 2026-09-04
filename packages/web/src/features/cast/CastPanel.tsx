@@ -140,6 +140,7 @@ export function SeuCanto({ onGuardadas }: { onGuardadas?: () => void }) {
             </MenuItem>
             <MenuSeparator />
             <MenuItem onSelect={() => abrirPerfil('perfil')}>Editar perfil</MenuItem>
+            <MenuItem onSelect={() => abrirPerfil('avisos')}>Notificações</MenuItem>
             <MenuItem onSelect={() => abrirPerfil('conta')}>Conta e segurança</MenuItem>
           </Menu>
           <div className={styles.controles}>
@@ -165,8 +166,18 @@ export function SeuCanto({ onGuardadas }: { onGuardadas?: () => void }) {
                 {fone ? <Headphones size={16} /> : <HeadphonesOff size={16} />}
               </IconButton>
             </Tooltip>
-            <Tooltip label="Configurações">
-              <IconButton label="Configurações" size="sm">
+            {/* Junto do microfone e do fone porque é o mesmo assunto: o que
+                chega até você. Era um botão sem `onClick` desde a fase 4,
+                esperando ter uma tela para chamar — e o nome mudou para
+                "Notificações" porque a engrenagem genérica ao lado de dois
+                controles de áudio não dizia o que abria, e o rail já tem uma
+                chamada "Configurações". */}
+            <Tooltip label="Notificações">
+              <IconButton
+                label="Notificações"
+                size="sm"
+                onClick={() => abrirPerfil('avisos')}
+              >
                 <Settings size={16} />
               </IconButton>
             </Tooltip>

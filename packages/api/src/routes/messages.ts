@@ -461,10 +461,11 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const me = requireUser(req);
       const canal = await channelsDb.findChannelById(req.params.id);
       if (!canal) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
-      await messagesDb.marcarLido(me.id, canal.id, req.body.messageId);
+      const { mutedUntil } = await messagesDb.marcarLido(me.id, canal.id, req.body.messageId);
 
       // Só para as suas outras abas: ler num lugar tem de apagar o negrito no
-      // outro, e isso não é da conta de mais ninguém.
+      // outro, e isso não é da conta de mais ninguém. O silêncio vai junto
+      // porque ler um canal silenciado não pode dessilenciá-lo.
       gateway.sendToUser(me.id, {
         op: 'READ_STATE_UPDATE',
         d: {
@@ -472,12 +473,47 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           lastReadMessageId: req.body.messageId,
           unreadCount: 0,
           mentionCount: 0,
-          mutedUntil: null,
+          mutedUntil,
         },
       });
       return reply.code(204).send(null);
     },
   );
+
+  /**
+   * Silenciar um canal.
+   *
+   * Por pessoa e com prazo: "1 hora", "8 horas" e "até eu ligar" viram uma
+   * data ou `null`. É uma preferência de conta e não de máquina — quem calou
+   * `#bugs` no notebook quer `#bugs` calado no celular também —, e por isso
+   * mora no servidor e volta no `READ_STATE_UPDATE`.
+   */
+  app.route({
+    method: ['PUT', 'DELETE'],
+    url: '/channels/:id/mute',
+    schema: {
+      params: z.object({ id: z.string().uuid() }),
+      // `nullish` e não `optional`: um DELETE sem corpo chega como `null`, e
+      // `optional` só aceita `undefined` — foi um 400 no teste de reativar.
+      body: z.object({ until: z.string().datetime().nullish() }).nullish(),
+      response: { 204: z.null() },
+    },
+    handler: async (req, reply) => {
+      const me = requireUser(req);
+      const canal = await channelsDb.findChannelById(req.params.id);
+      if (!canal) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
+
+      const corpo = req.body as { until?: string | null } | null | undefined;
+      const ate = req.method === 'DELETE' || !corpo?.until ? null : new Date(corpo.until);
+      await messagesDb.silenciar(me.id, canal.id, ate);
+
+      const estados = await messagesDb.listReadState(me.id);
+      const atual = estados.find((e) => e.channelId === canal.id);
+      if (atual) gateway.sendToUser(me.id, { op: 'READ_STATE_UPDATE', d: atual });
+
+      return reply.code(204).send(null);
+    },
+  });
 
   app.get(
     '/read-state',

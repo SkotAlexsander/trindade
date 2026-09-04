@@ -130,7 +130,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 6 — perfil e cargos
 - [x] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
-- [ ] Fase 9 — ferramentas de projeto e notificações
+- [x] Fase 9 — ferramentas de projeto e notificações
 - [ ] Fase 10 — conversas privadas e quadro
 
 ---
@@ -671,7 +671,7 @@ dizendo onde se verifica. Os quatro que dependem do servidor real — firewall,
 LUKS, 2FA das cinco contas — ficaram **desmarcados de propósito**: marcar item
 não verificado é pior que não ter checklist.
 
-### Fase 9 — em andamento
+### Fase 9 — concluída
 
 **Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte
 pelo **mesmo** WebSocket de tudo o mais — uma segunda conexão só para notas
@@ -752,6 +752,43 @@ na faxina que já existia, em vez de um segundo relógio.
 
 A barra é proporcional **à líder** e não ao total: com o total, três empates
 viram três barras curtas e o empate some da tela.
+
+**Fatia 4: notificações.** A tabela inteira de `design/09-notificacoes.md` é uma
+**função pura** em `features/notifications/regras.ts` — entra o acontecimento e
+o contexto, sai `{ som, desktop, badge, agrupa }`. Dezenove testes cobrem as
+regras sem abrir navegador; o navegador só executa o que ela decidiu. Testar
+isso pela interface exigiria permissão de notificação, foco de janela e relógio
+controlado, e cada regra viraria um roteiro de dois minutos.
+
+O contador do título sai da **soma de `mention_count`** do estado de leitura, e
+não de um contador próprio: dois números para a mesma coisa terminam no dia em
+que o título diz 3 e a lista diz 1. Ele zera onde já zerava — ao abrir o canal
+com a janela à vista, que é o que `marcarLido` já fazia.
+
+`mention_count` virou o contador de **chamados**, e não só de `@`: quem soma é
+o cliente, e soma exatamente o que a regra devolveu em `badge`. Escrever no
+gateway uma segunda regra parecida com a da tabela era o caminho curto para as
+duas discordarem.
+
+**Ler um canal silenciado o dessilenciava.** `marcarLido` mandava
+`mutedUntil: null` no `READ_STATE_UPDATE`, e o cliente ainda aplicava esse
+evento com `zerar`, que reinicia a linha inteira. Dois lados do mesmo descuido,
+e nenhum apareceria num teste de rota: o servidor agora devolve o silêncio do
+`returning`, e o cliente ganhou `aplicar`.
+
+`/config/perfil` e a engrenagem ao lado do microfone eram becos sem saída desde
+a fase 4. A engrenagem passou a abrir a tela de notificações e virou
+"Notificações" — engrenagem genérica ao lado de dois controles de áudio não diz
+o que abre, e o rail já tem uma chamada "Configurações".
+
+O sintetizador de bipes saiu de `features/voice/sons.ts` para `lib/bipe.ts`
+quando as notificações passaram a precisar dele. Duas cópias do mesmo envelope
+divergiriam no primeiro ajuste, e o estalo de quem esquecesse a rampa voltaria
+só num lugar.
+
+**O `Menu` clona o gatilho.** Envolver o botão num `Tooltip` fazia o `ref` e os
+manipuladores pararem no tooltip, e o menu de silenciar simplesmente não abria.
+O `label` do `IconButton` já é o texto acessível.
 
 ### Numeração das migrations
 

@@ -143,3 +143,20 @@
   background: var(--accent);
   box-shadow: var(--glow-accent);
 }
+
+/*
+ * Canal silenciado: continua marcando não lido, em peso 400 e mais apagado.
+ * Você vê que houve movimento sem que ele grite. Ver design/09-notificacoes.md.
+ */
+.item[data-silenciado='true'] {
+  color: var(--text-tertiary);
+}
+
+.item[data-silenciado='true'][data-unread='true'] .nome {
+  font-weight: var(--weight-normal);
+}
+
+.sino {
+  display: inline-flex;
+  color: var(--text-tertiary);
+}

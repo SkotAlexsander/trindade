@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { IconButton, Tooltip } from '../../components';
 import { FaixaConexao } from '../realtime/FaixaConexao';
+import { MenuDeSilenciar } from '../notifications/MenuDeSilenciar';
 import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
@@ -139,6 +140,9 @@ export function ChannelHeader({
         )}
 
         <div className={styles.acoes}>
+          {/* Silenciar antes dos painéis: é do canal, e os outros quatro são
+              janelas sobre ele. */}
+          {canal ? <MenuDeSilenciar channelId={canal.id} /> : null}
           {BOTOES.map((botao) => (
             <Tooltip key={botao.id} label={botao.rotulo}>
               <IconButton

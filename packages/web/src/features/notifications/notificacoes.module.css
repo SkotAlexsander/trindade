@@ -1,0 +1,80 @@
+/* A tela de notificações. Ver design/09-notificacoes.md. */
+
+.aba {
+  display: grid;
+  gap: var(--s-5);
+  padding-top: var(--s-3);
+}
+
+.grupo {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+}
+
+.previa {
+  display: flex;
+  gap: var(--s-2);
+}
+
+/*
+ * Os campos de horário ficam **visíveis** quando o não perturbe está
+ * desligado, só apagados e desabilitados: sumir com eles esconderia o horário
+ * que a pessoa já escolheu, e ela reabriria a tela sem saber o que ligaria.
+ */
+.horario {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text-secondary);
+  font: var(--text-label) var(--font-ui);
+  opacity: 0.5;
+  transition: opacity 120ms ease-out;
+}
+
+.horario[data-ligado='true'] {
+  opacity: 1;
+}
+
+.horario label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.horario input {
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: var(--text-ui) var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.silenciado {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  color: var(--text-secondary);
+  font: var(--text-ui) var(--font-ui);
+}
+
+.ate {
+  flex: 1;
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+}
+
+.vazio {
+  margin: 0;
+  color: var(--text-tertiary);
+  font: var(--text-label) var(--font-ui);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .horario {
+    transition: none;
+  }
+}

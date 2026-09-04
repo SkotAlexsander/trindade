@@ -29,8 +29,9 @@ const ZERO: Leitura = {
 interface LeituraState {
   porCanal: Record<string, Leitura>;
   substituir: (estados: readonly ReadStateEntry[]) => void;
-  somar: (channelId: string, mencionouVoce: boolean) => void;
+  somar: (channelId: string, chamouVoce: boolean, contaNaoLida?: boolean) => void;
   zerar: (channelId: string, lastReadMessageId: string | null) => void;
+  aplicar: (entrada: ReadStateEntry) => void;
 }
 
 export const useLeitura = create<LeituraState>((set) => ({
@@ -51,7 +52,17 @@ export const useLeitura = create<LeituraState>((set) => ({
       ),
     }),
 
-  somar: (channelId, mencionouVoce) =>
+  /*
+   * `mentionCount` é o contador de **chamados**, não só de `@`: menção,
+   * resposta à sua mensagem e movimento na thread que você acompanha entram
+   * aqui, porque é o mesmo número que o título mostra. O servidor conta só as
+   * menções no READY, e isso é o piso — na reconexão ele volta a mandar o que
+   * sabe, e o cliente volta a somar o resto.
+   *
+   * `contaNaoLida` é falso na resposta de thread: ela não muda o estado da
+   * linha principal do canal, mas continua sendo algo esperando por você.
+   */
+  somar: (channelId, chamouVoce, contaNaoLida = true) =>
     set((s) => {
       const atual = s.porCanal[channelId] ?? ZERO;
       return {
@@ -59,8 +70,8 @@ export const useLeitura = create<LeituraState>((set) => ({
           ...s.porCanal,
           [channelId]: {
             ...atual,
-            unreadCount: atual.unreadCount + 1,
-            mentionCount: atual.mentionCount + (mencionouVoce ? 1 : 0),
+            unreadCount: atual.unreadCount + (contaNaoLida ? 1 : 0),
+            mentionCount: atual.mentionCount + (chamouVoce ? 1 : 0),
           },
         },
       };
@@ -69,8 +80,27 @@ export const useLeitura = create<LeituraState>((set) => ({
   zerar: (channelId, lastReadMessageId) =>
     set((s) => ({
       porCanal: {
+        // O silêncio sobrevive: ler um canal calado não o descala.
         ...s.porCanal,
-        [channelId]: { ...ZERO, lastReadMessageId },
+        [channelId]: {
+          ...ZERO,
+          lastReadMessageId,
+          mutedUntil: s.porCanal[channelId]?.mutedUntil ?? null,
+        },
+      },
+    })),
+
+  /** O estado como o servidor mandou — inclusive o silêncio. */
+  aplicar: (e) =>
+    set((s) => ({
+      porCanal: {
+        ...s.porCanal,
+        [e.channelId]: {
+          unreadCount: e.unreadCount,
+          mentionCount: e.mentionCount,
+          lastReadMessageId: e.lastReadMessageId,
+          mutedUntil: e.mutedUntil,
+        },
       },
     })),
 }));

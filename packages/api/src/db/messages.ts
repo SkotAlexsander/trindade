@@ -331,12 +331,36 @@ export async function marcarLido(
   userId: string,
   channelId: string,
   messageId: string,
-): Promise<void> {
-  await sql`
+): Promise<{ mutedUntil: string | null }> {
+  // Devolve o silêncio porque quem avisa as outras abas precisa repeti-lo:
+  // ler um canal silenciado não pode desligar o silêncio dele.
+  const linhas = await sql<{ muted_until: Date | null }[]>`
     insert into read_state (user_id, channel_id, last_read_message_id, mention_count, updated_at)
     values (${userId}, ${channelId}, ${messageId}, 0, now())
     on conflict (user_id, channel_id) do update
       set last_read_message_id = ${messageId}, mention_count = 0, updated_at = now()
+    returning muted_until
+  `;
+  const linha = linhas[0];
+  return { mutedUntil: linha?.muted_until ? linha.muted_until.toISOString() : null };
+}
+
+/**
+ * Silencia o canal até `ate`, ou tira o silêncio com `null`.
+ *
+ * Mora em `read_state` porque é por pessoa: silenciar `#bugs` é uma decisão
+ * sua, e uma coluna em `channels` a tornaria de todo mundo.
+ */
+export async function silenciar(
+  userId: string,
+  channelId: string,
+  ate: Date | null,
+): Promise<void> {
+  await sql`
+    insert into read_state (user_id, channel_id, muted_until, updated_at)
+    values (${userId}, ${channelId}, ${ate}, now())
+    on conflict (user_id, channel_id) do update
+      set muted_until = ${ate}, updated_at = now()
   `;
 }
 

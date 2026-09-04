@@ -4,6 +4,7 @@ import { Button, Dialog, useToast } from '../../components';
 import { useAuth } from '../auth/store';
 import { AbaPerfil } from './AbaPerfil';
 import { AbaSeguranca } from './AbaSeguranca';
+import { AbaNotificacoes } from '../notifications/AbaNotificacoes';
 import styles from './perfil.module.css';
 
 /**
@@ -13,7 +14,7 @@ import styles from './perfil.module.css';
  * para trocar uma bio é desnecessário. Ver design/05-perfil-e-cargos.md.
  */
 
-export type AbaDoPerfil = 'perfil' | 'conta';
+export type AbaDoPerfil = 'perfil' | 'conta' | 'avisos';
 
 interface DialogoState {
   aberto: boolean;
@@ -112,6 +113,7 @@ export function DialogoDePerfil() {
         {(
           [
             ['perfil', 'Perfil'],
+            ['avisos', 'Notificações'],
             ['conta', 'Conta e segurança'],
           ] as const
         ).map(([chave, rotulo]) => (
@@ -142,6 +144,9 @@ export function DialogoDePerfil() {
           onSujo={setSujo}
           registrarSalvar={registrarSalvar}
         />
+      </div>
+      <div hidden={aba !== 'avisos'}>
+        <AbaNotificacoes />
       </div>
       <div hidden={aba !== 'conta'}>
         <AbaSeguranca />

@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { closePool } from './db/index.js';
 import { garantirBalde, storageConfigurado } from './lib/storage.js';
 import { agendarFaxina } from './services/faxina.js';
+import { agendarLembretes } from './services/lembretes.js';
 import { gravarTudo } from './services/notas.js';
 
 const app = await buildApp();
@@ -21,6 +22,9 @@ if (storageConfigurado()) {
 // coisas que crescem para sempre se ninguém as varrer.
 const pararFaxina = agendarFaxina(app.log);
 
+// Todo dia às 9h, quem tem tarefa vencendo hoje é lembrado uma vez.
+const pararLembretes = agendarLembretes(app.log);
+
 try {
   await app.listen({ port: config.PORT, host: config.API_HOST });
 } catch (err) {
@@ -38,6 +42,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     void (async () => {
       try {
         pararFaxina();
+        pararLembretes();
         await app.close();
         // As notas em memória vão para o banco antes do processo morrer: o
         // debounce de 2s não sobrevive a um `docker compose up -d` no meio de

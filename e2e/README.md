@@ -310,6 +310,26 @@ de quem votou **não aparece** na tela de quem perguntou. A garantia de verdade
 está no teste de API, que olha a resposta crua — na tela só se vê o que foi
 desenhado, e o que vaza vaza no JSON.
 
+**`fase-09-avisos.py`** — 9 verificações das notificações. As regras já estão
+testadas como função pura em `packages/web/test/notificacoes.test.ts`; o que
+este roteiro prova é que elas chegam à tela: contador no título, contador no
+canal, o sino cortado, e a regra que mais importa — **canal silenciado deixa
+passar menção direta**.
+
+Os dois usuários vêm por argumento (`... eva bruno`) justamente por causa do
+limite de login: depurar o roteiro esgota a cota de um par, e trocar de par é
+mais honesto que desligar a proteção nos testes.
+
+Ele começa desfazendo o silêncio do canal. O silêncio fica no banco, e a
+segunda corrida encontraria o botão chamado "Canal silenciado" em vez de
+"Silenciar canal" — roteiro que assume estado limpo quebra na segunda vez.
+
+**Navegue clicando, não com `goto`.** Cada carregamento de página gasta um
+`POST /auth/refresh`, que tem limite de 30 por hora e por IP. Um roteiro que
+troca de canal com `goto` seis vezes esgota a cota em poucas corridas e depois
+cai na tela de entrar — o que parece sessão quebrada e é a proteção
+funcionando. Clicar no link da barra lateral também é o que a pessoa faz.
+
 **O login tem limite de 5 por 15 minutos por IP.** Rodar os roteiros em sequência
 esgota a cota e o próximo falha em `wait_for_url` — o que parece defeito da
 aplicação é a proteção funcionando. Espere a janela ou reinicie a API, que

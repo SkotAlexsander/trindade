@@ -281,3 +281,19 @@ export const Expandir = (p: IconeProps) => (
     <path d="M9 3H3v6M21 9V3h-6M15 21h6v-6M3 15v6h6" />
   </Base>
 );
+
+/** O sino do aviso, e o mesmo sino cortado — a barra, não só a cor. */
+export const Sino = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+  </Base>
+);
+
+export const SinoCortado = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    <path d="m3 3 18 18" />
+  </Base>
+);

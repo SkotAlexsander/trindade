@@ -173,6 +173,13 @@ export type ServerEvent =
    * de outra pessoa como se fosse o seu.
    */
   | { op: 'POLL_UPDATE'; d: { poll: Poll } }
+  /**
+   * "Isto vence hoje." Sai às 9h para cada pessoa com tarefa vencendo.
+   *
+   * Vai numa lista só: três tarefas no mesmo dia são um lembrete com três
+   * linhas, não três interrupções seguidas às nove da manhã.
+   */
+  | { op: 'TASK_REMINDER'; d: { tasks: Task[] } }
   | { op: 'ERROR'; d: { code: string; message: string; retryAfter?: number } };
 
 export type ServerEventName = ServerEvent['op'];

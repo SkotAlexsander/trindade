@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Channel, User } from '@trindade/shared';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import type { Channel, Task, User } from '@trindade/shared';
 import { useToast } from '../../components';
+import { irPara } from '../../lib/navegacao';
 import * as ws from '../../lib/ws';
 import { useAuth } from '../auth/store';
 import {
@@ -11,10 +12,13 @@ import {
   receberMensagem,
   recuperarDesdeAUltima,
   removerMensagem,
+  type CacheCanal,
 } from '../messages/queries';
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
 import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { avisar } from '../notifications/motor';
+import type { Motivo } from '../notifications/regras';
 import { receberEnquete } from '../polls/queries';
 import { receberTarefa } from '../tasks/queries';
 import { useVoz } from '../voice/store';
@@ -114,13 +118,35 @@ export function useGateway(): void {
         // Quem mandou parou de digitar por definição.
         useDigitando.getState().esquecer(d.channelId, d.author.id);
 
-        // O que você mesmo escreveu nunca conta como não lido, e resposta de
-        // thread não muda o estado da linha principal.
-        if (d.author.id === meuId || d.parentId) return;
-        const citou = Boolean(
-          meuUsername && mencionados(analisarMarkdown(d.content ?? '')).has(meuUsername),
-        );
-        useLeitura.getState().somar(d.channelId, citou);
+        if (d.author.id === meuId) return;
+
+        const blocos = analisarMarkdown(d.content ?? '');
+        const citados = mencionados(blocos);
+        const citou = Boolean(meuUsername && citados.has(meuUsername));
+
+        const canal = qc
+          .getQueryData<Channel[]>(['channels'])
+          ?.find((c) => c.id === d.channelId);
+        const decisao = avisar({
+          motivo: motivoDaMensagem(d, {
+            citou,
+            aqui: citados.has('aqui'),
+            respondeuVoce: respondeuVoce(qc, d, meuId),
+          }),
+          channelId: d.channelId,
+          autorId: d.author.id,
+          titulo: `${d.author.displayName}${canal ? ` em #${canal.name}` : ''}`,
+          corpo: d.content ?? '(anexo)',
+          ir: () => {
+            if (canal) irPara(`/c/${canal.slug}?m=${d.id}`);
+          },
+        });
+
+        /* O contador conta o que a regra chamou de `badge`, e não "tinha `@`":
+           resposta à sua mensagem e movimento na thread também chamam você.
+           Resposta de thread não conta como não lida, porém — ela não muda o
+           estado da linha principal do canal. */
+        useLeitura.getState().somar(d.channelId, decisao.badge, !d.parentId);
       }),
 
       ws.on('MESSAGE_UPDATE', (d) => atualizarMensagem(qc, d)),
@@ -169,16 +195,64 @@ export function useGateway(): void {
         useAuth.setState({ permissions: BigInt(d.permissions) });
       }),
 
+      ws.on('TASK_REMINDER', (d) => {
+        if (d.tasks.length === 0) return;
+        const primeira = d.tasks[0];
+        if (!primeira) return;
+
+        const canal = qc
+          .getQueryData<Channel[]>(['channels'])
+          ?.find((c) => c.id === primeira.channelId);
+
+        // Um aviso com a lista, e não um por tarefa: três prazos no mesmo dia
+        // são um lembrete de três linhas, não três interrupções às nove.
+        avisar({
+          motivo: 'prazo',
+          channelId: primeira.channelId,
+          autorId: null,
+          titulo: d.tasks.length === 1 ? 'Vence hoje' : `${d.tasks.length} tarefas vencem hoje`,
+          corpo: d.tasks.map((t) => t.title).join(' · '),
+          ir: () => {
+            if (canal) irPara(`/c/${canal.slug}`);
+          },
+        });
+      }),
+
       ws.on('POLL_UPDATE', (d) => {
         receberEnquete(qc, d.poll);
       }),
 
       ws.on('TASK_UPDATE', (d) => {
+        const antes = qc
+          .getQueryData<Task[]>(['tasks', d.task.channelId])
+          ?.find((t) => t.id === d.task.id);
         receberTarefa(qc, d.task, d.removida ?? false);
+
+        /* Só a **passagem** para você notifica. Sem comparar com o estado
+           anterior, arrastar um cartão que já é seu avisaria de novo a cada
+           movimento — e quem move é quase sempre o dono. */
+        if (d.removida || d.task.assigneeId !== meuId) return;
+        if (antes?.assigneeId === meuId) return;
+
+        const canal = qc
+          .getQueryData<Channel[]>(['channels'])
+          ?.find((c) => c.id === d.task.channelId);
+        avisar({
+          motivo: 'tarefa',
+          channelId: d.task.channelId,
+          autorId: d.task.createdBy,
+          titulo: `Tarefa para você${canal ? ` em #${canal.name}` : ''}`,
+          corpo: d.task.title,
+          ir: () => {
+            if (canal) irPara(`/c/${canal.slug}`);
+          },
+        });
       }),
 
       ws.on('READ_STATE_UPDATE', (d) => {
-        useLeitura.getState().zerar(d.channelId, d.lastReadMessageId);
+        // `aplicar` e não `zerar`: o evento também é como o silêncio do canal
+        // chega às outras abas, e zerar perderia justamente esse campo.
+        useLeitura.getState().aplicar(d);
       }),
 
       ws.on('ERROR', (d) => {
@@ -213,4 +287,40 @@ export function useGateway(): void {
       }
     });
   }, [autenticado, qc]);
+}
+
+/**
+ * Por que esta mensagem notificaria.
+ *
+ * A ordem é a da tabela de design/09-notificacoes.md: menção direta ganha de
+ * `@aqui`, que ganha de resposta, que ganha de thread. Sem ordem, uma menção
+ * dentro de uma thread viraria só "thread" e perderia o som de chamado.
+ */
+function motivoDaMensagem(
+  d: { replyToId: string | null; parentId: string | null },
+  ctx: { citou: boolean; aqui: boolean; respondeuVoce: boolean },
+): Motivo {
+  if (ctx.citou) return 'mencao';
+  if (ctx.aqui) return 'aqui';
+  if (ctx.respondeuVoce) return 'resposta';
+  if (d.parentId) return 'thread';
+  return 'canal';
+}
+
+/**
+ * A mensagem responde uma sua?
+ *
+ * Só dá para saber se a citada estiver no cache — e ela quase sempre está,
+ * porque responder é responder a algo que acabou de passar. Fora do cache, a
+ * mensagem cai em "canal" e o ponto na lista dá conta: notificar por engano é
+ * pior que não notificar.
+ */
+function respondeuVoce(
+  qc: QueryClient,
+  d: { channelId: string; replyToId: string | null },
+  meuId: string,
+): boolean {
+  if (!d.replyToId) return false;
+  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(d.channelId));
+  return cache?.mensagens.some((m) => m.id === d.replyToId && m.author.id === meuId) ?? false;
 }

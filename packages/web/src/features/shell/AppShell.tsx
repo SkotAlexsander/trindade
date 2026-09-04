@@ -25,6 +25,8 @@ import { primeiroDestino, withReadState } from '../channels/canais';
 import { useLeitura } from '../messages/leitura';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { useQuadro } from '../tasks/store';
+import { useNotificacoes } from '../notifications/useNotificacoes';
+import { definirNavegador } from '../../lib/navegacao';
 import { CommandPalette } from './CommandPalette';
 import { ContextPanel } from './ContextPanel';
 import { ServerMenu } from './ServerMenu';
@@ -162,6 +164,15 @@ export function AppShell() {
   useEffect(() => {
     if (pedidoDeQuadro > 0) setPainel('tarefas');
   }, [pedidoDeQuadro]);
+
+  // O clique numa notificação da área de trabalho troca de canal sem recarregar
+  // o produto — o que reconectaria o socket e derrubaria a chamada.
+  useEffect(() => {
+    definirNavegador((para) => navigate(para));
+    return () => definirNavegador(null);
+  }, [navigate]);
+
+  useNotificacoes(canalAtual?.id);
 
   useHotkeys([
     { key: 'k', mod: true, emCampo: true, run: () => setPaletaAberta(true) },

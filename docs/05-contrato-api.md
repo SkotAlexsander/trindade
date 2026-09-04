@@ -369,6 +369,15 @@ antes do cartão — a interface esconde a imagem e mantém o cartão.
 ### `GET /read-state` → `200 { states: ReadState[] }`
 ### `PUT /channels/:id/mute` `{ until }` / `DELETE` → `204`
 
+Silenciar é **por pessoa** e mora em `read_state.muted_until` — uma coluna em
+`channels` faria a escolha de um valer para todos. "Até eu ligar" chega como um
+prazo de dez anos e não como `null`: `null` já quer dizer "não silenciado", e
+usar o mesmo valor para as duas coisas apagaria a diferença entre calado para
+sempre e nunca calado.
+
+O `DELETE` vem sem corpo, e o schema aceita corpo `null` por isso. A resposta é
+`204`; o estado novo volta pelo `READ_STATE_UPDATE` para as suas outras abas.
+
 ---
 
 ## Notas e tarefas
@@ -461,6 +470,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `CHANNEL_CREATE` / `UPDATE` / `DELETE` | canal | `Channel` |
 | `TASK_UPDATE` | tarefa nasceu, mudou ou saiu | `{ task: Task, removida?: true }` |
 | `POLL_UPDATE` | alguém votou, ou a enquete fechou | `{ poll: Poll }` — **um payload por pessoa**, porque `myVotes` e `voters` dependem de quem recebe |
+| `TASK_REMINDER` | às 9h, o que vence hoje | `{ tasks: Task[] }` — só para quem tem tarefa vencendo, e numa lista só |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |
 | `ERROR` | operação falhou | `{ code, message }` |
 

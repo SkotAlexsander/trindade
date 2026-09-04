@@ -1,6 +1,6 @@
 import { useState, type DragEvent } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronDown, Hash } from '../../components/icones';
+import { ChevronDown, Hash, SinoCortado } from '../../components/icones';
 import { ItemDeVoz } from '../voice/ItemDeVoz';
 import { groupByCategory, type Category, type ChannelWithState } from './canais';
 import styles from './channels.module.css';
@@ -184,6 +184,7 @@ function ItemCanal({
         [styles.item, isActive ? styles.ativo : ''].filter(Boolean).join(' ')
       }
       data-unread={canal.unread}
+      data-silenciado={canal.silenciadoAte !== null}
       data-arrastando={arrastando}
       draggable={podeGerenciar}
       onDragStart={onDragStart}
@@ -206,6 +207,13 @@ function ItemCanal({
         <Hash size={16} />
       </span>
       <span className={styles.nome}>{canal.name}</span>
+      {/* Silenciado continua marcando não lido, mas em peso normal e com o
+          sino cortado: você vê que houve movimento sem que ele grite. */}
+      {canal.silenciadoAte ? (
+        <span className={styles.sino} aria-label="silenciado">
+          <SinoCortado size={12} />
+        </span>
+      ) : null}
       {canal.mentions > 0 ? (
         <span className={styles.mencoes} aria-label={`${canal.mentions} menções`}>
           {canal.mentions > 9 ? '9+' : canal.mentions}
