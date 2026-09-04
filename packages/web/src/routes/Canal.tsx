@@ -1,52 +1,47 @@
 import { useParams } from 'react-router-dom';
-import { Skeleton } from '../components';
-import { useChannels } from '../features/channels/queries';
+import { Composer } from '../features/messages/Composer';
+import { Digitando } from '../features/messages/Digitando';
+import { MessageList } from '../features/messages/MessageList';
+import { useChannels, useUsers } from '../features/channels/queries';
+import styles from '../features/messages/canal.module.css';
 
 /**
- * A conversa. Sem mensagens ainda — o histórico fica com espaço reservado até
- * a fase 5. Ver prompts/fase-04-shell.md.
+ * A conversa: histórico, quem está digitando, compositor.
+ *
+ * A rolagem é da lista, não desta rota — ela precisa do próprio elemento para
+ * medir alturas e compensar a posição ao carregar histórico antigo.
  */
 export function Canal() {
   const { slug } = useParams<{ slug: string }>();
-  const { data: canais, isPending } = useChannels();
+  const { data: canais } = useChannels();
+  const { data: pessoas } = useUsers();
   const canal = canais?.find((c) => c.slug === slug);
 
-  if (isPending) {
-    // Seis blocos com a proporção real de mensagem. Nada de spinner no shell.
+  if (!canal) {
     return (
-      <div style={{ display: 'grid', gap: 'var(--s-4)' }}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} style={{ display: 'flex', gap: 'var(--s-3)' }}>
-            <Skeleton width="32px" height="32px" radius="var(--r-full)" />
-            <div style={{ flex: 1, display: 'grid', gap: 'var(--s-2)', maxWidth: 560 }}>
-              <Skeleton width="120px" height="12px" />
-              <Skeleton height="14px" />
-              <Skeleton width={`${55 + ((i * 13) % 35)}%`} height="14px" />
-            </div>
-          </div>
-        ))}
+      <div className={styles.semCanal}>
+        <p>Escolha um canal para começar.</p>
       </div>
     );
   }
 
-  // Tela vazia é convite para agir, não momento decorativo: sem ilustração.
+  // Canal de voz ainda não tem tela: a chamada é da fase 7.
+  if (canal.kind === 'voice') {
+    return (
+      <div className={styles.semCanal}>
+        <strong>{canal.name}</strong>
+        <p>Canais de voz entram na fase 7.</p>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'var(--s-2)',
-        height: '100%',
-        textAlign: 'center',
-        color: 'var(--text-secondary)',
-      }}
-    >
-      <strong style={{ fontSize: 'var(--text-section)', color: 'var(--text-primary)' }}>
-        #{canal?.name ?? slug}
-      </strong>
-      <p>Este canal ainda não tem mensagens. Escreva a primeira.</p>
+    <div className={styles.canal}>
+      {/* A chave força a lista a recomeçar ao trocar de canal: posição de
+          rolagem e contadores de um canal não valem para o outro. */}
+      <MessageList key={canal.id} channelId={canal.id} pessoas={pessoas ?? []} />
+      <Digitando channelId={canal.id} pessoas={pessoas ?? []} />
+      <Composer canal={canal} />
     </div>
   );
 }

@@ -190,3 +190,43 @@ export const ChevronLeft = (p: IconeProps) => (
     <path d="m15 18-6-6 6-6" />
   </Base>
 );
+
+export const ArrowDown = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </Base>
+);
+
+export const Send = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M4 12h13M13 6l6 6-6 6" />
+  </Base>
+);
+
+export const Paperclip = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M20 11.5 12.4 19a4.6 4.6 0 0 1-6.5-6.5l7.9-7.9a3 3 0 0 1 4.3 4.3l-7.9 7.9a1.5 1.5 0 0 1-2.1-2.1l7.2-7.2" />
+  </Base>
+);
+
+export const Smile = (p: IconeProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+    <path d="M9 9.5h.01M15 9.5h.01" />
+  </Base>
+);
+
+export const Reply = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h9a7 7 0 0 1 7 7v4" />
+  </Base>
+);
+
+export const Clock = (p: IconeProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3.5 2" />
+  </Base>
+);

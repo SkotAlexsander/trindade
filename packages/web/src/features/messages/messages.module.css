@@ -1,0 +1,353 @@
+/* A conversa. Ver design/04-mensagens.md. */
+
+.moldura {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  height: 100%;
+}
+
+.rolagem {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s-4) 0 var(--s-3);
+  /* Ancora no fim: quando o conteúdo cresce acima da viewport, o navegador
+     mantém o que está visível no lugar. É o mesmo princípio da compensação
+     manual da prepend, feito pelo motor. */
+  overflow-anchor: auto;
+}
+
+/*
+ * Acima de 200 linhas, o navegador para de desenhar o que está fora da tela.
+ *
+ * `content-visibility` faz o trabalho de um virtualizador sem trazer os bugs
+ * de altura variável que ele traz — e `contain-intrinsic-size: auto` guarda a
+ * altura real que cada linha teve, então a barra de rolagem não pula quando o
+ * item volta. Abaixo de 200, nada disso vale a pena: é o limiar do documento.
+ */
+.rolagem[data-janela='true'] .mensagem {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40px;
+}
+
+/* --- mensagem ------------------------------------------------------------- */
+
+.mensagem {
+  display: grid;
+  grid-template-columns: var(--gutter-w) minmax(0, 1fr);
+  padding: 2px var(--s-5) 2px 0;
+  position: relative;
+}
+
+/* 2px dentro do bloco, 12px entre blocos. Esse ritmo é o que faz a leitura
+   funcionar sem borda nenhuma. */
+.mensagem[data-cabeca='true'] {
+  margin-top: 12px;
+}
+
+.mensagem:hover {
+  background: var(--bg-hover);
+}
+
+.mensagem[data-mencionado='true'] {
+  background: var(--cyan-wash);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.mensagem[data-local='enviando'] .corpo,
+.mensagem[data-local='na-fila'] .corpo {
+  opacity: 0.5;
+}
+
+.mensagem[data-local='falhou'] {
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+
+.gutter {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.horaGutter {
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  line-height: var(--leading-read);
+  opacity: 0;
+}
+
+.mensagem:hover .horaGutter,
+.mensagem:focus-within .horaGutter {
+  opacity: 1;
+}
+
+/* Relógio da fila é informação, não decoração de hover: fica sempre visível. */
+.mensagem[data-local='na-fila'] .horaGutter {
+  opacity: 1;
+}
+
+.conteudo {
+  min-width: 0;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.nome {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+}
+
+.cargo {
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.hora {
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.corpo {
+  font: var(--weight-normal) var(--text-body) / var(--leading-read) var(--font-read);
+  color: var(--text-primary);
+  max-width: var(--measure);
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.editado {
+  margin-left: var(--s-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.apagada {
+  font: italic var(--weight-normal) var(--text-body) / var(--leading-read) var(--font-read);
+  color: var(--text-tertiary);
+}
+
+.falhou {
+  margin-top: 2px;
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  color: var(--danger);
+}
+
+.falhou button {
+  color: var(--danger);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- reações -------------------------------------------------------------- */
+
+.reacoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.reacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--weight-medium) 11px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.reacao:hover {
+  border-color: var(--border-strong);
+}
+
+.reacao[data-minha='true'] {
+  background: var(--cyan-wash);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* --- divisor de dia -------------------------------------------------------
+ *
+ * Uma seção por dia. É ela que faz o `sticky` funcionar: o elemento grudado se
+ * prende ao **pai**, então, com todos os divisores irmãos no mesmo container,
+ * cada um ficaria preso ao topo pelo scroll inteiro e eles se empilhariam
+ * sobrepostos. Dentro da própria seção, o divisor gruda enquanto o dia dele
+ * está na tela e o dia seguinte o empurra para fora. */
+
+.dia {
+  /* Precisa gerar caixa. Com `display: contents` a seção some do layout e o
+     divisor voltaria a se prender ao container de rolagem — que é exatamente
+     o problema que a seção existe para resolver. */
+  display: block;
+}
+
+.divisorDia {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: 20px var(--s-5) 20px var(--s-4);
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.divisorDia::before,
+.divisorDia::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.divisorDia span {
+  /* Fundo opaco: grudado no topo, ele passa por cima das mensagens. */
+  background: var(--bg-app);
+  padding: 0 var(--s-2);
+}
+
+/* --- estados da lista ----------------------------------------------------- */
+
+.comeco,
+.vazio {
+  padding: var(--s-4) var(--s-5) var(--s-4) var(--gutter-w);
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+}
+
+.carregandoTopo {
+  display: flex;
+  justify-content: center;
+  padding: var(--s-3);
+}
+
+.esqueleto {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+
+.esqueletoLinha {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.esqueletoLinha > div {
+  flex: 1;
+  display: grid;
+  gap: var(--s-2);
+  max-width: 560px;
+}
+
+/* --- botão de mensagens novas --------------------------------------------- */
+
+.novas {
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-3);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 30px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-full);
+  border: 1px solid var(--accent);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-pop);
+  color: var(--accent);
+  font: var(--weight-medium) var(--text-label) var(--font-ui);
+}
+
+/* --- compositor ----------------------------------------------------------- */
+
+.compositorArea {
+  padding: 0 var(--s-4) var(--s-3);
+}
+
+.barraEdicao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 32px;
+  padding: 0 var(--s-2) 0 var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-bottom: none;
+  border-radius: var(--r-field) var(--r-field) 0 0;
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.dica {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+}
+
+/* Raio quase reto de propósito: campo muito arredondado parece "bolha de
+   mensagem", que é vocabulário de aplicativo pessoal, não de trabalho. */
+.compositor {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  background: var(--bg-live);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+}
+
+.compositor:focus-within {
+  border-color: var(--border-strong);
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  max-height: 240px;
+  padding: 9px 0;
+  border: none;
+  background: none;
+  resize: none;
+  color: var(--text-primary);
+  font: var(--weight-normal) var(--text-body) / var(--leading-ui) var(--font-read);
+}
+
+.campo:focus {
+  outline: none;
+}
+
+.campo::placeholder {
+  color: var(--text-tertiary);
+}
+
+.digitando {
+  height: 18px;
+  padding: 0 var(--s-4) 2px;
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rolagem {
+    scroll-behavior: auto;
+  }
+}

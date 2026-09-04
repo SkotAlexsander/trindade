@@ -10,6 +10,8 @@ import { useAuth } from '../auth/store';
 import { CastPanel } from '../cast/CastPanel';
 import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
+import { useGateway } from '../realtime/useGateway';
+import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
 import { primeiroDestino, withPlaceholderState } from '../channels/canais';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { CommandPalette } from './CommandPalette';
@@ -30,10 +32,37 @@ export function AppShell() {
   const permissoes = useAuth((state) => state.permissions);
 
   const { data: canaisCrus, isPending: carregandoCanais } = useChannels();
-  const { data: pessoas } = useUsers();
+  const { data: pessoasCruas } = useUsers();
+
+  // Um hook só, montado uma vez: assinaturas de socket espalhadas pelos
+  // componentes produzem o clássico "chegou duas vezes".
+  useGateway();
+
+  const presencas = usePresenca((s) => s.porUsuario);
+  const conectado = useConexao((s) => s.estado === 'aberto');
+  const digitandoPorCanal = useDigitando((s) => s.porCanal);
+
+  // O status que o servidor mandou no READY já vem público (quem escolheu
+  // invisível chega como offline). O que o socket atualiza depois vive fora do
+  // cache de requisição, e é aqui que as duas fontes se juntam.
+  const pessoas = useMemo(
+    () =>
+      (pessoasCruas ?? []).map((p) => {
+        const presenca = presencas[p.id];
+        return presenca
+          ? { ...p, status: presenca.status, customStatus: presenca.customStatus }
+          : p;
+      }),
+    [pessoasCruas, presencas],
+  );
 
   const canais = useMemo(() => withPlaceholderState(canaisCrus ?? []), [canaisCrus]);
   const canalAtual = canais.find((c) => c.slug === slug);
+
+  const digitando = useMemo(
+    () => new Set(canalAtual ? digitandoAgora(digitandoPorCanal, canalAtual.id) : []),
+    [digitandoPorCanal, canalAtual],
+  );
   const podeGerenciar = can(permissoes, Perm.MANAGE_CHANNEL);
 
   const [painel, setPainel] = useState<PainelAberto>(null);
@@ -141,7 +170,7 @@ export function AppShell() {
           )}
         </div>
 
-        <CastPanel users={pessoas ?? []} acender={Boolean(pessoas)} />
+        <CastPanel users={pessoas} typing={digitando} acender={conectado} />
       </div>
 
       {gaveta && estreito ? (
@@ -166,7 +195,7 @@ export function AppShell() {
         aberta={paletaAberta}
         onFechar={() => setPaletaAberta(false)}
         canais={canais}
-        pessoas={pessoas ?? []}
+        pessoas={pessoas}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconButton, Tooltip } from '../../components';
+import { FaixaConexao } from '../realtime/FaixaConexao';
 import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
 import styles from './shell.module.css';
@@ -33,9 +34,8 @@ export function ChannelHeader({
 }: ChannelHeaderProps) {
   return (
     <div className={styles.conversa}>
-      {/* A faixa de desconexão ocupa a primeira linha da grade quando existe;
-          empurra o conteúdo em vez de sobrepor. Ligada na fase 5. */}
-      <div />
+      {/* Primeira linha da grade: empurra o conteúdo, não sobrepõe. */}
+      <FaixaConexao />
 
       <header className={styles.cabecalho}>
         {mostrarGaveta ? (
@@ -79,15 +79,9 @@ export function ChannelHeader({
         </div>
       </header>
 
-      {/* `role="log"` com `aria-live="polite"`, nunca `assertive`: mensagem
-          nova não deve interromper quem está lendo outra coisa. */}
-      <div className={styles.historico} role="log" aria-live="polite" aria-label="Mensagens">
-        {children}
-      </div>
-
-      <div className={styles.compositor} id="compositor">
-        {canal ? `escreva em #${canal.name}` : 'escolha um canal'}
-      </div>
+      {/* A rolagem e o compositor pertencem à rota, não à moldura: `/config`
+          usa este mesmo cabeçalho e não tem onde escrever. */}
+      <div className={styles.historico}>{children}</div>
     </div>
   );
 }
