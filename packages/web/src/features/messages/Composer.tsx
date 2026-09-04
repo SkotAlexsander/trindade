@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { TYPING_THROTTLE_MS, type Channel, type Message } from '@trindade/shared';
+import { TYPING_THROTTLE_MS, type Channel, type Message, type User } from '@trindade/shared';
 import { IconButton, Tooltip, useToast } from '../../components';
 import { Paperclip, Reply, Send, X } from '../../components/icones';
 import { api } from '../../lib/http';
@@ -8,6 +8,7 @@ import { enviar as enviarPeloSocket } from '../../lib/ws';
 import { useAuth } from '../auth/store';
 import { atualizarMensagem, chaveDoCanal, type CacheCanal } from './queries';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
+import { gatilhoAtivo, sugerir, type Sugestao } from './autocompletar';
 import { useComposer, useFoco } from './store';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
@@ -26,9 +27,11 @@ const ALTURA_MAX = 240;
 
 export interface ComposerProps {
   canal: Channel;
+  pessoas: readonly User[];
+  canais: readonly Channel[];
 }
 
-export function Composer({ canal }: ComposerProps) {
+export function Composer({ canal, pessoas, canais }: ComposerProps) {
   const qc = useQueryClient();
   const { show } = useToast();
   const meuId = useAuth((s) => s.user?.id);
@@ -43,6 +46,42 @@ export function Composer({ canal }: ComposerProps) {
   const campo = useRef<HTMLTextAreaElement>(null);
   const ultimoTyping = useRef(0);
   const [texto, setTexto] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const [escolhida, setEscolhida] = useState(0);
+  // Fechado à mão com `Esc`, até o gatilho mudar. Sem isto, `Esc` fecharia e a
+  // próxima tecla reabriria a mesma lista.
+  const [dispensado, setDispensado] = useState('');
+
+  const gatilho = useMemo(() => gatilhoAtivo(texto, cursor), [texto, cursor]);
+  const sugestoes = useMemo(
+    () => (gatilho ? sugerir(gatilho, pessoas, canais) : []),
+    [gatilho, pessoas, canais],
+  );
+  const chaveDoGatilho = gatilho ? `${gatilho.tipo}${gatilho.inicio}` : '';
+  const abertas = sugestoes.length > 0 && dispensado !== chaveDoGatilho;
+
+  useEffect(() => {
+    setEscolhida(0);
+  }, [chaveDoGatilho, sugestoes.length]);
+
+  const completar = useCallback(
+    (sugestao: Sugestao) => {
+      if (!gatilho) return;
+      const antes = texto.slice(0, gatilho.inicio);
+      const depois = texto.slice(cursor);
+      const novo = antes + sugestao.troca + depois;
+      const posicao = antes.length + sugestao.troca.length;
+
+      setTexto(novo);
+      requestAnimationFrame(() => {
+        const el = campo.current;
+        el?.focus();
+        el?.setSelectionRange(posicao, posicao);
+        setCursor(posicao);
+      });
+    },
+    [gatilho, texto, cursor],
+  );
 
   const ajustarAltura = useCallback(() => {
     const el = campo.current;
@@ -148,6 +187,32 @@ export function Composer({ canal }: ComposerProps) {
       // composição — enviar aqui cortaria a palavra no meio.
       if (e.nativeEvent.isComposing) return;
 
+      // O autocompletar come as teclas antes de todo o resto: com a lista
+      // aberta, `Enter` escolhe e não envia.
+      if (abertas) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          setEscolhida((i) => {
+            const passo = e.key === 'ArrowDown' ? 1 : -1;
+            return (i + passo + sugestoes.length) % sugestoes.length;
+          });
+          return;
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          const alvo = sugestoes[escolhida];
+          if (alvo) {
+            e.preventDefault();
+            completar(alvo);
+            return;
+          }
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setDispensado(chaveDoGatilho);
+          return;
+        }
+      }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         submeter();
@@ -185,7 +250,22 @@ export function Composer({ canal }: ComposerProps) {
         });
       }
     },
-    [submeter, editando, respondendoA, cancelar, texto, editarUltima, qc, canal.id, focar],
+    [
+      submeter,
+      editando,
+      respondendoA,
+      cancelar,
+      texto,
+      editarUltima,
+      qc,
+      canal.id,
+      focar,
+      abertas,
+      sugestoes,
+      escolhida,
+      completar,
+      chaveDoGatilho,
+    ],
   );
 
   const contexto = editando
@@ -200,6 +280,34 @@ export function Composer({ canal }: ComposerProps) {
 
   return (
     <div className={styles.compositorArea}>
+      {/* Acima do campo, nunca abaixo: embaixo ela sairia da tela, porque o
+          compositor já está colado no rodapé. */}
+      {abertas ? (
+        <div className={styles.sugestoes} role="listbox" aria-label="Sugestões">
+          {sugestoes.map((s, i) => (
+            <button
+              key={s.chave}
+              type="button"
+              role="option"
+              aria-selected={i === escolhida}
+              className={styles.sugestao}
+              data-ativa={i === escolhida}
+              onMouseEnter={() => setEscolhida(i)}
+              onMouseDown={(e) => {
+                // `mousedown` e não `click`: o clique tiraria o foco do campo
+                // antes de completar, e o cursor se perderia.
+                e.preventDefault();
+                completar(s);
+              }}
+            >
+              {s.simbolo ? <span className={styles.sugestaoSimbolo}>{s.simbolo}</span> : null}
+              <span className={styles.sugestaoRotulo}>{s.rotulo}</span>
+              {s.detalhe ? <span className={styles.sugestaoDetalhe}>{s.detalhe}</span> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {contexto ? (
         <div className={styles.barraContexto}>
           {contexto.icone}
@@ -228,8 +336,11 @@ export function Composer({ canal }: ComposerProps) {
           aria-label={`Escrever em ${canal.name}`}
           onChange={(e) => {
             setTexto(e.target.value);
+            setCursor(e.target.selectionStart);
             if (e.target.value) sinalizarDigitacao();
           }}
+          onKeyUp={(e) => setCursor(e.currentTarget.selectionStart)}
+          onClick={(e) => setCursor(e.currentTarget.selectionStart)}
           onKeyDown={aoTeclar}
         />
 

@@ -310,6 +310,7 @@ export async function resolveMentions(content: string): Promise<string[]> {
 export interface ReadStateRow {
   channelId: string;
   lastReadMessageId: string | null;
+  unreadCount: number;
   mentionCount: number;
   mutedUntil: string | null;
 }
@@ -333,6 +334,14 @@ export async function marcarLido(
   `;
 }
 
+/**
+ * O estado de leitura completo, já com a contagem de não lidas.
+ *
+ * Duas consultas e não uma: a contagem varre `messages` e o resto é uma
+ * leitura direta de `read_state`. Juntá-las num `left join` faria a segunda
+ * pagar o custo da primeira em toda chamada, e `GET /read-state` é pedido a
+ * cada reconexão.
+ */
 export async function listReadState(userId: string): Promise<ReadStateRow[]> {
   const linhas = await sql<
     {
@@ -345,12 +354,31 @@ export async function listReadState(userId: string): Promise<ReadStateRow[]> {
     select channel_id, last_read_message_id, mention_count, muted_until
     from read_state where user_id = ${userId}
   `;
-  return linhas.map((l) => ({
+  const naoLidas = await contarNaoLidas(userId);
+  const vistos = new Set(linhas.map((l) => l.channel_id));
+
+  const estados: ReadStateRow[] = linhas.map((l) => ({
     channelId: l.channel_id,
     lastReadMessageId: l.last_read_message_id,
+    unreadCount: naoLidas.get(l.channel_id) ?? 0,
     mentionCount: l.mention_count,
     mutedUntil: l.muted_until ? l.muted_until.toISOString() : null,
   }));
+
+  // Canal em que a pessoa nunca entrou não tem linha em `read_state`, e é
+  // justamente onde há mais para ler. Sem isto, canal novo nasce lido.
+  for (const [channelId, total] of naoLidas) {
+    if (vistos.has(channelId) || total === 0) continue;
+    estados.push({
+      channelId,
+      lastReadMessageId: null,
+      unreadCount: total,
+      mentionCount: 0,
+      mutedUntil: null,
+    });
+  }
+
+  return estados;
 }
 
 /** Conta quantas mensagens há depois da última lida, por canal. */

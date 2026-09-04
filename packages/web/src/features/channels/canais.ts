@@ -6,16 +6,24 @@ export interface ChannelWithState extends Channel {
 }
 
 /**
- * Estado de leitura ainda não existe — `read_state` só é alimentado na fase 5.
- * Até lá, um valor derivado do id mantém a lista com os quatro estados
- * visíveis para revisão, e sai junto com a chegada do dado real.
+ * Junta os canais com o estado de leitura de verdade.
+ *
+ * Substituiu o valor de espaço reservado da fase 4, que derivava "não lido" do
+ * índice na lista — útil para revisar os quatro estados, e mentira assim que
+ * alguém usava o produto.
  */
-export function withPlaceholderState(channels: Channel[]): ChannelWithState[] {
-  return channels.map((channel, indice) => ({
-    ...channel,
-    unread: indice === 1 || indice === 2,
-    mentions: indice === 2 ? 3 : 0,
-  }));
+export function withReadState(
+  channels: readonly Channel[],
+  leitura: Record<string, { unreadCount: number; mentionCount: number }>,
+): ChannelWithState[] {
+  return channels.map((channel) => {
+    const estado = leitura[channel.id];
+    return {
+      ...channel,
+      unread: (estado?.unreadCount ?? 0) > 0,
+      mentions: estado?.mentionCount ?? 0,
+    };
+  });
 }
 
 export interface Category {

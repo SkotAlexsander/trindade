@@ -13,7 +13,8 @@ import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
 import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
 import { useThread } from '../messages/store';
-import { primeiroDestino, withPlaceholderState } from '../channels/canais';
+import { primeiroDestino, withReadState } from '../channels/canais';
+import { useLeitura } from '../messages/leitura';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { CommandPalette } from './CommandPalette';
 import { ContextPanel } from './ContextPanel';
@@ -57,7 +58,11 @@ export function AppShell() {
     [pessoasCruas, presencas],
   );
 
-  const canais = useMemo(() => withPlaceholderState(canaisCrus ?? []), [canaisCrus]);
+  const leitura = useLeitura((s) => s.porCanal);
+  const canais = useMemo(
+    () => withReadState(canaisCrus ?? [], leitura),
+    [canaisCrus, leitura],
+  );
   const canalAtual = canais.find((c) => c.slug === slug);
 
   const digitando = useMemo(

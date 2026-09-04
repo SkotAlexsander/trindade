@@ -384,6 +384,19 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const canal = await channelsDb.findChannelById(req.params.id);
       if (!canal) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
       await messagesDb.marcarLido(me.id, canal.id, req.body.messageId);
+
+      // Só para as suas outras abas: ler num lugar tem de apagar o negrito no
+      // outro, e isso não é da conta de mais ninguém.
+      gateway.sendToUser(me.id, {
+        op: 'READ_STATE_UPDATE',
+        d: {
+          channelId: canal.id,
+          lastReadMessageId: req.body.messageId,
+          unreadCount: 0,
+          mentionCount: 0,
+          mutedUntil: null,
+        },
+      });
       return reply.code(204).send(null);
     },
   );
@@ -398,6 +411,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
               z.object({
                 channelId: z.string(),
                 lastReadMessageId: z.string().nullable(),
+                unreadCount: z.number(),
                 mentionCount: z.number(),
                 mutedUntil: z.string().nullable(),
               }),

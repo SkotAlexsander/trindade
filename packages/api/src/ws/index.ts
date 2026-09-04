@@ -73,7 +73,11 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
     gw.register(conn);
 
     // --- READY ------------------------------------------------------------
-    const [pessoas, canais] = await Promise.all([usersDb.listUsers(), channelsDb.listChannels()]);
+    const [pessoas, canais, leitura] = await Promise.all([
+      usersDb.listUsers(),
+      channelsDb.listChannels(),
+      messagesDb.listReadState(userId),
+    ]);
     const conectados = new Set(gw.online());
 
     const payload: ReadyPayload = {
@@ -87,7 +91,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
         return api;
       }),
       channels: canais.map(toApiChannel),
-      readState: [],
+      readState: leitura,
       voiceStates: [],
       first: gw.primeiroReady(userId),
     };

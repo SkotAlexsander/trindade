@@ -13,6 +13,8 @@ import {
   removerMensagem,
 } from '../messages/queries';
 import { confirmarNonce } from '../messages/useEnviar';
+import { useLeitura } from '../messages/leitura';
+import { analisarMarkdown, mencionados } from '../messages/markdown';
 import { ATRASO_DA_FAIXA_MS, useConexao, useDigitando, usePresenca } from './store';
 
 /**
@@ -26,6 +28,7 @@ export function useGateway(): void {
   const qc = useQueryClient();
   const { show } = useToast();
   const meuId = useAuth((s) => s.user?.id);
+  const meuUsername = useAuth((s) => s.user?.username);
   const autenticado = useAuth((s) => s.status === 'authenticated');
 
   const setEstado = useConexao((s) => s.setEstado);
@@ -81,6 +84,7 @@ export function useGateway(): void {
             d.users.map((u) => [u.id, { status: u.status, customStatus: u.customStatus }]),
           ),
         );
+        useLeitura.getState().substituir(d.readState);
       }),
 
       ws.on('MESSAGE_CREATE', (d) => {
@@ -88,6 +92,14 @@ export function useGateway(): void {
         receberMensagem(qc, d);
         // Quem mandou parou de digitar por definição.
         useDigitando.getState().esquecer(d.channelId, d.author.id);
+
+        // O que você mesmo escreveu nunca conta como não lido, e resposta de
+        // thread não muda o estado da linha principal.
+        if (d.author.id === meuId || d.parentId) return;
+        const citou = Boolean(
+          meuUsername && mencionados(analisarMarkdown(d.content ?? '')).has(meuUsername),
+        );
+        useLeitura.getState().somar(d.channelId, citou);
       }),
 
       ws.on('MESSAGE_UPDATE', (d) => atualizarMensagem(qc, d)),
@@ -136,6 +148,10 @@ export function useGateway(): void {
         useAuth.setState({ permissions: BigInt(d.permissions) });
       }),
 
+      ws.on('READ_STATE_UPDATE', (d) => {
+        useLeitura.getState().zerar(d.channelId, d.lastReadMessageId);
+      }),
+
       ws.on('ERROR', (d) => {
         show(d.message, 'danger');
       }),
@@ -144,7 +160,7 @@ export function useGateway(): void {
     return () => {
       for (const cancelar of inscricoes) cancelar();
     };
-  }, [autenticado, meuId, qc, show]);
+  }, [autenticado, meuId, meuUsername, qc, show]);
 
   // --- recuperação depois de reconectar ------------------------------------
   useEffect(() => {

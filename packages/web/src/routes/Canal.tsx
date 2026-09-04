@@ -46,7 +46,7 @@ export function Canal() {
         canais={canais ?? []}
       />
       <Digitando channelId={canal.id} pessoas={pessoas ?? []} />
-      <Composer canal={canal} />
+      <Composer canal={canal} pessoas={pessoas ?? []} canais={canais ?? []} />
     </div>
   );
 }

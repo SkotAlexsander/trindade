@@ -8,6 +8,7 @@ import { montarSecoes, rotuloDoDia } from './linhas';
 import { useCarregarAntigas, useMessages, type MensagemLocal } from './queries';
 import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco, useThread } from './store';
 import { useAcoesDaMensagem } from './useAcoes';
+import { useMarcarLido } from './leitura';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
 
@@ -65,6 +66,9 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const secoes = useMemo(() => montarSecoes(mensagens), [mensagens]);
   const porId = useMemo(() => new Map(pessoas.map((p) => [p.id, p])), [pessoas]);
   const mensagensPorId = useMemo(() => new Map(mensagens.map((m) => [m.id, m])), [mensagens]);
+
+  // Canal aberto e janela à vista: o que chegou está lido.
+  useMarcarLido(channelId, mensagens[mensagens.length - 1]?.id ?? null);
 
   const irAoFim = useCallback((comportamento: ScrollBehavior = 'auto') => {
     const el = rolagem.current;

@@ -244,10 +244,10 @@ Três defeitos que só apareceram rodando:
 - Na gaveta do celular, o elenco herdava uma linha de 48px para 120px de
   conteúdo e cobria o cabeçalho.
 
-Pendente por depender da fase 5: estado de leitura (`unread` e menções vêm de
-`withPlaceholderState`, não do banco), faixa de desconexão, presença em tempo
-real e a sequência de acender disparada pelo `READY` — hoje ela roda quando as
-pessoas carregam.
+Pendia da fase 5 e **foi resolvido nela**: estado de leitura de verdade (o
+`withPlaceholderState`, que derivava "não lido" do índice na lista, saiu na
+fatia 6), faixa de desconexão, presença em tempo real e a sequência de acender
+disparada pelo `READY`.
 
 ### Escopo acrescentado em 4 de setembro de 2026
 

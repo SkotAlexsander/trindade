@@ -992,3 +992,52 @@ button.mencao:hover {
   color: inherit;
   border-radius: 2px;
 }
+
+/* --- autocompletar ---------------------------------------------------------
+ *
+ * Acima do campo, nunca abaixo: o compositor está colado no rodapé e uma lista
+ * embaixo sairia da tela. Ver design/04-mensagens.md. */
+
+.sugestoes {
+  display: grid;
+  max-height: 264px;
+  overflow-y: auto;
+  margin-bottom: var(--s-1);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-pop);
+}
+
+.sugestao {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.sugestao[data-ativa='true'] {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.sugestaoSimbolo {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.sugestaoRotulo {
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.sugestaoDetalhe {
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}

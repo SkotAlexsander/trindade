@@ -47,6 +47,14 @@ export type ClientEvent = z.infer<typeof clientEventSchema>;
 export interface ReadStateEntry {
   channelId: string;
   lastReadMessageId: string | null;
+  /**
+   * Quantas mensagens de outras pessoas há depois da última lida.
+   *
+   * Contado no servidor porque só ele conhece o histórico inteiro: o cliente
+   * carrega cinquenta linhas e não teria como saber que há trezentas atrás.
+   * Depois disso, quem soma é o cliente, a cada evento que chega.
+   */
+  unreadCount: number;
   mentionCount: number;
   mutedUntil: string | null;
 }
@@ -87,6 +95,8 @@ export type ServerEvent =
   | { op: 'CHANNEL_UPDATE'; d: Channel }
   | { op: 'CHANNEL_DELETE'; d: { id: string } }
   | { op: 'PERMISSIONS_UPDATE'; d: { permissions: string } }
+  /** Outra aba sua marcou um canal como lido. Só vai para você. */
+  | { op: 'READ_STATE_UPDATE'; d: ReadStateEntry }
   | { op: 'ERROR'; d: { code: string; message: string; retryAfter?: number } };
 
 export type ServerEventName = ServerEvent['op'];
