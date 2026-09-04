@@ -267,3 +267,17 @@ Três formas, e cada uma tem um lugar:
 
 O `fill-rule="evenodd"` é o que abre os vazios do entrelaçado. Sem ela o nó
 vira um triângulo cheio.
+
+### Cor da marca
+
+**Monocromática: branca no tema escuro, preta no claro.** Ela usa
+`--text-primary`, que já é exatamente isso nos dois temas — não há condicional
+nem par de arquivos a manter em sincronia.
+
+O ciano fica reservado ao botão do espaço ativo no rail, onde a cor comunica
+**seleção**, não identidade. Uma marca em cor de acento competiria com o único
+lugar onde essa cor precisa significar algo.
+
+Para uso fora do produto — apresentação, documento, impressão — há arquivos
+avulsos em `design/marca/`: `marca-preta.svg`, `marca-branca.svg`, e as
+variantes compacta e da palavra.

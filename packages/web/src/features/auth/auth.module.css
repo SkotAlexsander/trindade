@@ -29,10 +29,9 @@
   margin-bottom: var(--s-2);
 }
 
-.mark {
-  color: var(--accent);
-}
-
+/* Monocromática: branca no tema escuro, preta no claro. `--text-primary` já é
+   exatamente isso nos dois, então a marca acompanha sem nenhuma condicional. */
+.mark,
 .wordmark {
   color: var(--text-primary);
 }
