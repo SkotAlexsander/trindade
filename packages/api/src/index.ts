@@ -21,7 +21,7 @@ if (storageConfigurado()) {
 const pararFaxina = agendarFaxina(app.log);
 
 try {
-  await app.listen({ port: config.PORT, host: '127.0.0.1' });
+  await app.listen({ port: config.PORT, host: config.API_HOST });
 } catch (err) {
   app.log.error({ err }, 'não subiu');
   process.exit(1);

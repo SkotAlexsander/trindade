@@ -37,6 +37,10 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      # Dentro do contêiner, o loopback é o do contêiner: preso a 127.0.0.1, a
+      # API fica inalcançável para o Caddy, que fala com ela pela rede do
+      # compose. Fora daqui o padrão continua sendo 127.0.0.1.
+      API_HOST: 0.0.0.0
     depends_on:
       postgres:
         condition: service_healthy

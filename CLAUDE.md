@@ -645,6 +645,32 @@ imagem e **reverte sozinho** se a saúde não vier em 60s. As migrations não s�
 desfeitas na reversão: elas são aditivas, e desfazer migration com dado em cima
 é como se perde dado.
 
+**Fatia 3: carga, segredos, dependências e o checklist.**
+
+**A API escutava só em `127.0.0.1`** — certo na máquina de desenvolvimento e
+**errado dentro de um contêiner**, onde o loopback é o do próprio contêiner e o
+Caddy nunca alcançaria a API. Virou `API_HOST`, com o padrão seguro e
+`0.0.0.0` só no compose de produção. O teste de carga foi o que expôs isso.
+
+**50 conexões no gateway, nenhuma recusada**, READY em 164ms no p95 e 2.500
+mensagens entregues. O k6 roda em contêiner; nada para instalar.
+
+**`gitleaks` no histórico inteiro**: 39 commits, um achado, e era a senha do
+elenco de desenvolvimento. Permitida **pelo nome exato** em `.gitleaks.toml` —
+permitir o arquivo inteiro deixaria passar um segredo de verdade que caísse ali
+amanhã. O hook de pre-commit está em `.githooks/`, versionado, e liga com
+`git config core.hooksPath .githooks`.
+
+**`pnpm audit` limpo**, e limpo por correção: `react-router` para 7 e
+`node-pg-migrate` para 9. Dava para argumentar que os avisos do router só valem
+em modo servidor, que não é o nosso — mas argumentar exploitabilidade é como se
+acumula dívida que ninguém revisita.
+
+**O checklist de `docs/04-seguranca.md` está preenchido item por item**, cada um
+dizendo onde se verifica. Os quatro que dependem do servidor real — firewall,
+LUKS, 2FA das cinco contas — ficaram **desmarcados de propósito**: marcar item
+não verificado é pior que não ter checklist.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

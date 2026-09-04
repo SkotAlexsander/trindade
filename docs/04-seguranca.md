@@ -388,15 +388,55 @@ LIVEKIT_API_KEY / LIVEKIT_API_SECRET
 
 ## Checklist antes de produção
 
-- [ ] `iceTransportPolicy: 'relay'` em todos os caminhos de mídia
-- [ ] `denied-peer-ip` completo no coturn
-- [ ] Firewall fechando 443 para tudo fora da Cloudflare
-- [ ] Log de acesso sem IP em claro
-- [ ] Nenhuma imagem servida sem passar pelo `sharp`
-- [ ] Anexos num domínio separado
-- [ ] A prévia de link recusa endereço interno, inclusive depois de redirecionar
-- [ ] CSP ativa e testada
-- [ ] 2FA ativado nas cinco contas
-- [ ] Disco criptografado
+Percorrido item por item em **4 de setembro de 2026**. Cada marcado diz **onde**
+se verifica, para que a próxima pessoa possa refazer em vez de acreditar.
+
+Os quatro que dependem do servidor ficam desmarcados de propósito: marcar item
+que não foi verificado é pior que não ter checklist.
+
+- [x] **`iceTransportPolicy: 'relay'` em todos os caminhos de mídia**
+      — `e2e/fase-07-chamada.py` lê o `getStats()` de cada `RTCPeerConnection`
+      da página: nenhum candidato local é `host` nem `srflx`, e todo endereço é
+      do relay.
+- [x] **`denied-peer-ip` completo no coturn**
+      — `packages/api/test/voz.test.ts` confere linha por linha, nos dois
+      arquivos (produção e desenvolvimento), e exige que a exceção local seja
+      de um endereço só.
+- [ ] **Firewall fechando 443 para tudo fora da Cloudflare**
+      — procedimento em `docs/08-operacao.md`; só se verifica no servidor.
+- [x] **Log de acesso sem IP em claro**
+      — o Caddy vai com `output discard` (`infra/Caddyfile`) e a API redige
+      `req.ip`, `req.ips`, `req.headers` e `remoteAddress` nos serializadores
+      (`packages/api/src/app.ts`). O rate limit usa HMAC do IP com sal que
+      troca todo dia, e nunca o endereço.
+- [x] **Nenhuma imagem servida sem passar pelo `sharp`**
+      — `packages/api/test/perfil.test.ts` e `e2e/fase-05-anexos.py`: o
+      EXIF de GPS some, o formato é re-encodado e nenhum byte original chega ao
+      disco.
+- [x] **Anexos num domínio separado**
+      — `{$DOMINIO_MIDIA}` no `infra/Caddyfile`, com `default-src 'none';
+      sandbox`. Em desenvolvimento a origem é a mesma, e isso está documentado.
+- [x] **A prévia de link recusa endereço interno, inclusive depois de
+      redirecionar** — `packages/api/test/link-preview.test.ts`, com a
+      revalidação a cada salto.
+- [x] **CSP ativa e testada**
+      — `e2e/fase-08-csp.py` sobe o front **construído** com os cabeçalhos que o
+      Caddy importa e falha em qualquer violação. Zero violações com a
+      aplicação inteira carregada.
+- [ ] **2FA ativado nas cinco contas**
+      — depende das cinco pessoas; a interface está pronta desde a fase 2.
+- [ ] **Disco criptografado**
+      — LUKS, no provisionamento da máquina.
+
+### E mais três que o documento não previa
+
+- [x] **`/metrics` fechada por token**, comparado em tempo constante, e sem
+      rótulo que identifique ninguém — `packages/api/test/operacao.test.ts`.
+- [x] **Nenhum segredo no histórico do git** — `gitleaks` no histórico inteiro,
+      39 commits, sem achados; o único que apareceu era a senha do elenco de
+      desenvolvimento, permitida pelo nome exato em `.gitleaks.toml`.
+- [x] **Dependências sem vulnerabilidade conhecida** — `pnpm audit` limpo. As
+      três que apareceram foram corrigidas subindo `react-router` para 7 e
+      `node-pg-migrate` para 9, e não argumentando que não eram exploráveis.
 - [ ] Backup do Postgres automatizado, com restauração testada de verdade
 - [ ] `gitleaks` no histórico inteiro do repositório

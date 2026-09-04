@@ -1,0 +1,38 @@
+# gitleaks. Ver docs/04-seguranca.md, "Segredos".
+#
+# Roda no **histórico inteiro**, não só no que está para entrar: um segredo que
+# já foi commitado alguma vez precisa ser rotacionado, não apenas removido — o
+# commit continua lá, e o repositório inteiro é a superfície.
+#
+#   ./scripts/verificar-segredos.sh
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+A senha do elenco de desenvolvimento.
+
+Não é segredo: está no `e2e/README.md`, vale só contra o banco local semeado por
+`pnpm dev:seed`, e existe justamente para que os roteiros do navegador possam
+entrar. Está aqui pelo nome exato — permitir o arquivo inteiro deixaria passar
+um segredo de verdade que caísse ali amanhã.
+"""
+regexes = ['cavalo-bateria-grampo-9']
+
+[[allowlists]]
+description = """
+Segredos de desenvolvimento do compose, que existem para o MinIO e o LiveKit
+subirem numa máquina só. Todos aparecem no `.env.example` com o mesmo valor e
+todos são trocados na implantação — ver docs/08-operacao.md.
+"""
+regexes = [
+  'trindade_dev',
+  'devsecretdevsecretdevsecretdevsecret',
+  'turn_dev_secret_trocar_em_producao',
+  'minioadmin',
+]
+
+[[allowlists]]
+description = "Chaves de exemplo, sem valor, no arquivo que existe para ser copiado."
+paths = ['\.env\.example$']

@@ -267,6 +267,30 @@ O primeiro defeito que ele pegou foi nosso: o `index.html` carimbava o tema com
 um `<script>` inline, que `script-src 'self'` recusa. A correção foi mover o
 bloco para `/tema.js` — corrigir o código, não relaxar a política.
 
+## Carga: 50 conexões no gateway
+
+Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,
+porque um número que ninguém mediu é um número que se descobre num sábado.
+
+O k6 vem em contêiner; nada para instalar. A API precisa estar escutando fora do
+loopback para o contêiner alcançá-la:
+
+```bash
+# .env: API_HOST=0.0.0.0 enquanto durar o teste
+node e2e/tokens-de-carga.mjs > /tmp/tokens.txt
+docker run --rm -i -e ALVO=ws://host.docker.internal:3000   -e TOKENS="$(cat /tmp/tokens.txt)"   --add-host=host.docker.internal:host-gateway   grafana/k6:latest run - < e2e/carga-websocket.js
+```
+
+**Medido em 4 de setembro de 2026:** 50 conexões, nenhuma recusada, READY em
+144ms de mediana e 164ms no p95, 2.500 mensagens entregues (50 escritas × 50
+destinos) e a API em 130 MB de memória residente ao final, saudável. Os tokens
+saem das contas do elenco, em rodízio — várias sessões da mesma pessoa é o pior
+caso para o mapa do gateway.
+
+O limite de login é 5 por 15 minutos por conta: numa segunda corrida seguida os
+tokens vêm em falta, e aí é `touch packages/api/src/app.ts` para zerar o
+contador.
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

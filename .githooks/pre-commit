@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Segredo não entra. Ver docs/04-seguranca.md.
+#
+# Ligue uma vez, por clone:
+#   git config core.hooksPath .githooks
+#
+# Hook não é versionado pelo git por padrão — `core.hooksPath` é o jeito de
+# versioná-lo sem depender de nenhuma ferramenta a mais.
+
+set -e
+
+if ! docker info >/dev/null 2>&1; then
+  echo "gitleaks precisa do Docker; pulei a verificação de segredos." >&2
+  exit 0
+fi
+
+./scripts/verificar-segredos.sh --staged

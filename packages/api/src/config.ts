@@ -12,6 +12,16 @@ dotenv.config({ quiet: true });
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  /**
+   * Em que endereço escutar.
+   *
+   * `127.0.0.1` é o certo na máquina de desenvolvimento: nada fica exposto na
+   * rede local sem querer. **Em contêiner tem de ser `0.0.0.0`** — o Caddy fala
+   * com a API pela rede do compose, e um processo preso ao loopback do próprio
+   * contêiner é inalcançável de fora dele. O compose de produção define isto, e
+   * o padrão continua sendo o seguro.
+   */
+  API_HOST: z.string().default('127.0.0.1'),
   WEB_ORIGIN: z.string().url().default('http://localhost:5173'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória — copie o .env.example'),
 

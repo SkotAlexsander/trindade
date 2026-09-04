@@ -13,6 +13,20 @@ export default tseslint.config(
       globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
     },
   },
+  // O roteiro de carga roda dentro do k6, que tem globais próprias; o de tokens
+  // roda em Node solto. Nenhum dos dois passa pelo bundler.
+  {
+    files: ['e2e/**/*.js', 'e2e/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        __ENV: 'readonly',
+        __VU: 'readonly',
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+  },
   {
     files: ['packages/web/public/**/*.js'],
     languageOptions: {
