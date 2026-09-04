@@ -190,6 +190,17 @@ export async function enableTotp(userId: string): Promise<void> {
   `;
 }
 
+export async function setPresence(
+  userId: string,
+  status: string,
+  customStatus: string | null,
+): Promise<void> {
+  await sql`
+    update users set status = ${status}, custom_status = ${customStatus}, updated_at = now()
+    where id = ${userId}
+  `;
+}
+
 export async function disableTotp(userId: string): Promise<void> {
   await sql`
     update users

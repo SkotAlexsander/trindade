@@ -16,6 +16,8 @@ import { meRoutes } from './routes/me.js';
 import { inviteRoutes } from './routes/invites.js';
 import { channelRoutes } from './routes/channels.js';
 import { userRoutes } from './routes/users.js';
+import { messageRoutes } from './routes/messages.js';
+import { registerGateway } from './ws/index.js';
 import { ipKey } from './lib/client-key.js';
 
 export async function buildApp() {
@@ -80,9 +82,13 @@ export async function buildApp() {
       await api.register(inviteRoutes);
       await api.register(channelRoutes);
       await api.register(userRoutes);
+      await api.register(messageRoutes);
     },
     { prefix: '/api' },
   );
+
+  // O gateway vive na mesma porta e no mesmo processo — ver docs/02-arquitetura.md.
+  await registerGateway(app);
 
   // Log manual de requisição, sem IP.
   app.addHook('onResponse', (req, reply, done) => {

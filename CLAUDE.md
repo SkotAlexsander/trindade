@@ -248,3 +248,17 @@ Pendente por depender da fase 5: estado de leitura (`unread` e menções vêm de
 `withPlaceholderState`, não do banco), faixa de desconexão, presença em tempo
 real e a sequência de acender disparada pelo `READY` — hoje ela roda quando as
 pessoas carregam.
+
+### Numeração das migrations
+
+O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
+e `013_boards` (fase 10). Duas migrations não previstas entraram no caminho:
+
+| aplicada | por quê |
+|---|---|
+| `011_recovery_codes` | o modelo de dados não previu onde guardar os códigos que `docs/04-seguranca.md` exige |
+| `012_busca_sem_acento` | `to_tsvector('portuguese', …)` não remove acento, e o aceite pede que "migracao" ache "migração" |
+
+**As migrations das fases 9 e 10 andam dois números:** `polls` vira **013**,
+`conversations` **014** e `boards` **015**. Migration aplicada não se edita; se
+algo estiver errado, crie a próxima.
