@@ -9,7 +9,7 @@ A moldura que existe em toda tela autenticada. Componente:
 
 ```
 ┌────┬──────────────┬───────────────────────────────┬──────────────┐
-│    │ Cinco        │ # produto            🔍 📌 ⋯  │  Notas    ✕  │ 48px
+│    │ Trindade     │ # produto            🔍 📌 ⋯  │  Notas    ✕  │ 48px
 │ ▪  ├──────────────┼───────────────────────────────┼──────────────┤
 │    │ CONVERSA     │                               │              │
 │ ▪  │  # geral     │   histórico de mensagens      │  conteúdo    │
@@ -75,7 +75,7 @@ Três zonas verticais:
 
 ```
 ┌──────────────┐
-│ Cinco     ⌄  │  48px, fixo
+│ Trindade  ⌄  │  48px, fixo
 ├──────────────┤
 │ CONVERSA     │
 │  # geral     │  rola

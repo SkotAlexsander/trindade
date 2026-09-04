@@ -1,4 +1,4 @@
-# Pacote de construção — Cinco
+# Pacote de construção — Trindade
 
 Especificação completa e prompts sequenciais para construir o aplicativo com
 Claude Code dentro do VS Code.

@@ -1,9 +1,10 @@
-# Cinco
+# Trindade
 
 Espaço de trabalho privado para uma equipe fixa de 5 pessoas. Conversa em canais,
 chamada de voz, compartilhamento de tela e notas de projeto. Auto-hospedado.
 
-O nome é provisório. Trocar aqui e em `packages/web/index.html` muda tudo.
+Nome definido: **Trindade**. Ele aparece em `packages/web/index.html`, no cabeçalho
+da barra lateral, nas telas de autenticação e em `serverName` do contrato da API.
 
 ---
 
@@ -131,3 +132,21 @@ Atualizar esta seção ao fim de cada fase.
 - [ ] Fase 8 — endurecimento
 - [ ] Fase 9 — ferramentas de projeto e notificações
 - [ ] Fase 10 — conversas privadas e quadro
+
+---
+
+## Decisões
+
+Tomadas no Passo 0. Não reabrir sem me perguntar.
+
+- **Nome:** Trindade.
+- **E-mail no cadastro:** não. Não existe "esqueci minha senha" — recuperação é
+  reset manual por um admin, e `pnpm bootstrap` cobre o caso do banco vazio.
+  Não crie campo de e-mail, SMTP nem fluxo de verificação.
+- **Hospedagem:** a definir. Até decidir, assuma um VPS único com coturn e
+  LiveKit no mesmo servidor, mas mantenha os endereços deles em variável de
+  ambiente para que separar depois não exija mudar código.
+- **Desktop:** sim, Tauri na fase 8. A partir de agora, evite APIs de navegador
+  que o Tauri trata diferente — notificação, bandeja e atalho global passam por
+  uma camada de abstração em `packages/web/src/lib/`, nunca chamadas diretas
+  espalhadas pelos componentes.

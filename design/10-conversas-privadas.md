@@ -56,7 +56,7 @@ Na barra lateral, uma seção acima dos canais:
 
 ```
 ┌──────────────────────────────┐
-│ Cinco                     ⌄  │
+│ Trindade                  ⌄  │
 ├──────────────────────────────┤
 │ CONVERSAS                    │
 │  ◉ Bruno                  ●  │

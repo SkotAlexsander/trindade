@@ -159,7 +159,7 @@ Mesma checagem de hierarquia. Fecha as conexões WebSocket da pessoa. → `204`
 ### `DELETE /invites/:code` → `204`
 ### `GET /invites/:code/preview` — público
 
-→ `200 { valid: true, serverName: "Cinco", invitedBy: "Ana" }`
+→ `200 { valid: true, serverName: "Trindade", invitedBy: "Ana" }`
 
 Nunca revele quantas pessoas existem nem quem são. Se inválido, devolva
 `{ valid: false }` com 200, não 404 — dificulta enumerar códigos.

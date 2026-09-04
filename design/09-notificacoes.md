@@ -54,7 +54,7 @@ compartilhada, não mostra — a notificação apareceria na tela de todo mundo.
 
 ### Badge
 
-Contador no título da aba: `(3) Cinco`. No Tauri, no ícone do dock ou da
+Contador no título da aba: `(3) Trindade`. No Tauri, no ícone do dock ou da
 barra. Conta só menções e respostas, não mensagens de canal.
 
 Zera ao focar a janela e abrir o canal, não ao focar apenas.

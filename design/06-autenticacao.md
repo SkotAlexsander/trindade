@@ -17,7 +17,7 @@ a paleta reflete isso — nada de âmbar aqui, porque não há ninguém presente
 
 ```
               ▪
-           Cinco
+          Trindade
 
      Entrar
 
@@ -115,7 +115,7 @@ Rota `/entrar/:codigo`. Valida antes de mostrar qualquer formulário.
 
 ```
               ▪
-           Cinco
+          Trindade
 
      Ana convidou você
 
