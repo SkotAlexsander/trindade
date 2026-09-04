@@ -138,6 +138,27 @@ O `pnpm dev:seed` dá ao cargo `Admin` um azul-marinho de propósito: é escuro
 demais para o tema escuro, e sem uma cor difícil no banco o ajuste de contraste
 nunca é exercitado por ninguém olhando a tela.
 
+**`fase-07-dispositivos.py`** — 12 verificações da camada de dispositivo, e a
+única da suíte que não olha a interface: importa `src/lib/midia.ts` pelo próprio
+servidor do Vite e exercita o grafo de áudio dentro do Chrome. Cobre a lista sem
+rótulo antes da permissão, a trilha de sondagem que fecha logo depois de abrir,
+o medidor respondendo ao ganho, o portão abrindo com sinal, e a que importa: que
+**trocar de microfone mantém a mesma trilha publicada**, que é o motivo de a
+chamada não cair na troca.
+
+Sobe o Chrome com `--use-fake-device-for-media-stream` e **sem**
+`--use-fake-ui-for-media-stream`. A diferença não é detalhe: com a interface
+falsa o Chrome se comporta como já autorizado desde o primeiro
+`enumerateDevices`, e o estado "ainda sem rótulo" — metade do que essa camada
+trata — deixa de existir no teste. A permissão é concedida no meio do roteiro,
+por `context.grant_permissions`, depois de a primeira leitura já ter acontecido.
+
+O dispositivo falso emite um bipe curto e periódico, e a cadeia mede em janelas
+de ~21ms. Uma janela que pegue meio bipe dá um RMS menor, então comparar dois
+níveis exige ler **mais denso que o tique interno de 33ms** — a 100ms, dois
+terços das medições passam batido e o pico vira sorteio: a mesma verificação
+passava com +5,9 dB e falhava com +4,0 dB sem nada ter mudado no código.
+
 ### Se o Vite servir 404 num módulo que existe
 
 Renomear um arquivo deixa o grafo de módulos do Vite apontando para o nome

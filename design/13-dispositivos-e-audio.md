@@ -124,13 +124,24 @@ desabilitada com o porquê. Sumir com o controle faz a pessoa procurar por ele.
 navegador; o controle é um `GainNode` entre a trilha capturada e o que sobe:
 
 ```
-getUserMedia → MediaStreamAudioSourceNode → GainNode → AnalyserNode
-                                                ↓
-                        MediaStreamAudioDestinationNode → LiveKit
+getUserMedia → SourceNode → GainNode → AnalyserNode → GainNode → DestinationNode
+                            (volume)    (medidor)     (portão)      → LiveKit
 ```
 
 O `AnalyserNode` fica **depois** do ganho, de propósito: o medidor tem que
 mostrar o que os outros ouvem, não o que o microfone captou.
+
+> Acrescentado em 4 de setembro de 2026, ao implementar: o portão de
+> sensibilidade é um **segundo** `GainNode`, e o medidor fica entre os dois. Se
+> o portão fosse o mesmo nó do volume, o medidor mostraria silêncio sempre que
+> ele fechasse — e o limiar é desenhado **sobre** o medidor, então não haveria
+> sobre o que posicionar a linha. O medidor mostra o sinal; o portão decide o
+> que passa dali para a frente.
+
+A trilha que sobe para o LiveKit é a do `MediaStreamAudioDestinationNode`, e ela
+**nunca é trocada**. É por isso que trocar de microfone no meio da chamada só
+religa um nó dentro do grafo: os outros passam a ouvir o aparelho novo sem
+republicação, sem renegociação e sem a chamada cair.
 
 Acima de 100% o rótulo fica em `--danger` a partir de 150%, com a nota "pode
 distorcer". Permitir e avisar é melhor que travar em 100% — microfone de
@@ -213,6 +224,14 @@ slider separado do medidor obriga a traduzir número em som, e ninguém faz isso
 Nos dois casos, abaixo do limiar o ganho vai a zero — **em rampa de 40ms, com
 250ms de espera antes de fechar.** O corte seco produz um clique audível, e sem
 a espera a última sílaba de cada frase é engolida.
+
+> Acrescentado em 4 de setembro de 2026: **quando o relógio falha, o portão
+> abre.** A decisão é tomada por um temporizador de 33ms, e temporizador é
+> justamente o que o navegador estrangula numa aba em segundo plano — ou o que
+> some quando a máquina suspende. Voltar depois de um intervalo desses com o
+> piso de ruído velho e a contagem de espera velha pode deixar alguém mudo
+> falando. Perdido o passo, o piso é esquecido e o portão abre; o pior caso vira
+> deixar passar um ruído, e não engolir uma frase.
 
 O ponto do elenco em `--live` acende com o mesmo sinal. Se o medidor mostra
 verde e o ponto não acende, o limiar está alto — e ver os dois juntos é o que

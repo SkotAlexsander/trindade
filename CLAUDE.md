@@ -436,6 +436,44 @@ provavelmente o erro de novo.
 aplicativo tem. Eu tinha escrito `/convite/...`, que caía no redirecionamento
 de rota desconhecida — o convite chegava quebrado e nada avisava.
 
+### Fase 7 — em andamento
+
+**Fatia 1: infraestrutura.** `livekit.yaml`, `turnserver.conf`, os dois
+serviços no compose, o token com escopo de uma sala e a credencial efêmera do
+relay. Duas coisas saíram do previsto: `canPublishSources` não aceita mais texto
+no SDK 2.18 (é o enum numérico do protocolo; o JWT sai com os nomes em texto
+porque o SDK converte), e as portas de mídia tiveram de descer para 40000 em
+desenvolvimento — **no Windows a faixa dinâmica começa em 49152**, e publicar
+dentro dela colide com o que o sistema já entregou a outro processo, com um erro
+que fala em permissão e não explica nada. `network_mode: host` também não serve
+no Docker Desktop: o "host" ali é a máquina virtual Linux, e a porta fica
+inalcançável sem erro nenhum.
+
+**Fatia 2: a camada de dispositivo.** `lib/midia.ts` e `lib/preferencias.ts`.
+`navigator.mediaDevices` não é chamado em lugar nenhum fora de `midia.ts` — a
+enumeração, a sondagem de permissão, a cascata e o encerramento das trilhas são
+a mesma decisão vista de ângulos diferentes, e espalhá-las é como se acaba com
+uma luz de câmera acesa por um painel esquecido aberto.
+
+O grafo tem **dois** `GainNode`: volume, medidor, portão, nessa ordem. O
+documento pedia o medidor depois do volume; o portão como segundo nó é
+consequência de o limiar ser desenhado sobre o medidor — com um nó só, o medidor
+mostraria silêncio sempre que o portão fechasse.
+
+A trilha publicada é a do `MediaStreamAudioDestinationNode` e **nunca é
+trocada**: trocar de microfone religa um nó dentro do grafo, sem republicação e
+sem a chamada cair.
+
+**Quando o relógio falha, o portão abre.** A decisão de abrir e fechar corre num
+temporizador de 33ms, que é o que o navegador estrangula em aba de segundo plano
+e o que some quando a máquina suspende. Decidir com o piso de ruído velho pode
+deixar alguém mudo falando; perdido o passo, o piso é esquecido e o portão abre.
+
+`lib/preferencias.ts` reconstrói o que leu **campo a campo**, com tipo e faixa.
+O efeito colateral que interessa: campo desconhecido não entra. Se um dia alguém
+gravar um token ali por engano, ele não volta na leitura seguinte — a regra de
+que credencial nenhuma passa por `localStorage` continua inteira.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
