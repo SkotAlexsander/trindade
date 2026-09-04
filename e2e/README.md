@@ -225,6 +225,15 @@ devolve um `<canvas>` animado. Todo o resto é o caminho de verdade: publicaçã
 como fonte de tela, assinatura por escolha, contagem de bytes, foco e contador.
 O que fica de fora é escolher a janela, que é coisa de olhar.
 
+**`fase-07-flutuante.py`** — 16 verificações da janela flutuante: que ela
+aparece quando a chamada sai da tela, continua em outro canal, obedece ao
+arrasto e ao canto de redimensionar, guarda posição e tamanho, deixa escolher
+quem aparece, e some ao voltar para a sala.
+
+O defeito que ela pegou de primeira: `setPointerCapture` na barra de arrasto
+rouba os eventos seguintes, e o clique nunca chega aos botões que moram nela — o
+menu de "quem aparece" simplesmente não abria. Botão dentro da alça não arrasta.
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

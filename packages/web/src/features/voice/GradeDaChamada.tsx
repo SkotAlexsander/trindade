@@ -120,8 +120,6 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
         </Tooltip>
       </header>
 
-      {quantos <= 1 ? <p className={styles.sozinho}>Você está sozinho na sala.</p> : null}
-
       {emFoco ? (
         <div className={styles.comFoco}>
           <TelaEmFoco
@@ -161,6 +159,10 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
               onFocar={focar}
             />
           ))}
+
+          {/* Dentro da grade, e não flutuando no topo: o aviso pertence à
+              caixa solitária que está logo acima dele. */}
+          {quantos <= 1 ? <p className={styles.sozinho}>Você está sozinho na sala.</p> : null}
         </div>
       )}
 

@@ -69,6 +69,9 @@ export interface Chamada {
   focar: (identity: string | null) => void;
   trocarPreset: (preset: IdDePreset) => void;
   definirQualidadeDoEspectador: (qualidade: QualidadeDoEspectador) => void;
+  /** `null` limpa a escolha e volta a mostrar quem tem imagem. */
+  fixarNaMiniatura: (identity: string | null) => void;
+  esconderMiniatura: (esconder: boolean) => void;
   destravarAudio: () => void;
 }
 
@@ -162,6 +165,10 @@ export function useChamada(): Chamada {
           fase: 'conectado',
           muted: false,
           deafened: false,
+          // Entrar numa chamada mostra a chamada: quem clicou num canal de voz
+          // quer ver quem está lá. O modo é o guardado — a escolha de quem usa
+          // vale desde o primeiro instante, não depois de um clique extra.
+          modo: lerPreferencias().modoDaSala,
           // A interface esconde o botão sem a permissão; o token já não
           // deixaria publicar a trilha. As duas coisas, sempre.
           podeCompartilhar: credenciais.canShareScreen,
@@ -252,6 +259,9 @@ export function useChamada(): Chamada {
 
   const definirModo = useCallback((modo: ModoDaSala) => {
     if (useVoz.getState().fase === 'fora') return;
+    // Voltar a ver a sala desfaz o "esconder": a janela sumiu para dar lugar à
+    // sala, e não porque a pessoa não a queira nunca mais.
+    if (modo !== 'mensagens') useVoz.getState().definir({ miniaturaEscondida: false });
     /* Guardada como preferência de máquina: quem trabalha com a conversa ao
        lado quer isso em toda chamada, não só nesta. **`mensagens` não é
        guardado** — é "esconda a chamada agora", não uma escolha de layout, e
@@ -348,6 +358,22 @@ export function useChamada(): Chamada {
     useVoz.getState().definir({ qualidadeDoEspectador: qualidade });
   }, []);
 
+  const fixarNaMiniatura = useCallback((identity: string | null) => {
+    const voz = useVoz.getState();
+    if (identity === null) {
+      voz.definir({ fixadosNaMiniatura: new Set<string>() });
+      return;
+    }
+    const proximo = new Set(voz.fixadosNaMiniatura);
+    if (proximo.has(identity)) proximo.delete(identity);
+    else proximo.add(identity);
+    voz.definir({ fixadosNaMiniatura: proximo });
+  }, []);
+
+  const esconderMiniatura = useCallback((esconder: boolean) => {
+    useVoz.getState().definir({ miniaturaEscondida: esconder });
+  }, []);
+
   const destravarAudio = useCallback(() => {
     void sala.destravarAudio().then(() => useVoz.getState().definir({ audioBloqueado: false }));
   }, []);
@@ -367,6 +393,8 @@ export function useChamada(): Chamada {
     focar,
     trocarPreset,
     definirQualidadeDoEspectador,
+    fixarNaMiniatura,
+    esconderMiniatura,
     destravarAudio,
   };
 }

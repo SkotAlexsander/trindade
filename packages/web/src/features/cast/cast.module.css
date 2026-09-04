@@ -15,6 +15,26 @@
   padding: var(--s-3) var(--s-2) var(--s-2);
 }
 
+/* No rail: uma coluna de cinco, sem altura fixa. O anel de estado continua
+   sendo o sinal; o que muda é a direção da leitura. */
+.espacos[data-orientacao='vertical'] {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--s-2);
+  height: auto;
+  padding: var(--s-2) 0;
+}
+
+.espacos[data-orientacao='vertical'] .espaco {
+  width: 100%;
+}
+
+/* O sulco do anel é da cor da superfície de trás, e o rail não é `--bg-live`. */
+.espacos[data-orientacao='vertical'] .espaco[data-estado] .avatarBox {
+  --sulco: var(--bg-app);
+}
+
 .espaco {
   display: flex;
   flex-direction: column;
@@ -57,16 +77,16 @@
 /* O anel é box-shadow de duas camadas: a primeira abre um sulco entre o avatar
    e o anel — sem ela encostam e ficam sujos. */
 .espaco[data-estado='online'] .avatarBox {
-  box-shadow: 0 0 0 2px var(--bg-live), 0 0 0 4px var(--status-online);
+  box-shadow: 0 0 0 2px var(--sulco, var(--bg-live)), 0 0 0 4px var(--status-online);
 }
 
 .espaco[data-estado='idle'] .avatarBox {
-  box-shadow: 0 0 0 2px var(--bg-live), 0 0 0 4px var(--status-idle);
+  box-shadow: 0 0 0 2px var(--sulco, var(--bg-live)), 0 0 0 4px var(--status-idle);
   filter: opacity(0.6);
 }
 
 .espaco[data-estado='busy'] .avatarBox {
-  box-shadow: 0 0 0 2px var(--bg-live), 0 0 0 4px var(--status-busy);
+  box-shadow: 0 0 0 2px var(--sulco, var(--bg-live)), 0 0 0 4px var(--status-busy);
 }
 
 .espaco[data-estado='offline'] .avatarBox,
@@ -75,7 +95,7 @@
 }
 
 .espaco[data-estado='call'] .avatarBox {
-  box-shadow: 0 0 0 2px var(--bg-live), 0 0 0 4px var(--live);
+  box-shadow: 0 0 0 2px var(--sulco, var(--bg-live)), 0 0 0 4px var(--live);
 }
 
 /* Falando entra em --dur-quick e sai em --dur-slow. A assimetria é o detalhe

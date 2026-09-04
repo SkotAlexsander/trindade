@@ -74,6 +74,11 @@ export interface PreferenciasDeMidia {
   modoDaSala: 'mensagens' | 'ambos' | 'chamada';
   /** Largura da faixa de conversa ao lado da chamada, em pixels. */
   larguraDaConversa: number;
+  /**
+   * A janela flutuante da chamada: onde ficou e de que tamanho. Posição de
+   * canto é hábito, e hábito é da máquina.
+   */
+  miniatura: { x: number; y: number; largura: number };
 }
 
 export const CHAVE = 'trindade:midia';
@@ -117,6 +122,7 @@ export const PADRAO: PreferenciasDeMidia = {
   audioDaTela: false,
   modoDaSala: 'ambos',
   larguraDaConversa: 380,
+  miniatura: { x: -1, y: -1, largura: 280 },
 };
 
 /** O piso do medidor. Abaixo disto é silêncio digital, não sinal fraco. */
@@ -129,6 +135,17 @@ function numero(valor: unknown, minimo: number, maximo: number, padrao: number):
 
 function booleano(valor: unknown, padrao: boolean): boolean {
   return typeof valor === 'boolean' ? valor : padrao;
+}
+
+/** `-1` quer dizer "ainda não escolheram": a janela nasce no canto de baixo. */
+function miniatura(valor: unknown): { x: number; y: number; largura: number } {
+  if (typeof valor !== 'object' || valor === null) return { ...PADRAO.miniatura };
+  const b = valor as Record<string, unknown>;
+  return {
+    x: numero(b.x, -1, 10000, PADRAO.miniatura.x),
+    y: numero(b.y, -1, 10000, PADRAO.miniatura.y),
+    largura: numero(b.largura, 180, 640, PADRAO.miniatura.largura),
+  };
 }
 
 function dispositivo(valor: unknown): DispositivoSalvo | null {
@@ -201,6 +218,7 @@ export function sanear(bruto: unknown): PreferenciasDeMidia {
         ? b.modoDaSala
         : PADRAO.modoDaSala,
     larguraDaConversa: numero(b.larguraDaConversa, 260, 760, PADRAO.larguraDaConversa),
+    miniatura: miniatura(b.miniatura),
   };
 }
 

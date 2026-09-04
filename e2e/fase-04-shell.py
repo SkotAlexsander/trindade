@@ -224,17 +224,21 @@ with sync_playwright() as p:
             pg.wait_for_timeout(500)
             pg.screenshot(path=str(SHOTS / '46-pilha-gaveta.png'))
 
-            # O elenco não some no celular, e fica no topo da gaveta.
+            # O elenco não some no celular. Desde 4 de setembro de 2026 ele
+            # mora no rail, na vertical, a pedido do dono do projeto — e é o
+            # rail que fica visível quando a gaveta fecha, então o elenco
+            # sobrevive à faixa estreita por construção.
             elenco = pg.locator('[aria-label="Elenco"]')
-            visivel = elenco.is_visible()
-            posicao = pg.evaluate("""() => {
+            check('abaixo de 900px o elenco continua visível', elenco.is_visible())
+
+            noRail = pg.evaluate("""() => {
                 const el = document.querySelector('[aria-label="Elenco"]');
-                const lista = document.querySelector('nav[aria-label="Canais"]');
-                if (!el || !lista) return null;
-                return el.getBoundingClientRect().top < lista.getBoundingClientRect().top;
+                const rail = document.querySelector('nav[aria-label="Espaços"]');
+                if (!el || !rail) return null;
+                return rail.contains(el)
+                    && el.getBoundingClientRect().width <= rail.getBoundingClientRect().width;
             }""")
-            check('abaixo de 900px o elenco continua visível', visivel)
-            check('e fica no topo da gaveta, acima da lista', posicao is True, str(posicao))
+            check('e fica no rail, fora da gaveta', noRail is True, str(noRail))
 
             alvos = pg.evaluate("""() => [...document.querySelectorAll('nav[aria-label="Canais"] a')]
                 .map(a => a.getBoundingClientRect().height)""")

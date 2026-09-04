@@ -175,6 +175,28 @@ que aconteceu sem olhar.
 
 Sair não pede confirmação.
 
+### A janela flutuante
+
+> Acrescentado em 4 de setembro de 2026, a pedido do dono do projeto.
+
+Sair da sala não é sair da chamada. Quando a chamada deixa a tela — porque a
+pessoa escolheu "só a conversa" ou porque foi para outro canal —, uma janela
+flutuante fica por cima de tudo com quem importa à vista.
+
+- **Arrastável e redimensionável.** A barra inteira é a alça; o canto estica.
+  Posição e tamanho ficam guardados: canto é hábito, e hábito é da máquina.
+- **Quem aparece é escolha de quem olha.** Por padrão, quem tem imagem — câmera
+  ou tela. O menu deixa fixar pessoas específicas, e é isso que a separa de uma
+  miniatura que decide sozinha e mostra a pessoa errada.
+- Microfone e "Sair" ficam nela: o que se precisa fazer com pressa não pode
+  exigir voltar para a sala primeiro.
+- "Voltar à sala" leva ao canal da chamada e reabre a sala no modo guardado.
+- Fechá-la não sai da chamada — ela volta quando a sala é vista de novo.
+
+Até três caixas na janela; acima disso, a quarta vira contagem. Uma janela
+flutuante que cresce sem limite é uma segunda grade, e para isso já existe a
+sala.
+
 ### A sala tem conversa
 
 > Acrescentado em 4 de setembro de 2026, a pedido do dono do projeto.

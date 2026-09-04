@@ -91,6 +91,16 @@ custa mais do que comunica.
 
 ## Painel do elenco
 
+> Movido em 4 de setembro de 2026, a pedido do dono do projeto: o elenco saiu
+> do rodapé da coluna de canais e foi para o **rail**, na vertical. O que se
+> ganha é que ele fica visível em qualquer largura — inclusive com a gaveta
+> fechada, na faixa estreita — e para de disputar altura com a lista de canais
+> e com a barra de chamada. O que fica no rodapé é só o **seu canto**: seu
+> nome, microfone, áudio e configurações.
+
+> As regras não mudaram: são sempre cinco espaços, quem está offline aparece
+> esmaecido e não some, e o anel de estado continua sendo o sinal.
+
 O elemento identitário. Fixo no rodapé da coluna de canais, 88px, fundo
 `--bg-live`, `border-top: 1px solid var(--border)`.
 

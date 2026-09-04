@@ -8,6 +8,10 @@
   min-height: 56px;
   display: grid;
   gap: var(--s-1);
+  /* Num filho de grade, `min-width: auto` deixa o conteúdo empurrar a coluna:
+     sem isto, a fileira de controles fazia a barra ficar 12px mais larga que o
+     painel, e o indicador de qualidade saía pela borda. */
+  min-width: 0;
   padding: var(--s-2) var(--s-3);
   background: var(--bg-live);
   /* A única borda saturada da interface inteira. É o que torna impossível
@@ -160,6 +164,10 @@
   display: flex;
   align-items: center;
   gap: var(--s-1);
+  /* Cinco ícones e o "Sair" não cabem sempre em 232px. Quebrar é melhor que
+     transbordar: o que sai da coluna não é clicável. */
+  flex-wrap: wrap;
+  row-gap: var(--s-1);
 }
 
 .controle {

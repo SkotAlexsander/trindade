@@ -1041,3 +1041,32 @@ button.mencao:hover {
   white-space: nowrap;
   min-width: 0;
 }
+
+/* --- a conversa numa coluna estreita --------------------------------------
+   Durante uma chamada em "as duas", a conversa divide a largura com a chamada.
+   Nada some: o que muda é a régua — gutter menor, menos respiro nas laterais,
+   e o compositor mais justo. Ver design/07-chamada.md. */
+
+@container (max-width: 560px) {
+  .mensagem {
+    --gutter-w: 46px;
+    padding-right: var(--s-3);
+  }
+
+  .divisorDia {
+    margin: 16px var(--s-3);
+  }
+
+  .comeco,
+  .vazio {
+    padding: var(--s-4) var(--s-3) var(--s-4) 46px;
+  }
+
+  .compositorArea {
+    padding: 0 var(--s-3) var(--s-3);
+  }
+
+  .digitando {
+    padding: 0 var(--s-3) 2px;
+  }
+}

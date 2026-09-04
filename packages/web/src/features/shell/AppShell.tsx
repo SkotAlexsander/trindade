@@ -7,7 +7,7 @@ import { Marca } from '../../components/Logo';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import { useHotkeys } from '../../lib/useHotkeys';
 import { useAuth } from '../auth/store';
-import { CastPanel } from '../cast/CastPanel';
+import { Elenco, SeuCanto } from '../cast/CastPanel';
 import { DialogoDePerfil } from '../profile/DialogoDePerfil';
 import { DialogoDeConvite } from '../people/DialogoDeConvite';
 import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
@@ -16,6 +16,7 @@ import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
 import { BarraDeChamada } from '../voice/BarraDeChamada';
 import { GradeDaChamada } from '../voice/GradeDaChamada';
+import { JanelaFlutuante } from '../voice/JanelaFlutuante';
 import { useVoz } from '../voice/store';
 import { useChamada } from '../voice/useChamada';
 import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
@@ -216,6 +217,12 @@ export function AppShell() {
           <span className="visually-hidden">Trindade</span>
           <Marca size={18} />
         </button>
+        {/* O elenco mora aqui, na vertical: visível em qualquer largura, e sem
+            disputar altura com a lista de canais. */}
+        <div className={styles.elencoNoRail} hidden={!elencoVisivel}>
+          <Elenco users={pessoas} typing={digitando} acender={conectado} orientacao="vertical" />
+        </div>
+
         <span className={styles.espacador} />
         <Tooltip label="Configurações" placement="right">
           <IconButton label="Configurações" size="sm" onClick={() => navigate('/config/perfil')}>
@@ -259,18 +266,9 @@ export function AppShell() {
 
         <BarraDeChamada canais={canais} pessoas={pessoas} />
 
-        {/* Escondido, não desmontado: na faixa estreita o elenco é o último
-            filho e recebe `order: -1` para virar faixa no topo da gaveta.
-            Desmontá-lo passaria essa regra para a lista de canais, que subiria
-            por cima do cabeçalho. */}
-        <div className={styles.elencoSlot} hidden={!elencoVisivel}>
-          <CastPanel
-            users={pessoas}
-            typing={digitando}
-            acender={conectado}
-            onGuardadas={() => alternarPainel('guardadas')}
-          />
-        </div>
+        {/* Só o seu canto fica no pé da coluna: é a única parte que fala de
+            você, e ela pertence ao rodapé, junto do que você faz. */}
+        <SeuCanto onGuardadas={() => alternarPainel('guardadas')} />
       </div>
 
       {gaveta && estreito ? (
@@ -310,6 +308,10 @@ export function AppShell() {
 
       {/* Montado uma vez no shell: o diálogo é aberto do cartão de perfil e do
           menu do rodapé, e uma store diz quando. */}
+      {/* Fica por cima de tudo e fora das colunas: a chamada não pertence a
+          nenhuma delas quando você saiu da sala. */}
+      <JanelaFlutuante canais={canais} pessoas={pessoas} />
+
       <DialogoDePerfil />
       <DialogoDeConvite aberto={conviteAberto} onFechar={fecharConvite} />
     </div>

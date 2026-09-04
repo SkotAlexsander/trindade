@@ -28,6 +28,13 @@ export interface CastPanelProps {
   typing?: ReadonlySet<string>;
   /** Verdadeiro no primeiro READY da sessão, falso em reconexão. */
   acender?: boolean;
+  /**
+   * `vertical` é o elenco no rail; `horizontal` é a faixa antiga, no rodapé da
+   * coluna. A pedido do dono do projeto em 4 de setembro de 2026: no rail ele
+   * fica visível em qualquer largura e para de disputar altura com a lista de
+   * canais.
+   */
+  orientacao?: 'horizontal' | 'vertical';
   onSelect?: (user: User) => void;
   /**
    * Abre o painel de guardadas. O gatilho fica aqui, no rodapé com o seu nome,
@@ -43,18 +50,20 @@ export function nomeCurto(displayName: string): string {
   return primeiro.length > 6 ? primeiro.slice(0, 5) : primeiro;
 }
 
-export function CastPanel({
+/**
+ * Os cinco espaços.
+ *
+ * São **sempre cinco**: quem está offline aparece esmaecido, não some. O espaço
+ * vazio de alguém ausente é informação, e é isso que faz o elenco funcionar
+ * como instrumento em vez de lista.
+ */
+export function Elenco({
   users,
   typing,
   acender = false,
+  orientacao = 'horizontal',
   onSelect,
-  onGuardadas,
 }: CastPanelProps) {
-  const eu = useAuth((state) => state.user);
-  const abrirPerfil = useDialogoDePerfil((s) => s.abrir);
-  const [microfone, setMicrofone] = useState(true);
-  const [fone, setFone] = useState(true);
-
   // A sequência roda uma vez por sessão. O ref é o que garante isso: um
   // segundo `acender=true` vindo de reconexão não reanima nada.
   const jaAcendeu = useRef(false);
@@ -73,23 +82,44 @@ export function CastPanel({
   while (espacos.length < ESPACOS) espacos.push(null);
 
   return (
-    <div className={styles.painel}>
-      <div className={styles.espacos} data-acender={animar} aria-label="Elenco" role="group">
-        {espacos.map((pessoa, indice) =>
-          pessoa ? (
-            <EspacoPessoa
-              key={pessoa.id}
-              user={pessoa}
-              indice={indice}
-              digitando={typing?.has(pessoa.id) ?? false}
-              {...(onSelect ? { onSelect } : {})}
-            />
-          ) : (
-            <div key={`vago-${indice}`} className={styles.espaco} aria-hidden="true" />
-          ),
-        )}
-      </div>
+    <div
+      className={styles.espacos}
+      data-acender={animar}
+      data-orientacao={orientacao}
+      aria-label="Elenco"
+      role="group"
+    >
+      {espacos.map((pessoa, indice) =>
+        pessoa ? (
+          <EspacoPessoa
+            key={pessoa.id}
+            user={pessoa}
+            indice={indice}
+            digitando={typing?.has(pessoa.id) ?? false}
+            {...(onSelect ? { onSelect } : {})}
+          />
+        ) : (
+          <div key={`vago-${indice}`} className={styles.espaco} aria-hidden="true" />
+        ),
+      )}
+    </div>
+  );
+}
 
+/**
+ * O seu canto, no rodapé da coluna: quem você é e os controles de sempre.
+ *
+ * Ficou aqui quando o elenco foi para o rail — é a única parte que fala de
+ * você, e ela pertence ao pé da coluna, junto do que você faz.
+ */
+export function SeuCanto({ onGuardadas }: { onGuardadas?: () => void }) {
+  const eu = useAuth((state) => state.user);
+  const abrirPerfil = useDialogoDePerfil((s) => s.abrir);
+  const [microfone, setMicrofone] = useState(true);
+  const [fone, setFone] = useState(true);
+
+  return (
+    <div className={styles.painel}>
       {eu ? (
         <div className={styles.voce}>
           <Avatar id={eu.id} name={eu.displayName} src={eu.avatarUrl} size="sm" status={eu.status} />

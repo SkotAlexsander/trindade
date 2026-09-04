@@ -63,6 +63,10 @@ interface VozState {
   estatisticas: EstatisticasDaTela | null;
   /** Medida do WebRTC, em bits por segundo, ou nulo enquanto não há medida. */
   bandaDeSubida: number | null;
+  /** Quem você fixou na janela flutuante. Vazio = quem tiver imagem. */
+  fixadosNaMiniatura: ReadonlySet<string>;
+  /** Escondida por escolha, até voltar para a sala. */
+  miniaturaEscondida: boolean;
 
   definir: (mudanca: Partial<Omit<VozState, 'definir'>>) => void;
   esquecerChamada: () => void;
@@ -87,6 +91,8 @@ const SEM_CHAMADA = {
   qualidadeDoEspectador: 'auto' as QualidadeDoEspectador,
   estatisticas: null,
   bandaDeSubida: null,
+  fixadosNaMiniatura: new Set<string>() as ReadonlySet<string>,
+  miniaturaEscondida: false,
 };
 
 export const useVoz = create<VozState>((set) => ({

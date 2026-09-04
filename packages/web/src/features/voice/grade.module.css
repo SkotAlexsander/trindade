@@ -61,14 +61,11 @@
 }
 
 .sozinho {
-  position: absolute;
-  top: calc(var(--header-h) + var(--s-3));
-  left: 0;
-  right: 0;
+  grid-column: 1 / -1;
+  margin: 0;
   text-align: center;
   color: var(--text-tertiary);
   font-size: var(--text-label);
-  pointer-events: none;
 }
 
 .cartoes {
@@ -89,7 +86,7 @@
   /* Quantas caixas cabem lado a lado é pergunta sobre **esta coluna**, não
      sobre a janela: em "as duas" a chamada divide a largura com a conversa, e
      duas caixas de 16:9 numa faixa estreita não mostram rosto nenhum. */
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
 }
 
 /* Com espaço, vale o desenho do documento: 1 ocupa tudo, 2 lado a lado, 3 e 4
@@ -468,4 +465,43 @@
   display: inline-flex;
   align-items: center;
   gap: var(--s-1);
+}
+
+/* --- a sala numa coluna estreita ------------------------------------------
+   Em "as duas" a chamada divide a largura com a conversa. O que cede é o
+   supérfluo — a contagem de pessoas, o respiro dos rótulos —, nunca o que
+   permite agir. */
+
+@container (max-width: 460px) {
+  .contagem {
+    display: none;
+  }
+
+  .modo {
+    padding: 3px var(--s-1);
+  }
+
+  .cartoes {
+    padding: var(--s-2);
+  }
+
+  .controles {
+    padding: 0 72px;
+  }
+
+  .sair {
+    padding: 0 var(--s-2);
+  }
+}
+
+/* Caixa pequena: o avatar acompanha, em vez de ocupar a caixa inteira. */
+@container (max-width: 260px) {
+  .semVideo {
+    transform: scale(0.62);
+  }
+
+  .rodape {
+    padding: var(--s-1) var(--s-2);
+    font-size: var(--text-meta);
+  }
 }

@@ -550,6 +550,24 @@ conversa porque `.conversa[data-chamada='ambos'] > *` vence `.divisor`; o
 resultado era o cabeçalho e o histórico jogados em linhas implícitas, a chamada
 com um terço da altura e o resto da coluna preto.
 
+**Fatia 6: a janela flutuante, o elenco no rail e as proporções.** Tudo pedido
+pelo dono do projeto em 4 de setembro de 2026, depois de usar.
+
+A **janela flutuante** aparece quando a chamada sai da tela, é arrastável e
+redimensionável, guarda posição e tamanho, e deixa **escolher quem aparece** —
+que é o que a separa de uma miniatura que decide sozinha. `setPointerCapture` na
+barra de arrasto rouba os eventos seguintes: sem excluir os botões da alça, o
+menu de escolha nunca abria.
+
+O **elenco foi para o rail**, na vertical. Fica visível em qualquer largura e
+para de disputar altura com a lista de canais. No rodapé ficou só o seu canto.
+O anel de estado precisou de uma variável para o sulco: ele é da cor da
+superfície de trás, e o rail não é `--bg-live`.
+
+**A barra de chamada estourava a coluna:** cinco ícones e o "Sair" somam mais de
+232px, e um filho de grade sem `min-width: 0` empurra a coluna em vez de
+encolher. O indicador de qualidade saía pela borda.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

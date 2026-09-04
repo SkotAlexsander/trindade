@@ -38,6 +38,7 @@
   gap: var(--s-2);
   padding: var(--s-3) 0;
   background: var(--bg-app);
+  min-height: 0;
 }
 
 .marca {
@@ -88,6 +89,21 @@
 
 .espacoBotao[data-ativo='true'] .marcador {
   height: 24px;
+}
+
+.elencoNoRail {
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.elencoNoRail::-webkit-scrollbar {
+  display: none;
+}
+
+.elencoNoRail[hidden] {
+  display: none;
 }
 
 .espacador {
@@ -310,7 +326,10 @@
 
 /* Só a moldura. Quem rola é a lista de mensagens, que precisa do próprio
    elemento para medir e compensar a rolagem. */
+/* Contêiner de consulta: numa chamada em "as duas" esta coluna fica estreita,
+   e o que precisa encolher é a régua do texto — não a janela inteira. */
 .historico {
+  container-type: inline-size;
   display: grid;
   min-height: 0;
   min-width: 0;
@@ -379,10 +398,6 @@
 
 .painelSlot[data-open='true'] .painel {
   transform: translateX(0);
-}
-
-.elencoSlot[hidden] {
-  display: none;
 }
 
 .painelHead {
