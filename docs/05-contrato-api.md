@@ -395,6 +395,28 @@ da resposta sem erro nenhum.
 
 ---
 
+## Conversas privadas
+
+- `GET /conversations` → `200 { conversations: Conversation[] }` — as suas, com última mensagem e não lidos
+- `POST /conversations/direct` `{ userId }` → `200 { conversation }` — idempotente: a mesma dupla devolve a mesma conversa
+- `POST /conversations/group` `{ userIds, name? }` → `200 { conversation }` — três pessoas ou mais
+- `PATCH /conversations/:id` `{ name }` — só grupo
+- `POST /conversations/:id/leave` — só grupo; grava `left_at` e deixa uma linha de sistema
+- `POST /conversations/:id/hide` / `unhide` — esconder da sua lista
+- `GET /conversations/:id/messages` e `/messages/search` — o mesmo formato do canal
+- `PUT /conversations/:id/read`, `PUT|DELETE /conversations/:id/mute`
+- `POST /conversations/:id/voice/token` — sala `conversation:{id}`, que não aparece na lista de canais de voz
+
+**A checagem de acesso é ser membro com `left_at` nulo, e `ADMINISTRATOR` não
+passa.** É a única exceção ao bitfield no produto inteiro, e é deliberada:
+privado significa privado. Quem não é membro recebe `403 NOT_A_MEMBER` em todas
+elas, busca inclusive.
+
+`Message.channelId` e `Message.conversationId` são exclusivos — exatamente um
+vem preenchido, nas duas direções. O mesmo vale para `ReadStateEntry`.
+
+---
+
 ## Enquetes
 
 - `GET /channels/:id/polls` → `200 { polls: Poll[] }` — todas as do canal, já do ponto de vista de quem pergunta
@@ -469,6 +491,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `VOICE_STATE_UPDATE` | entrou/saiu/mutou | `{ userId, channelId, muted, deafened, screenSharing, connected }` |
 | `CHANNEL_CREATE` / `UPDATE` / `DELETE` | canal | `Channel` |
 | `TASK_UPDATE` | tarefa nasceu, mudou ou saiu | `{ task: Task, removida?: true }` |
+| `CONVERSATION_UPDATE` | conversa nasceu, mudou de nome ou de silêncio | `{ conversation: Conversation }` — **um payload por membro**, porque não lidas e silêncio são de cada um |
 | `POLL_UPDATE` | alguém votou, ou a enquete fechou | `{ poll: Poll }` — **um payload por pessoa**, porque `myVotes` e `voters` dependem de quem recebe |
 | `TASK_REMINDER` | às 9h, o que vence hoje | `{ tasks: Task[] }` — só para quem tem tarefa vencendo, e numa lista só |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |

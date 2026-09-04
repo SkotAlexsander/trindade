@@ -310,6 +310,60 @@ uma linha na hora do upload e melhora muito a percepção de velocidade.
 
 ---
 
+## Conversas privadas
+
+Direta entre duas pessoas, ou grupo de três a quatro. Criadas na migration 021.
+
+```sql
+create table conversations (
+  id         uuid primary key default gen_random_uuid(),
+  kind       text not null check (kind in ('direct','group')),
+  name       text check (char_length(name) <= 48),
+  created_by uuid references users(id),
+  created_at timestamptz not null default now()
+);
+
+create table conversation_members (
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  user_id         uuid not null references users(id) on delete cascade,
+  joined_at       timestamptz not null default now(),
+  left_at         timestamptz,
+  hidden_at       timestamptz,
+  primary key (conversation_id, user_id)
+);
+
+alter table messages
+  add column conversation_id uuid references conversations(id) on delete cascade,
+  alter column channel_id drop not null,
+  add constraint messages_um_alvo
+    check ((channel_id is null) <> (conversation_id is null));
+```
+
+As mensagens usam a **mesma tabela**, com `conversation_id` no lugar de
+`channel_id`. É isso que reaproveita busca, reações, anexos, threads e o
+gateway inteiro sem duplicar nada — uma segunda tabela de mensagens seria uma
+segunda implementação de tudo o que já existe. `attachments` ganhou o mesmo
+par de colunas na 022, pelo mesmo motivo: sem ele não dá para mandar uma
+captura de tela numa direta.
+
+`read_state` também acompanha: não lidas, menções e silêncio valem para
+conversa exatamente como valem para canal. A chave primária `(user_id,
+channel_id)` virou **dois índices únicos parciais**, um por alvo — chave
+primária não aceita coluna nula, e é `on conflict` que precisa nomear o índice
+certo em cada caso.
+
+A unicidade do par de uma direta é da aplicação, não do banco: seria um índice
+sobre uma agregação de duas linhas de `conversation_members`. `acharOuCriarDireta`
+resolve numa transação com `for update` nas duas linhas de `users`, com o par
+ordenado antes de travar — sem o lock, duas abas procuram, nenhuma acha, e as
+duas criam; sem a ordem, as duas pontas travam uma a linha da outra.
+
+Sair de um grupo é `left_at`, não remoção: quem sai deixa de receber, e o
+histórico continua para os outros. `hidden_at` é esconder da lista, e some
+sozinho na próxima mensagem — não existe apagar conversa.
+
+---
+
 ## Trabalho de projeto
 
 ```sql
@@ -455,6 +509,8 @@ Retenção de 180 dias, apagado por tarefa periódica.
 018_mensagem_de_sistema     -- não previsto; ver CLAUDE.md
 019_membro_mexe_no_quadro   -- não previsto; ver CLAUDE.md
 020_enquetes                -- era 011_polls no pacote; ver CLAUDE.md
+021_conversas               -- era 012_conversations no pacote
+022_anexo_em_conversa       -- não previsto; ver CLAUDE.md
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

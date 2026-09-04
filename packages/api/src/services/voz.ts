@@ -24,6 +24,17 @@ export function salaDoCanal(channelId: string): string {
   return `channel:${channelId}`;
 }
 
+/**
+ * A sala de uma conversa privada.
+ *
+ * Prefixo diferente de propósito: os dois espaços de nome não se cruzam, e um
+ * id de canal nunca abre a sala de uma conversa nem o contrário — mesmo que
+ * alguém montasse o nome à mão. Ver design/10-conversas-privadas.md.
+ */
+export function salaDaConversa(conversationId: string): string {
+  return `conversation:${conversationId}`;
+}
+
 export interface IceServer {
   urls: string[];
   username?: string;
@@ -88,8 +99,22 @@ function clienteDoServico(): RoomServiceClient {
  * derrubar quem estiver dentro.
  */
 export async function garantirSala(channelId: string): Promise<void> {
+  await criarSala(salaDoCanal(channelId));
+}
+
+export async function garantirSalaDaConversa(conversationId: string): Promise<void> {
+  await criarSala(salaDaConversa(conversationId));
+}
+
+/**
+ * A sala nasce no servidor, nunca no cliente.
+ *
+ * `auto_create` está desligado no SFU justamente para que criar uma sala seja
+ * decisão de quem já conferiu a permissão — e é a contrapartida disso.
+ */
+async function criarSala(nome: string): Promise<void> {
   await clienteDoServico().createRoom({
-    name: salaDoCanal(channelId),
+    name: nome,
     emptyTimeout: VAZIA_POR_SEGUNDOS,
     maxParticipants: MAXIMO_DE_PESSOAS,
   });
@@ -106,7 +131,9 @@ export async function garantirSala(channelId: string): Promise<void> {
 export async function tokenDeVoz(entrada: {
   userId: string;
   displayName: string;
-  channelId: string;
+  /** Uma das duas: o token vale para uma sala só, seja de canal ou de conversa. */
+  channelId?: string;
+  conversationId?: string;
   permissions: bigint;
 }): Promise<string> {
   const at = new AccessToken(config.LIVEKIT_API_KEY as string, config.LIVEKIT_API_SECRET as string, {
@@ -116,7 +143,9 @@ export async function tokenDeVoz(entrada: {
   });
 
   at.addGrant({
-    room: salaDoCanal(entrada.channelId),
+    room: entrada.conversationId
+      ? salaDaConversa(entrada.conversationId)
+      : salaDoCanal(entrada.channelId as string),
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,

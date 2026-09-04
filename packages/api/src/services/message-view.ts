@@ -32,6 +32,7 @@ export function toApiMessage(
   const mensagem: Message = {
     id: row.id,
     channelId: row.channel_id,
+    conversationId: row.conversation_id,
     kind: row.kind,
     author: {
       id: row.author_id,

@@ -19,7 +19,10 @@ const LIMITE_MAXIMO = 100;
 
 const mensagemSchema = z.object({
   id: z.string(),
-  channelId: z.string(),
+  /* Um dos dois vem preenchido. A mesma mensagem serve canal e conversa
+     privada — ver design/10-conversas-privadas.md. */
+  channelId: z.string().nullable(),
+  conversationId: z.string().nullable(),
   author: z.object({
     id: z.string(),
     username: z.string(),
@@ -87,6 +90,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         throw notFound('MESSAGE_NOT_FOUND', 'esta mensagem não existe');
       }
 
+      // Nota é do canal: mensagem de conversa privada não tem para onde ir, e
+      // levá-la para a nota de um canal seria vazar o privado no público.
+      if (!mensagem.channel_id) {
+        throw badRequest('MESSAGE_NOT_IN_CHANNEL', 'conversa privada não tem notas');
+      }
+
       const autor = await usersDb.findUserById(mensagem.author_id);
       const canal = await channelsDb.findChannelById(mensagem.channel_id);
 
@@ -125,7 +134,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const { before, after, around, limit } = req.query;
 
       const { messages, hasMore } = around
-        ? await messagesDb.listAround(req.params.id, around, limit)
+        ? await messagesDb.listAround({ channelId: req.params.id }, around, limit)
         : await messagesDb.listMessages({
             channelId: req.params.id,
             ...(before ? { before } : {}),
@@ -287,7 +296,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       if (row) {
         gateway.broadcast({
           op: 'MESSAGE_DELETE',
-          d: { id: row.id, channelId: row.channel_id },
+          d: { id: row.id, channelId: row.channel_id, conversationId: row.conversation_id },
         });
       }
       return reply.code(204).send(null);
@@ -347,7 +356,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         if (mudou) {
           gateway.broadcast({
             op: adicionar ? 'REACTION_ADD' : 'REACTION_REMOVE',
-            d: { messageId: alvo.id, channelId: alvo.channel_id, userId: me.id, emoji },
+            d: {
+              messageId: alvo.id,
+              channelId: alvo.channel_id ?? alvo.conversation_id ?? '',
+              userId: me.id,
+              emoji,
+            },
           });
         }
         return reply.code(204).send(null);
@@ -401,11 +415,11 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           200: z.object({
             messages: z.array(
               mensagemSchema.extend({
-                channel: z.object({
-                  id: z.string(),
-                  slug: z.string(),
-                  name: z.string(),
-                }),
+                /* Nulo quando a mensagem veio de uma conversa privada: ela
+                   continua na sua lista, mas não tem canal para nomear. */
+                channel: z
+                  .object({ id: z.string(), slug: z.string(), name: z.string() })
+                  .nullable(),
                 savedAt: z.string(),
               }),
             ),
@@ -440,7 +454,10 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           }),
           // O canal de origem em cada linha. Sem ele a lista é um amontoado de
           // frases sem lugar, e metade do valor de guardar se perde.
-          channel: { id: row.channel_id, slug: row.channel_slug, name: row.channel_name },
+          channel:
+            row.channel_id && row.channel_slug && row.channel_name
+              ? { id: row.channel_id, slug: row.channel_slug, name: row.channel_name }
+              : null,
           savedAt: row.saved_at.toISOString(),
         })),
         hasMore,
@@ -461,7 +478,11 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const me = requireUser(req);
       const canal = await channelsDb.findChannelById(req.params.id);
       if (!canal) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
-      const { mutedUntil } = await messagesDb.marcarLido(me.id, canal.id, req.body.messageId);
+      const { mutedUntil } = await messagesDb.marcarLido(
+        me.id,
+        { channelId: canal.id },
+        req.body.messageId,
+      );
 
       // Só para as suas outras abas: ler num lugar tem de apagar o negrito no
       // outro, e isso não é da conta de mais ninguém. O silêncio vai junto
@@ -470,6 +491,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         op: 'READ_STATE_UPDATE',
         d: {
           channelId: canal.id,
+          conversationId: null,
           lastReadMessageId: req.body.messageId,
           unreadCount: 0,
           mentionCount: 0,
@@ -505,7 +527,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
 
       const corpo = req.body as { until?: string | null } | null | undefined;
       const ate = req.method === 'DELETE' || !corpo?.until ? null : new Date(corpo.until);
-      await messagesDb.silenciar(me.id, canal.id, ate);
+      await messagesDb.silenciar(me.id, { channelId: canal.id }, ate);
 
       const estados = await messagesDb.listReadState(me.id);
       const atual = estados.find((e) => e.channelId === canal.id);
@@ -523,7 +545,8 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           200: z.object({
             states: z.array(
               z.object({
-                channelId: z.string(),
+                channelId: z.string().nullable(),
+                conversationId: z.string().nullable(),
                 lastReadMessageId: z.string().nullable(),
                 unreadCount: z.number(),
                 mentionCount: z.number(),

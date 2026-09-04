@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Composer } from '../features/messages/Composer';
 import { Digitando } from '../features/messages/Digitando';
 import { MessageList } from '../features/messages/MessageList';
 import { useChannels, useUsers } from '../features/channels/queries';
+import { canal as canalComoAlvo } from '../features/messages/alvo';
 import styles from '../features/messages/canal.module.css';
 
 /**
@@ -20,6 +22,7 @@ export function Canal() {
   const { data: canais } = useChannels();
   const { data: pessoas } = useUsers();
   const canal = canais?.find((c) => c.slug === slug);
+  const alvoDoCanal = useMemo(() => canalComoAlvo(canal?.id ?? ''), [canal?.id]);
 
   if (!canal) {
     return (
@@ -35,12 +38,18 @@ export function Canal() {
           rolagem e contadores de um canal não valem para o outro. */}
       <MessageList
         key={canal.id}
-        channelId={canal.id}
+        alvo={alvoDoCanal}
         pessoas={pessoas ?? []}
         canais={canais ?? []}
       />
       <Digitando channelId={canal.id} pessoas={pessoas ?? []} />
-      <Composer canal={canal} pessoas={pessoas ?? []} canais={canais ?? []} />
+      <Composer
+        alvo={alvoDoCanal}
+        nome={`${canal.kind === 'voice' ? '' : '#'}${canal.name}`}
+        preposicao="em"
+        pessoas={pessoas ?? []}
+        canais={canais ?? []}
+      />
     </div>
   );
 }

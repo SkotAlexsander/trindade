@@ -15,6 +15,7 @@ import { healthRoutes } from './routes/health.js';
 import { metricsRoutes } from './routes/metrics.js';
 import { taskRoutes } from './routes/tasks.js';
 import { pollRoutes } from './routes/polls.js';
+import { conversationRoutes } from './routes/conversations.js';
 import { medirRequisicoes } from './lib/metricas.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
@@ -109,6 +110,7 @@ export async function buildApp() {
       await api.register(messageRoutes);
       await api.register(taskRoutes);
       await api.register(pollRoutes);
+      await api.register(conversationRoutes);
       await api.register(attachmentRoutes);
       await api.register(fileRoutes);
     },

@@ -6,6 +6,7 @@ import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
 import { Conteudo } from './Conteudo';
 import { CompositorSimples } from './CompositorSimples';
+import { alvoDaMensagem } from './alvo';
 import { hora, rotuloDoDia } from './linhas';
 import { chaveDaThread, type CacheDeThread } from './queries';
 import { useThread } from './store';
@@ -93,7 +94,7 @@ export function PainelThread({ pessoas, canais }: PainelThreadProps) {
       </div>
 
       <CompositorSimples
-        channelId={data.parent.channelId}
+        alvo={alvoDaMensagem(data.parent)}
         parentId={data.parent.id}
         rotulo="Responder na thread"
       />

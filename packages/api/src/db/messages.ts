@@ -2,7 +2,9 @@ import { sql } from './index.js';
 
 export interface MessageRow {
   id: string;
-  channel_id: string;
+  /** Um dos dois, nunca os dois: `messages_um_alvo` garante. */
+  channel_id: string | null;
+  conversation_id: string | null;
   author_id: string;
   parent_id: string | null;
   reply_to_id: string | null;
@@ -26,13 +28,31 @@ export interface ReactionRow {
 }
 
 const COLUNAS = sql`
-  m.id, m.channel_id, m.author_id, m.parent_id, m.reply_to_id, m.content,
+  m.id, m.channel_id, m.conversation_id, m.author_id, m.parent_id, m.reply_to_id, m.content,
   m.kind, m.client_nonce, m.pinned_at, m.edited_at, m.deleted_at, m.created_at,
   u.username as author_username, u.display_name as author_display_name,
   u.avatar_key as author_avatar_key
 `;
 
 const DE = sql`from messages m join users u on u.id = m.author_id`;
+
+/**
+ * Onde a mensagem mora: um canal ou uma conversa privada.
+ *
+ * Um fragmento e não dois conjuntos de consultas — histórico, pular para o
+ * meio e busca são exatamente o mesmo problema nos dois casos, e duplicá-los
+ * seria manter duas paginações em dia.
+ */
+export interface Alvo {
+  channelId?: string | null;
+  conversationId?: string | null;
+}
+
+function doAlvo(alvo: Alvo) {
+  return alvo.conversationId
+    ? sql`m.conversation_id = ${alvo.conversationId}`
+    : sql`m.channel_id = ${alvo.channelId ?? null}`;
+}
 
 export async function findMessageById(id: string): Promise<MessageRow | null> {
   const rows = await sql<MessageRow[]>`select ${COLUNAS} ${DE} where m.id = ${id}`;
@@ -45,8 +65,7 @@ export async function findMessageById(id: string): Promise<MessageRow | null> {
  * Mensagem nova muda os índices, e paginação por deslocamento duplica ou pula
  * linhas exatamente quando a conversa está ativa. Ver docs/05-contrato-api.md.
  */
-export async function listMessages(input: {
-  channelId: string;
+export async function listMessages(input: Alvo & {
   before?: string;
   after?: string;
   limit: number;
@@ -57,7 +76,7 @@ export async function listMessages(input: {
   if (input.after) {
     linhas = await sql<MessageRow[]>`
       select ${COLUNAS} ${DE}
-      where m.channel_id = ${input.channelId}
+      where ${doAlvo(input)}
         and m.parent_id is null
         and m.created_at > (select created_at from messages where id = ${input.after})
       order by m.created_at asc
@@ -72,7 +91,7 @@ export async function listMessages(input: {
   linhas = input.before
     ? await sql<MessageRow[]>`
         select ${COLUNAS} ${DE}
-        where m.channel_id = ${input.channelId}
+        where ${doAlvo(input)}
           and m.parent_id is null
           and m.created_at < (select created_at from messages where id = ${input.before})
         order by m.created_at desc
@@ -80,7 +99,7 @@ export async function listMessages(input: {
       `
     : await sql<MessageRow[]>`
         select ${COLUNAS} ${DE}
-        where m.channel_id = ${input.channelId} and m.parent_id is null
+        where ${doAlvo(input)} and m.parent_id is null
         order by m.created_at desc
         limit ${limite}
       `;
@@ -91,21 +110,21 @@ export async function listMessages(input: {
 
 /** Metade antes e metade depois: usado ao pular de um resultado de busca. */
 export async function listAround(
-  channelId: string,
+  alvo: Alvo,
   around: string,
   limit: number,
 ): Promise<{ messages: MessageRow[]; hasMore: boolean }> {
   const metade = Math.floor(limit / 2);
   const antes = await sql<MessageRow[]>`
     select ${COLUNAS} ${DE}
-    where m.channel_id = ${channelId} and m.parent_id is null
+    where ${doAlvo(alvo)} and m.parent_id is null
       and m.created_at <= (select created_at from messages where id = ${around})
     order by m.created_at desc
     limit ${metade + 1}
   `;
   const depois = await sql<MessageRow[]>`
     select ${COLUNAS} ${DE}
-    where m.channel_id = ${channelId} and m.parent_id is null
+    where ${doAlvo(alvo)} and m.parent_id is null
       and m.created_at > (select created_at from messages where id = ${around})
     order by m.created_at asc
     limit ${metade}
@@ -173,7 +192,8 @@ export async function listReactions(ids: readonly string[]): Promise<ReactionRow
  * a resposta é a mensagem original. É a barreira final contra duplicata.
  */
 export async function createMessage(input: {
-  channelId: string;
+  channelId?: string | null;
+  conversationId?: string | null;
   authorId: string;
   content: string;
   clientNonce: string;
@@ -184,9 +204,10 @@ export async function createMessage(input: {
 }): Promise<{ row: MessageRow; novo: boolean }> {
   const inseridos = await sql<{ id: string }[]>`
     insert into messages
-      (channel_id, author_id, content, client_nonce, reply_to_id, parent_id, kind)
-    values (${input.channelId}, ${input.authorId}, ${input.content},
-            ${input.clientNonce}, ${input.replyToId}, ${input.parentId},
+      (channel_id, conversation_id, author_id, content, client_nonce, reply_to_id,
+       parent_id, kind)
+    values (${input.channelId ?? null}, ${input.conversationId ?? null}, ${input.authorId},
+            ${input.content}, ${input.clientNonce}, ${input.replyToId}, ${input.parentId},
             ${input.kind ?? 'text'})
     on conflict (author_id, client_nonce) where client_nonce is not null do nothing
     returning id
@@ -271,8 +292,14 @@ export async function removeReaction(
  * `to_tsvector('portuguese', …)`, então acento e stemming saem de graça:
  * "migração" e "migracao" encontram a mesma linha.
  */
-export async function search(input: {
-  channelId: string;
+/**
+ * Busca **dentro de um alvo**, nunca global.
+ *
+ * O conteúdo de conversa privada não aparece em busca de canal nem numa busca
+ * geral que não existe: o filtro do alvo é obrigatório, e é o mesmo caminho
+ * pelo qual o servidor já verificou que você pode ler ali.
+ */
+export async function search(input: Alvo & {
   q: string;
   from?: string;
   limit: number;
@@ -282,7 +309,7 @@ export async function search(input: {
 
   const results = await sql<MessageRow[]>`
     select ${COLUNAS} ${DE}
-    where m.channel_id = ${input.channelId}
+    where ${doAlvo(input)}
       and m.deleted_at is null
       and m.search_vector @@ ${consulta}
       ${filtroAutor}
@@ -292,7 +319,7 @@ export async function search(input: {
 
   const totais = await sql<{ total: string }[]>`
     select count(*)::text as total from messages m
-    where m.channel_id = ${input.channelId}
+    where ${doAlvo(input)}
       and m.deleted_at is null
       and m.search_vector @@ ${consulta}
       ${input.from ? sql`and m.author_id = ${input.from}` : sql``}
@@ -314,7 +341,8 @@ export async function resolveMentions(content: string): Promise<string[]> {
 // --- estado de leitura ------------------------------------------------------
 
 export interface ReadStateRow {
-  channelId: string;
+  channelId: string | null;
+  conversationId: string | null;
   lastReadMessageId: string | null;
   unreadCount: number;
   mentionCount: number;
@@ -329,18 +357,31 @@ export interface ReadStateRow {
  */
 export async function marcarLido(
   userId: string,
-  channelId: string,
+  alvo: Alvo,
   messageId: string,
 ): Promise<{ mutedUntil: string | null }> {
-  // Devolve o silêncio porque quem avisa as outras abas precisa repeti-lo:
-  // ler um canal silenciado não pode desligar o silêncio dele.
-  const linhas = await sql<{ muted_until: Date | null }[]>`
-    insert into read_state (user_id, channel_id, last_read_message_id, mention_count, updated_at)
-    values (${userId}, ${channelId}, ${messageId}, 0, now())
-    on conflict (user_id, channel_id) do update
-      set last_read_message_id = ${messageId}, mention_count = 0, updated_at = now()
-    returning muted_until
-  `;
+  /* Dois `insert` quase iguais, e não um com `coalesce`: a cláusula de
+     conflito precisa nomear o índice parcial certo, e índice parcial não se
+     escolhe em tempo de execução. Devolve o silêncio porque quem avisa as
+     outras abas precisa repeti-lo — ler um alvo silenciado não pode desligar
+     o silêncio dele. */
+  const linhas = alvo.conversationId
+    ? await sql<{ muted_until: Date | null }[]>`
+        insert into read_state
+          (user_id, conversation_id, last_read_message_id, mention_count, updated_at)
+        values (${userId}, ${alvo.conversationId}, ${messageId}, 0, now())
+        on conflict (user_id, conversation_id) where conversation_id is not null do update
+          set last_read_message_id = ${messageId}, mention_count = 0, updated_at = now()
+        returning muted_until
+      `
+    : await sql<{ muted_until: Date | null }[]>`
+        insert into read_state
+          (user_id, channel_id, last_read_message_id, mention_count, updated_at)
+        values (${userId}, ${alvo.channelId ?? null}, ${messageId}, 0, now())
+        on conflict (user_id, channel_id) where channel_id is not null do update
+          set last_read_message_id = ${messageId}, mention_count = 0, updated_at = now()
+        returning muted_until
+      `;
   const linha = linhas[0];
   return { mutedUntil: linha?.muted_until ? linha.muted_until.toISOString() : null };
 }
@@ -351,15 +392,20 @@ export async function marcarLido(
  * Mora em `read_state` porque é por pessoa: silenciar `#bugs` é uma decisão
  * sua, e uma coluna em `channels` a tornaria de todo mundo.
  */
-export async function silenciar(
-  userId: string,
-  channelId: string,
-  ate: Date | null,
-): Promise<void> {
+export async function silenciar(userId: string, alvo: Alvo, ate: Date | null): Promise<void> {
+  if (alvo.conversationId) {
+    await sql`
+      insert into read_state (user_id, conversation_id, muted_until, updated_at)
+      values (${userId}, ${alvo.conversationId}, ${ate}, now())
+      on conflict (user_id, conversation_id) where conversation_id is not null do update
+        set muted_until = ${ate}, updated_at = now()
+    `;
+    return;
+  }
   await sql`
     insert into read_state (user_id, channel_id, muted_until, updated_at)
-    values (${userId}, ${channelId}, ${ate}, now())
-    on conflict (user_id, channel_id) do update
+    values (${userId}, ${alvo.channelId ?? null}, ${ate}, now())
+    on conflict (user_id, channel_id) where channel_id is not null do update
       set muted_until = ${ate}, updated_at = now()
   `;
 }
@@ -373,6 +419,8 @@ export async function silenciar(
  * cada reconexão.
  */
 export async function listReadState(userId: string): Promise<ReadStateRow[]> {
+  // Só as linhas de canal: o estado das conversas privadas vem junto com a
+  // conversa, numa consulta que já sabe quem é membro do quê.
   const linhas = await sql<
     {
       channel_id: string;
@@ -382,13 +430,14 @@ export async function listReadState(userId: string): Promise<ReadStateRow[]> {
     }[]
   >`
     select channel_id, last_read_message_id, mention_count, muted_until
-    from read_state where user_id = ${userId}
+    from read_state where user_id = ${userId} and channel_id is not null
   `;
   const naoLidas = await contarNaoLidas(userId);
   const vistos = new Set(linhas.map((l) => l.channel_id));
 
   const estados: ReadStateRow[] = linhas.map((l) => ({
     channelId: l.channel_id,
+    conversationId: null,
     lastReadMessageId: l.last_read_message_id,
     unreadCount: naoLidas.get(l.channel_id) ?? 0,
     mentionCount: l.mention_count,
@@ -401,6 +450,7 @@ export async function listReadState(userId: string): Promise<ReadStateRow[]> {
     if (vistos.has(channelId) || total === 0) continue;
     estados.push({
       channelId,
+      conversationId: null,
       lastReadMessageId: null,
       unreadCount: total,
       mentionCount: 0,
@@ -433,17 +483,27 @@ export async function contarNaoLidas(userId: string): Promise<Map<string, number
 
 /** Soma uma menção para cada pessoa citada, exceto quem escreveu. */
 export async function somarMencoes(
-  channelId: string,
+  alvo: Alvo,
   userIds: readonly string[],
   autorId: string,
 ): Promise<void> {
   const alvos = userIds.filter((id) => id !== autorId);
   if (alvos.length === 0) return;
+
   for (const id of alvos) {
+    if (alvo.conversationId) {
+      await sql`
+        insert into read_state (user_id, conversation_id, mention_count, updated_at)
+        values (${id}, ${alvo.conversationId}, 1, now())
+        on conflict (user_id, conversation_id) where conversation_id is not null do update
+          set mention_count = read_state.mention_count + 1, updated_at = now()
+      `;
+      continue;
+    }
     await sql`
       insert into read_state (user_id, channel_id, mention_count, updated_at)
-      values (${id}, ${channelId}, 1, now())
-      on conflict (user_id, channel_id) do update
+      values (${id}, ${alvo.channelId ?? null}, 1, now())
+      on conflict (user_id, channel_id) where channel_id is not null do update
         set mention_count = read_state.mention_count + 1, updated_at = now()
     `;
   }
@@ -490,9 +550,10 @@ export async function quaisGuardadas(
 
 export interface SavedRow extends MessageRow {
   saved_at: Date;
-  channel_slug: string;
-  channel_name: string;
-  channel_kind: string;
+  /** Nulos quando a mensagem guardada veio de uma conversa privada. */
+  channel_slug: string | null;
+  channel_name: string | null;
+  channel_kind: string | null;
 }
 
 /**
@@ -522,7 +583,9 @@ export async function listarGuardadas(input: {
         from saved_messages s
         join messages m on m.id = s.message_id
         join users u on u.id = m.author_id
-        join channels c on c.id = m.channel_id
+        -- left join de propósito: mensagem guardada de conversa privada não
+        -- tem canal, e um join comum a faria sumir da lista em silêncio.
+        left join channels c on c.id = m.channel_id
         where s.user_id = ${input.userId} and m.deleted_at is null
           and s.created_at < (
             select created_at from saved_messages
@@ -536,7 +599,9 @@ export async function listarGuardadas(input: {
         from saved_messages s
         join messages m on m.id = s.message_id
         join users u on u.id = m.author_id
-        join channels c on c.id = m.channel_id
+        -- left join de propósito: mensagem guardada de conversa privada não
+        -- tem canal, e um join comum a faria sumir da lista em silêncio.
+        left join channels c on c.id = m.channel_id
         where s.user_id = ${input.userId} and m.deleted_at is null
         order by s.created_at desc
         limit ${limite}

@@ -16,7 +16,9 @@ import {
   useRole,
 } from '@floating-ui/react';
 import type { Role, User } from '@trindade/shared';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, Button } from '../../components';
+import { useAbrirDireta } from '../conversations/queries';
 import { ensureContrast, sobrepor } from '../../lib/contraste';
 import { lerToken } from '../../lib/tokens';
 import { useAuth } from '../auth/store';
@@ -78,6 +80,8 @@ export interface CartaoDePerfilProps {
 }
 
 export function CartaoDePerfil({ user, trigger, onEditar, onMensagem }: CartaoDePerfilProps) {
+  const navigate = useNavigate();
+  const abrindo = useAbrirDireta();
   const [aberto, setAberto] = useState(false);
   const souEu = useAuth((s) => s.user?.id) === user.id;
   // A presença vem do gateway, não do `User` do cache: o status muda muito mais
@@ -174,10 +178,24 @@ export function CartaoDePerfil({ user, trigger, onEditar, onMensagem }: CartaoDe
                   variant="secondary"
                   size="sm"
                   className={styles.acao}
+                  disabled={abrindo.isPending}
                   onClick={() => {
                     setAberto(false);
-                    if (souEu) (onEditar ?? (() => abrirPerfil('perfil')))();
-                    else onMensagem?.(user);
+                    if (souEu) {
+                      (onEditar ?? (() => abrirPerfil('perfil')))();
+                      return;
+                    }
+                    // Sem `onMensagem`, o próprio cartão abre a direta: este é
+                    // **o** caminho principal para uma conversa privada, e
+                    // depender de cada tela passar um callback era o jeito
+                    // garantido de o botão não funcionar em alguma delas.
+                    if (onMensagem) {
+                      onMensagem(user);
+                      return;
+                    }
+                    abrindo.mutate(user.id, {
+                      onSuccess: ({ conversation }) => navigate(`/d/${conversation.id}`),
+                    });
                   }}
                 >
                   {souEu ? 'Editar perfil' : 'Mandar mensagem'}

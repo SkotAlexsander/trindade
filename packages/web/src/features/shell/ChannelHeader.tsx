@@ -1,9 +1,12 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { IconButton, Tooltip } from '../../components';
+import type { Conversation, User } from '@trindade/shared';
+import { Avatar, IconButton, Tooltip } from '../../components';
 import { FaixaConexao } from '../realtime/FaixaConexao';
 import { MenuDeSilenciar } from '../notifications/MenuDeSilenciar';
+import { MenuDaConversa } from '../conversations/MenuDaConversa';
 import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
+import { canal as canalComoAlvo, conversa as conversaComoAlvo } from '../messages/alvo';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
 import styles from './shell.module.css';
 
@@ -22,7 +25,7 @@ export type PainelAberto =
   | null;
 
 const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: ReactNode }> = [
-  { id: 'busca', rotulo: 'Buscar no canal', icone: <Search size={18} /> },
+  { id: 'busca', rotulo: 'Buscar', icone: <Search size={18} /> },
   { id: 'fixadas', rotulo: 'Fixadas', icone: <Pin size={18} /> },
   { id: 'notas', rotulo: 'Notas', icone: <Notes size={18} /> },
   { id: 'tarefas', rotulo: 'Tarefas', icone: <Tasks size={18} /> },
@@ -30,6 +33,26 @@ const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: Re
 
 export interface ChannelHeaderProps {
   canal: ChannelWithState | undefined;
+  /**
+   * A conversa privada aberta, quando é uma.
+   *
+   * O cabeçalho é o mesmo componente porque a coluna é a mesma — o que muda é
+   * o que ele identifica e quais painéis fazem sentido. Conversa privada não
+   * tem fixadas, notas nem tarefas: são coisas do canal.
+   * Ver design/10-conversas-privadas.md.
+   */
+  conversa?:
+    | {
+        id: string;
+        nome: string;
+        /** Quem está do outro lado — para o avatar e o status. */
+        pessoas: readonly User[];
+        /** A conversa inteira, para o menu de ações. */
+        completa: Conversation;
+        /** O elenco todo, para escolher quem entra num grupo novo. */
+        todas: readonly User[];
+      }
+    | undefined;
   painel: PainelAberto;
   onPainel: (qual: Exclude<PainelAberto, null>) => void;
   /** Só aparece abaixo de 900px, onde a navegação vira pilha. */
@@ -49,6 +72,7 @@ export interface ChannelHeaderProps {
 
 export function ChannelHeader({
   canal,
+  conversa,
   painel,
   onPainel,
   onAbrirGaveta,
@@ -121,7 +145,30 @@ export function ChannelHeader({
           </IconButton>
         ) : null}
 
-        {canal ? (
+        {conversa ? (
+          <>
+            {/* Avatar em vez de `#`: a conversa é com uma pessoa, e o anel de
+                status diz se ela está aí agora. */}
+            <span className={styles.hash}>
+              {conversa.pessoas[0] ? (
+                <Avatar
+                  id={conversa.pessoas[0].id}
+                  name={conversa.pessoas[0].displayName}
+                  src={conversa.pessoas[0].avatarUrl}
+                  size="sm"
+                  status={conversa.pessoas.length === 1 ? conversa.pessoas[0].status : undefined}
+                />
+              ) : null}
+            </span>
+            <h1 className={styles.nomeCanal}>{conversa.nome}</h1>
+            {conversa.pessoas.length === 1 && conversa.pessoas[0]?.customStatus ? (
+              <>
+                <span className={styles.separador} aria-hidden="true" />
+                <p className={styles.topico}>{conversa.pessoas[0].customStatus}</p>
+              </>
+            ) : null}
+          </>
+        ) : canal ? (
           <>
             <span className={styles.hash} aria-hidden="true">
               {canal.kind === 'voice' ? <Volume size={18} /> : <Hash size={18} />}
@@ -140,10 +187,16 @@ export function ChannelHeader({
         )}
 
         <div className={styles.acoes}>
-          {/* Silenciar antes dos painéis: é do canal, e os outros quatro são
-              janelas sobre ele. */}
-          {canal ? <MenuDeSilenciar channelId={canal.id} /> : null}
-          {BOTOES.map((botao) => (
+          {/* Silenciar antes dos painéis: é do alvo, e os outros são janelas
+              sobre ele. */}
+          {canal || conversa ? (
+            <MenuDeSilenciar
+              alvo={conversa ? conversaComoAlvo(conversa.id) : canalComoAlvo(canal?.id ?? '')}
+            />
+          ) : null}
+          {/* Numa conversa privada, só busca e thread: fixadas, notas e
+              tarefas são do canal. Ver design/10-conversas-privadas.md. */}
+          {(conversa ? BOTOES.filter((b) => b.id === 'busca') : BOTOES).map((botao) => (
             <Tooltip key={botao.id} label={botao.rotulo}>
               <IconButton
                 label={botao.rotulo}
@@ -156,6 +209,9 @@ export function ChannelHeader({
               </IconButton>
             </Tooltip>
           ))}
+          {conversa?.completa ? (
+            <MenuDaConversa conversa={conversa.completa} pessoas={conversa.todas} />
+          ) : null}
         </div>
       </header>
 

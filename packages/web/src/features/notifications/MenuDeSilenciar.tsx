@@ -2,9 +2,10 @@ import { IconButton, Menu, MenuItem, MenuSeparator, useToast } from '../../compo
 import { Sino, SinoCortado } from '../../components/icones';
 import { api } from '../../lib/http';
 import { useLeitura } from '../messages/leitura';
+import { caminhoDo, type Alvo } from '../messages/alvo';
 
 /**
- * Silenciar o canal: 1 hora, 8 horas, até eu ligar.
+ * Silenciar o alvo — canal ou conversa: 1 hora, 8 horas, até eu ligar.
  *
  * Três opções e nenhum campo de duração: quem silencia quer parar de ser
  * interrompido agora, não configurar uma política. Ver design/09-notificacoes.md.
@@ -16,7 +17,11 @@ const OPCOES: { rotulo: string; horas: number | null }[] = [
   { rotulo: 'Até eu ligar', horas: null },
 ];
 
-export function MenuDeSilenciar({ channelId }: { channelId: string }) {
+export function MenuDeSilenciar({ alvo }: { alvo: Alvo }) {
+  const channelId = alvo.id;
+  // O rótulo nomeia o que está sendo calado: "Silenciar canal" numa conversa
+  // privada seria dizer a coisa errada em voz alta.
+  const oQue = alvo.tipo === 'canal' ? 'canal' : 'conversa';
   const { show } = useToast();
   const leitura = useLeitura((s) => s.porCanal[channelId]);
 
@@ -37,20 +42,20 @@ export function MenuDeSilenciar({ channelId }: { channelId: string }) {
 
     // O estado volta pelo `READ_STATE_UPDATE`, como em qualquer outra aba
     // sua: não há o que atualizar aqui à mão.
-    void api(`/channels/${channelId}/mute`, { method: 'PUT', body: { until } }).catch(() =>
+    void api(`${caminhoDo(alvo)}/mute`, { method: 'PUT', body: { until } }).catch(() =>
       show('Não foi possível silenciar o canal.', 'danger'),
     );
   }
 
   function reativar(): void {
-    void api(`/channels/${channelId}/mute`, { method: 'DELETE' }).catch(() =>
+    void api(`${caminhoDo(alvo)}/mute`, { method: 'DELETE' }).catch(() =>
       show('Não foi possível reativar o canal.', 'danger'),
     );
   }
 
   return (
     <Menu
-      label="Silenciar canal"
+      label={`Silenciar ${oQue}`}
       placement="bottom-end"
       /* O gatilho é o próprio botão, sem `Tooltip` em volta: o `Menu` clona o
          elemento que recebe para pendurar nele o `ref` e os manipuladores, e
@@ -58,8 +63,8 @@ export function MenuDeSilenciar({ channelId }: { channelId: string }) {
          não abria. O `label` do `IconButton` já é o texto acessível. */
       trigger={
         <IconButton
-          label={estaMudo ? 'Canal silenciado' : 'Silenciar canal'}
-          title={estaMudo ? 'Canal silenciado' : 'Silenciar canal'}
+          label={estaMudo ? `${maiuscula(oQue)} silenciado` : `Silenciar ${oQue}`}
+          title={estaMudo ? `${maiuscula(oQue)} silenciado` : `Silenciar ${oQue}`}
           size="sm"
         >
           {estaMudo ? <SinoCortado size={16} /> : <Sino size={16} />}
@@ -81,4 +86,9 @@ export function MenuDeSilenciar({ channelId }: { channelId: string }) {
       ))}
     </Menu>
   );
+}
+
+/** "canal" → "Canal". Só para o rótulo do botão. */
+function maiuscula(palavra: string): string {
+  return palavra.charAt(0).toUpperCase() + palavra.slice(1);
 }

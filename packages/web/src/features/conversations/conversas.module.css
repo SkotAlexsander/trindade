@@ -1,0 +1,158 @@
+/* A seção "Conversas" e o aviso de privacidade. Ver design/10-conversas-privadas.md. */
+
+.secao {
+  margin-bottom: var(--s-3);
+}
+
+.titulo {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--s-4);
+}
+
+/*
+ * A mesma linha dos canais, com a coluna do ícone um pouco mais larga: o grupo
+ * mostra dois avatares sobrepostos, e 20px cortariam o segundo.
+ */
+.item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: var(--s-2);
+  height: 32px;
+  width: calc(100% - var(--s-4));
+  padding: 0 var(--s-2);
+  margin: 1px var(--s-2);
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-normal);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.item[data-unread='true'] {
+  color: var(--text-primary);
+  font-weight: var(--weight-semi);
+}
+
+.item.ativo {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+/* Silenciada continua marcando não lido, em peso normal: você vê que houve
+   movimento sem que ele grite. A mesma regra dos canais. */
+.item[data-silenciada='true'] {
+  color: var(--text-tertiary);
+}
+
+.item[data-silenciada='true'][data-unread='true'] .nome {
+  font-weight: var(--weight-normal);
+}
+
+.avatares {
+  display: flex;
+  align-items: center;
+}
+
+/* O segundo avatar por cima do primeiro, com um recorte do fundo em volta —
+   sobrepor sem a borda vira uma mancha só. */
+.avatares[data-grupo='true'] > *:last-child {
+  margin-left: -8px;
+  border-radius: var(--r-full);
+  box-shadow: 0 0 0 2px var(--bg-base);
+}
+
+.nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sino {
+  display: inline-flex;
+  color: var(--text-tertiary);
+}
+
+.ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--text-primary);
+}
+
+.mencoes {
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-semi);
+}
+
+/* --- o aviso de privacidade ------------------------------------------------ */
+
+/*
+ * Acima do compositor e dentro da coluna da conversa: é sobre o que está sendo
+ * escrito ali, e um banner no topo da tela seria sobre o produto.
+ */
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0 var(--s-5) var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: var(--text-label) / var(--leading-ui) var(--font-ui);
+}
+
+.aviso p {
+  flex: 1;
+  margin: 0;
+  max-width: var(--measure);
+}
+
+/* --- escolher quem entra no grupo ------------------------------------------ */
+
+/*
+ * Caixas de marcação e não um campo de busca: com cinco pessoas sobram no
+ * máximo três, e uma busca para escolher entre três é fricção inventada.
+ */
+.escolha {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.pessoa {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--text-primary);
+  font: var(--text-ui) var(--font-ui);
+}
+
+.pessoa input[type='text'] {
+  flex: 1;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: inherit;
+}

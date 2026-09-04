@@ -10,6 +10,7 @@ import {
   marcarLocal,
   type MensagemLocal,
 } from './queries';
+import { alvoDaMensagem, alvoNoEvento, idDoAlvo, type Alvo } from './alvo';
 
 /**
  * Envio otimista.
@@ -38,7 +39,8 @@ function novoNonce(): string {
 }
 
 export interface Rascunho {
-  channelId: string;
+  /** Canal ou conversa privada: o envio é o mesmo dos dois lados. */
+  alvo: Alvo;
   content: string;
   replyToId?: string | null;
   parentId?: string | null;
@@ -66,7 +68,8 @@ export function useEnviarMensagem() {
           // chave de React, e por isso carrega o nonce — se fosse aleatório a
           // cada render, a linha remontaria sozinha.
           id: `local:${clientNonce}`,
-          channelId: rascunho.channelId,
+          channelId: rascunho.alvo.tipo === 'canal' ? rascunho.alvo.id : null,
+          conversationId: rascunho.alvo.tipo === 'conversa' ? rascunho.alvo.id : null,
           kind: 'text',
           author: {
             id: eu.id,
@@ -100,7 +103,7 @@ export function useEnviarMensagem() {
       const saiu = enviarPeloSocket({
         op: 'MESSAGE_CREATE',
         d: {
-          channelId: rascunho.channelId,
+          ...alvoNoEvento(rascunho.alvo),
           content: rascunho.content,
           clientNonce,
           ...(rascunho.anexos?.length
@@ -114,7 +117,7 @@ export function useEnviarMensagem() {
       // Enfileirada não é falha: a fila esvazia sozinha quando o socket volta,
       // e oferecer "tentar de novo" para algo que já vai sair é convidar à
       // duplicata.
-      marcarLocal(qc, rascunho.channelId, clientNonce, saiu ? 'enviando' : 'na-fila');
+      marcarLocal(qc, rascunho.alvo.id, clientNonce, saiu ? 'enviando' : 'na-fila');
 
       confirmarNonce(clientNonce);
       if (saiu) {
@@ -122,7 +125,7 @@ export function useEnviarMensagem() {
           clientNonce,
           setTimeout(() => {
             relogios.delete(clientNonce);
-            marcarLocal(qc, rascunho.channelId, clientNonce, 'falhou');
+            marcarLocal(qc, rascunho.alvo.id, clientNonce, 'falhou');
           }, PACIENCIA_MS),
         );
       }
@@ -138,7 +141,7 @@ export function useEnviarMensagem() {
       if (!mensagem.content && mensagem.attachments.length === 0) return;
       enviar(
         {
-          channelId: mensagem.channelId,
+          alvo: alvoDaMensagem(mensagem),
           content: mensagem.content ?? '',
           // Os anexos continuam pendentes no servidor: a mensagem é que não
           // chegou. Reenviar sem eles publicaria a legenda sem a foto.
@@ -156,7 +159,7 @@ export function useEnviarMensagem() {
     (mensagem: MensagemLocal) => {
       if (!mensagem.clientNonce) return;
       confirmarNonce(mensagem.clientNonce);
-      descartarOtimista(qc, mensagem.channelId, mensagem.clientNonce);
+      descartarOtimista(qc, idDoAlvo(mensagem), mensagem.clientNonce);
     },
     [qc],
   );

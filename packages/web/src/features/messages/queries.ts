@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import type { Message } from '@trindade/shared';
+import { caminhoDo, idDoAlvo, type Alvo } from './alvo';
 import { api } from '../../lib/http';
 
 /**
@@ -34,8 +35,15 @@ interface RespostaHistorico {
 
 export const PAGINA = 50;
 
-export function chaveDoCanal(channelId: string): [string, string] {
-  return ['messages', channelId];
+/**
+ * A chave do cache é o **id do alvo**, canal ou conversa.
+ *
+ * Os dois são uuid e nunca colidem, então um cache só serve para os dois — e é
+ * o que faz rolagem, histórico e escrita otimista valerem em conversa privada
+ * sem uma segunda implementação. Ver `alvo.ts`.
+ */
+export function chaveDoCanal(alvoId: string): [string, string] {
+  return ['messages', alvoId];
 }
 
 export function chaveDaThread(parentId: string): [string, string] {
@@ -47,21 +55,23 @@ export interface CacheDeThread {
   replies: MensagemLocal[];
 }
 
-export function useMessages(channelId: string | undefined) {
+export function useMessages(alvo: Alvo | undefined) {
   return useQuery({
-    queryKey: chaveDoCanal(channelId ?? ''),
-    enabled: Boolean(channelId),
+    queryKey: chaveDoCanal(alvo?.id ?? ''),
+    enabled: Boolean(alvo),
     staleTime: Infinity,
     gcTime: 30 * 60 * 1000,
     queryFn: async (): Promise<CacheCanal> => {
-      const r = await api<RespostaHistorico>(`/channels/${channelId}/messages?limit=${PAGINA}`);
+      const r = await api<RespostaHistorico>(
+        `${caminhoDo(alvo as Alvo)}/messages?limit=${PAGINA}`,
+      );
       return { mensagens: r.messages, temMaisAntigas: r.hasMore };
     },
   });
 }
 
 /** Carrega a página anterior e devolve quantas entraram, para compensar a rolagem. */
-export function useCarregarAntigas(channelId: string | undefined) {
+export function useCarregarAntigas(alvo: Alvo | undefined) {
   const qc = useQueryClient();
   const [carregando, setCarregando] = useState(false);
   // Guarda contra duas chamadas no mesmo quadro: o gatilho é a rolagem, que
@@ -69,9 +79,9 @@ export function useCarregarAntigas(channelId: string | undefined) {
   const emVoo = useRef(false);
 
   const carregar = useCallback(async (): Promise<number> => {
-    if (!channelId || emVoo.current) return 0;
+    if (!alvo || emVoo.current) return 0;
 
-    const atual = qc.getQueryData<CacheCanal>(chaveDoCanal(channelId));
+    const atual = qc.getQueryData<CacheCanal>(chaveDoCanal(alvo.id));
     const maisAntiga = atual?.mensagens.find((m) => !m.local);
     if (!atual?.temMaisAntigas || !maisAntiga) return 0;
 
@@ -79,9 +89,9 @@ export function useCarregarAntigas(channelId: string | undefined) {
     setCarregando(true);
     try {
       const r = await api<RespostaHistorico>(
-        `/channels/${channelId}/messages?limit=${PAGINA}&before=${maisAntiga.id}`,
+        `${caminhoDo(alvo)}/messages?limit=${PAGINA}&before=${maisAntiga.id}`,
       );
-      qc.setQueryData<CacheCanal>(chaveDoCanal(channelId), (anterior) => {
+      qc.setQueryData<CacheCanal>(chaveDoCanal(alvo.id), (anterior) => {
         if (!anterior) return anterior;
         const conhecidas = new Set(anterior.mensagens.map((m) => m.id));
         const novas = r.messages.filter((m) => !conhecidas.has(m.id));
@@ -92,7 +102,7 @@ export function useCarregarAntigas(channelId: string | undefined) {
       emVoo.current = false;
       setCarregando(false);
     }
-  }, [channelId, qc]);
+  }, [alvo, qc]);
 
   return { carregar, carregando };
 }
@@ -128,7 +138,7 @@ export function receberMensagem(qc: QueryClient, mensagem: Message): void {
     return;
   }
 
-  mexer(qc, mensagem.channelId, (cache) => {
+  mexer(qc, idDoAlvo(mensagem), (cache) => {
     if (mensagem.clientNonce) {
       const i = cache.mensagens.findIndex((m) => m.clientNonce === mensagem.clientNonce);
       if (i >= 0) {
@@ -146,7 +156,7 @@ export function receberMensagem(qc: QueryClient, mensagem: Message): void {
 }
 
 export function atualizarMensagem(qc: QueryClient, mensagem: Message): void {
-  mexer(qc, mensagem.channelId, (cache) => ({
+  mexer(qc, idDoAlvo(mensagem), (cache) => ({
     ...cache,
     mensagens: cache.mensagens.map((m) => (m.id === mensagem.id ? mensagem : m)),
   }));
@@ -198,7 +208,7 @@ export function mexerNaReacao(
 }
 
 export function inserirOtimista(qc: QueryClient, mensagem: MensagemLocal): void {
-  mexer(qc, mensagem.channelId, (cache) => ({
+  mexer(qc, idDoAlvo(mensagem), (cache) => ({
     ...cache,
     mensagens: [...cache.mensagens, mensagem],
   }));
@@ -233,24 +243,24 @@ export function descartarOtimista(qc: QueryClient, channelId: string, clientNonc
  * Recarregar o canal inteiro seria mais simples e jogaria fora a posição de
  * rolagem de quem estava lendo o histórico. Aqui só o rabo da lista muda.
  */
-export async function recuperarDesdeAUltima(qc: QueryClient, channelId: string): Promise<void> {
-  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(channelId));
+export async function recuperarDesdeAUltima(qc: QueryClient, alvo: Alvo): Promise<void> {
+  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(alvo.id));
   if (!cache) return;
 
   const ultima = [...cache.mensagens].reverse().find((m) => !m.local);
   if (!ultima) {
-    await qc.invalidateQueries({ queryKey: chaveDoCanal(channelId) });
+    await qc.invalidateQueries({ queryKey: chaveDoCanal(alvo.id) });
     return;
   }
 
   const r = await api<RespostaHistorico>(
-    `/channels/${channelId}/messages?limit=${PAGINA}&after=${ultima.id}`,
+    `${caminhoDo(alvo)}/messages?limit=${PAGINA}&after=${ultima.id}`,
   );
   for (const mensagem of r.messages) receberMensagem(qc, mensagem);
 
   // Mais de uma página perdida: o buraco no meio não se fecha adicionando o
   // fim. Recomeça do zero, que é o único jeito honesto.
-  if (r.hasMore) await qc.invalidateQueries({ queryKey: chaveDoCanal(channelId) });
+  if (r.hasMore) await qc.invalidateQueries({ queryKey: chaveDoCanal(alvo.id) });
 }
 
 // --- threads ---------------------------------------------------------------
@@ -280,7 +290,7 @@ function somarNaThread(qc: QueryClient, resposta: Message): void {
   const parentId = resposta.parentId;
   if (!parentId) return;
 
-  mexer(qc, resposta.channelId, (cache) => ({
+  mexer(qc, idDoAlvo(resposta), (cache) => ({
     ...cache,
     mensagens: cache.mensagens.map((m) =>
       m.id === parentId

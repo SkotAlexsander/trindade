@@ -9,6 +9,7 @@ import { useCarregarAntigas, useMessages, type MensagemLocal } from './queries';
 import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco, useThread } from './store';
 import { useAcoesDaMensagem } from './useAcoes';
 import { useMarcarLido } from './leitura';
+import type { Alvo } from './alvo';
 import { useTarefas } from '../tasks/queries';
 import { useEnquetes } from '../polls/queries';
 import { useEnviarMensagem } from './useEnviar';
@@ -33,16 +34,18 @@ const GATILHO_DO_TOPO = 600;
 const LIMITE_SEM_JANELA = 200;
 
 export interface MessageListProps {
-  channelId: string;
+  /** Canal ou conversa privada: a lista é a mesma. */
+  alvo: Alvo;
   pessoas: readonly User[];
   canais: readonly Channel[];
 }
 
-export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
+export function MessageList({ alvo, pessoas, canais }: MessageListProps) {
+  const channelId = alvo.id;
   const eu = useAuth((s) => s.user);
   const permissoes = useAuth((s) => s.permissions);
-  const { data, isPending } = useMessages(channelId);
-  const { carregar, carregando } = useCarregarAntigas(channelId);
+  const { data, isPending } = useMessages(alvo);
+  const { carregar, carregando } = useCarregarAntigas(alvo);
   const { tentarDeNovo, descartar } = useEnviarMensagem();
   const { reagir, guardar, fixar, apagar, paraNotas, virarTarefa } = useAcoesDaMensagem();
 

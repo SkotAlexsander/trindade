@@ -14,6 +14,7 @@ import { verifyAccessToken } from '../lib/auth/tokens.js';
 import { effectivePermissions } from '../lib/auth/permissions.js';
 import * as usersDb from '../db/users.js';
 import * as channelsDb from '../db/channels.js';
+import * as conversationsDb from '../db/conversations.js';
 import * as messagesDb from '../db/messages.js';
 import * as attachmentsDb from '../db/attachments.js';
 import { toApiChannel } from '../services/channel-view.js';
@@ -185,14 +186,29 @@ async function tratar(conn: gw.Connection, bruto: Buffer, app: FastifyInstance):
       conn.subscribed = new Set(evento.d.channelIds);
       return;
 
-    case 'TYPING_START':
+    case 'TYPING_START': {
       // Não existe TYPING_STOP: quem recebe guarda o instante e limpa sozinho
       // após 8 segundos. Ver docs/06-realtime-e-webrtc.md.
-      gw.broadcast(
-        { op: 'TYPING_START', d: { channelId: evento.d.channelId, userId: conn.userId } },
-        conn.sessionId,
-      );
+      const d = {
+        channelId: evento.d.channelId ?? null,
+        conversationId: evento.d.conversationId ?? null,
+        userId: conn.userId,
+      };
+
+      // Numa conversa privada, "está digitando" também é privado: quem não é
+      // membro não fica sabendo nem que há alguém escrevendo ali.
+      if (d.conversationId) {
+        if (!(await conversationsDb.ehMembro(d.conversationId, conn.userId))) return;
+        for (const membro of await conversationsDb.membros(d.conversationId)) {
+          if (membro.left_at || membro.user_id === conn.userId) continue;
+          gw.sendToUser(membro.user_id, { op: 'TYPING_START', d });
+        }
+        return;
+      }
+
+      gw.broadcast({ op: 'TYPING_START', d }, conn.sessionId);
       return;
+    }
 
     case 'PRESENCE_UPDATE': {
       conn.status = evento.d.status;
@@ -347,14 +363,35 @@ async function criarMensagem(
     return;
   }
 
-  const canal = await channelsDb.findChannelById(d.channelId);
-  if (!canal || canal.archived_at) {
-    gw.send(conn, { op: 'ERROR', d: { code: 'CHANNEL_NOT_FOUND', message: 'este canal não existe' } });
-    return;
+  /*
+   * O alvo, e quem tem direito a ele.
+   *
+   * Em conversa privada a checagem é **ser membro**, e `ADMINISTRATOR` não
+   * passa: é a única exceção ao bitfield no produto inteiro, e é deliberada.
+   * Ver design/10-conversas-privadas.md.
+   */
+  if (d.conversationId) {
+    if (!(await conversationsDb.ehMembro(d.conversationId, conn.userId))) {
+      gw.send(conn, {
+        op: 'ERROR',
+        d: { code: 'NOT_A_MEMBER', message: 'esta conversa não é sua' },
+      });
+      return;
+    }
+  } else {
+    const canal = await channelsDb.findChannelById(d.channelId ?? '');
+    if (!canal || canal.archived_at) {
+      gw.send(conn, {
+        op: 'ERROR',
+        d: { code: 'CHANNEL_NOT_FOUND', message: 'este canal não existe' },
+      });
+      return;
+    }
   }
 
   const { row, novo } = await messagesDb.createMessage({
-    channelId: d.channelId,
+    channelId: d.channelId ?? null,
+    conversationId: d.conversationId ?? null,
     authorId: conn.userId,
     content: d.content,
     clientNonce: d.clientNonce,
@@ -382,12 +419,13 @@ async function criarMensagem(
   // ganham dono. O `costurar` devolve **o que casou** — anexo de outra pessoa,
   // de outro canal ou já usado em outra mensagem fica de fora em silêncio, e a
   // mensagem sai assim mesmo: ela vale mais que o anexo, e já está no banco.
-  const anexos = await attachmentsDb.costurar(
-    row.id,
-    d.attachmentIds ?? [],
-    conn.userId,
-    d.channelId,
-  );
+  // O anexo casa pelo alvo em que foi enviado: canal com canal, conversa com
+  // conversa. É o que impede reaproveitar um arquivo pendente de outro lugar
+  // — e é a mesma regra dos dois lados, sem exceção para o privado.
+  const anexos = await attachmentsDb.costurar(row.id, d.attachmentIds ?? [], conn.userId, {
+    channelId: d.channelId ?? null,
+    conversationId: d.conversationId ?? null,
+  });
   if (anexos.length < (d.attachmentIds?.length ?? 0)) {
     app.log.warn(
       { pedidos: d.attachmentIds?.length ?? 0, costurados: anexos.length },
@@ -397,9 +435,22 @@ async function criarMensagem(
   const paraApi = anexos.map(toApiAttachment);
 
   // Menções contam para o badge de quem foi citado, nunca para quem escreveu.
+  const alvo = { channelId: d.channelId ?? null, conversationId: d.conversationId ?? null };
   const mencionados = await messagesDb.resolveMentions(d.content);
   if (mencionados.length > 0) {
-    await messagesDb.somarMencoes(d.channelId, mencionados, conn.userId);
+    await messagesDb.somarMencoes(alvo, mencionados, conn.userId);
+  }
+
+  /* Em conversa privada, **toda** mensagem conta como menção para quem
+     recebe: alguém falou diretamente com você. É a exceção da tabela de
+     notificações, e ela mora aqui porque o contador é do servidor. */
+  if (d.conversationId) {
+    const outros = (await conversationsDb.membros(d.conversationId))
+      .filter((m) => !m.left_at && m.user_id !== conn.userId)
+      .map((m) => m.user_id);
+    await messagesDb.somarMencoes(alvo, outros, conn.userId);
+    // A conversa escondida volta para a lista de quem a escondeu.
+    await conversationsDb.revelar(d.conversationId);
   }
 
   mensagensCriadas.inc();
@@ -412,7 +463,16 @@ async function criarMensagem(
       d: toApiMessage(row, { meuId: outra.userId, attachments: paraApi }),
     });
   }
-  for (const c of gw.online()) {
+  /* Em canal, todo mundo; em conversa, só os membros. Este `for` é o lugar
+     onde o privado deixa de ser público — mandar para `gw.online()` numa
+     conversa entregaria a mensagem às cinco pessoas. */
+  const destinos = d.conversationId
+    ? (await conversationsDb.membros(d.conversationId))
+        .filter((m) => !m.left_at)
+        .map((m) => m.user_id)
+    : gw.online();
+
+  for (const c of destinos) {
     if (c === conn.userId) continue;
     gw.sendToUser(c, {
       op: 'MESSAGE_CREATE',

@@ -131,7 +131,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
 - [x] Fase 9 — ferramentas de projeto e notificações
-- [ ] Fase 10 — conversas privadas e quadro
+- [ ] Fase 10 — conversas privadas e quadro (conversas prontas; quadro em aberto)
 
 ---
 
@@ -790,6 +790,41 @@ só num lugar.
 manipuladores pararem no tooltip, e o menu de silenciar simplesmente não abria.
 O `label` do `IconButton` já é o texto acessível.
 
+### Fase 10 — em andamento
+
+**Fatia 1: conversas privadas.** A mensagem de conversa é a **mesma mensagem**
+de canal, na mesma tabela, com `conversation_id` no lugar de `channel_id` e um
+`check` de alvo único. Do lado do cliente o mesmo movimento virou o tipo `Alvo`
+em `features/messages/alvo.ts`: a lista, o compositor, o cache e o "está
+digitando" atravessam os dois casos sem duplicar nada. Duas listas de mensagens
+seria manter duas rolagens em dia.
+
+**`ADMINISTRATOR` não passa numa conversa privada.** É a única exceção ao
+bitfield no produto, e está testada pelo lado que importa: o teste confere que
+a resposta da API não traz o conteúdo, e não que a tela não o desenha.
+
+**A promessa da primeira abertura foi reescrita.** O pacote trazia "Nem quem
+administra o servidor tem acesso", e a frase era falsa — não há E2EE, e quem
+administra o servidor é exatamente quem tem acesso ao banco. O produto diz o
+que garante ("ninguém vê pela aplicação") e diz o que não garante ("quem tem
+acesso ao banco consegue ler"), nessa ordem.
+
+**Abrir uma direta que já existe fazia ela sumir da barra lateral.** A rota
+devolvia uma carga montada à mão, com `lastMessageAt` nulo, e o cliente
+sobrescrevia a entrada boa com uma em branco — que a lista então filtrava, por
+regra. Agora cada membro recebe **a sua** visão da conversa, com o histórico e
+os contadores dele; o payload em branco só sobrou onde ele é a verdade, no
+grupo recém-criado.
+
+A chave primária de `read_state` virou dois índices únicos parciais. Chave
+primária não aceita coluna nula, e o `on conflict` precisa nomear qual dos dois
+índices está inferindo — por isso `marcarLido` e `somarMencoes` têm dois
+`insert` quase iguais em vez de um com `coalesce`.
+
+`attachments` também ganhou `conversation_id` (migration 022, não prevista):
+sem ela, não dá para mandar uma captura de tela numa direta, e uma conversa
+privada em que não dá para mandar imagem não é a mesma coisa que um canal.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -813,6 +848,9 @@ previstas, a fase 9 gastou três números com coisas que o pacote não antecipou
 | `018_mensagem_de_sistema` | a conclusão de tarefa precisa de uma mensagem que não é fala de ninguém; `messages.kind` chegou aqui, antes das enquetes |
 | `019_membro_mexe_no_quadro` | o mesmo da 017, para `MANAGE_TASKS` |
 
-Com isso, `polls` virou **020** (aplicada como `020_enquetes`), e
-`conversations` vira **021** e `boards` **022**.
+Com isso, `polls` virou **020** (aplicada como `020_enquetes`) e
+`conversations` virou **021** (`021_conversas`). A fase 10 gastou mais um
+número com `022_anexo_em_conversa` — a 014 deu a `attachments` um `channel_id
+not null`, e conversa privada precisa do mesmo lugar para o anexo nascer —,
+então `boards` vira **023**.
 Migration aplicada não se edita; se algo estiver errado, crie a próxima.

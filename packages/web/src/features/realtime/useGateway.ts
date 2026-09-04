@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { Channel, Task, User } from '@trindade/shared';
+import type { Channel, Message, Task, User } from '@trindade/shared';
 import { useToast } from '../../components';
 import { irPara } from '../../lib/navegacao';
 import * as ws from '../../lib/ws';
@@ -17,6 +17,8 @@ import {
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
 import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { alvoDaMensagem, canal, idDoAlvo, type Alvo } from '../messages/alvo';
+import { mensagemNaConversa, receberConversa } from '../conversations/queries';
 import { avisar } from '../notifications/motor';
 import type { Motivo } from '../notifications/regras';
 import { receberEnquete } from '../polls/queries';
@@ -115,8 +117,13 @@ export function useGateway(): void {
       ws.on('MESSAGE_CREATE', (d) => {
         if (d.clientNonce) confirmarNonce(d.clientNonce);
         receberMensagem(qc, d);
+
+        const alvoId = idDoAlvo(d);
+        // A conversa sobe para o topo da lista, e uma direta que ainda não
+        // tinha mensagem passa a aparecer nela.
+        mensagemNaConversa(qc, d);
         // Quem mandou parou de digitar por definição.
-        useDigitando.getState().esquecer(d.channelId, d.author.id);
+        useDigitando.getState().esquecer(alvoId, d.author.id);
 
         if (d.author.id === meuId) return;
 
@@ -127,18 +134,29 @@ export function useGateway(): void {
         const canal = qc
           .getQueryData<Channel[]>(['channels'])
           ?.find((c) => c.id === d.channelId);
+
+        /* Conversa privada **notifica como menção**: alguém falou diretamente
+           com você. É a exceção da tabela de design/09-notificacoes.md, e ela
+           cabe aqui porque é o motivo que muda, não a regra. */
+        const motivo = d.conversationId
+          ? ('mencao' as const)
+          : motivoDaMensagem(d, {
+              citou,
+              aqui: citados.has('aqui'),
+              respondeuVoce: respondeuVoce(qc, d, meuId),
+            });
+
         const decisao = avisar({
-          motivo: motivoDaMensagem(d, {
-            citou,
-            aqui: citados.has('aqui'),
-            respondeuVoce: respondeuVoce(qc, d, meuId),
-          }),
-          channelId: d.channelId,
+          motivo,
+          channelId: alvoId,
           autorId: d.author.id,
-          titulo: `${d.author.displayName}${canal ? ` em #${canal.name}` : ''}`,
+          titulo: d.conversationId
+            ? d.author.displayName
+            : `${d.author.displayName}${canal ? ` em #${canal.name}` : ''}`,
           corpo: d.content ?? '(anexo)',
           ir: () => {
-            if (canal) irPara(`/c/${canal.slug}?m=${d.id}`);
+            if (d.conversationId) irPara(`/d/${d.conversationId}?m=${d.id}`);
+            else if (canal) irPara(`/c/${canal.slug}?m=${d.id}`);
           },
         });
 
@@ -146,17 +164,17 @@ export function useGateway(): void {
            resposta à sua mensagem e movimento na thread também chamam você.
            Resposta de thread não conta como não lida, porém — ela não muda o
            estado da linha principal do canal. */
-        useLeitura.getState().somar(d.channelId, decisao.badge, !d.parentId);
+        useLeitura.getState().somar(alvoId, decisao.badge, !d.parentId);
       }),
 
       ws.on('MESSAGE_UPDATE', (d) => atualizarMensagem(qc, d)),
-      ws.on('MESSAGE_DELETE', (d) => removerMensagem(qc, d.id, d.channelId)),
+      ws.on('MESSAGE_DELETE', (d) => removerMensagem(qc, d.id, d.conversationId ?? d.channelId ?? '')),
       ws.on('REACTION_ADD', (d) => mexerNaReacao(qc, d, meuId, true)),
       ws.on('REACTION_REMOVE', (d) => mexerNaReacao(qc, d, meuId, false)),
 
       ws.on('TYPING_START', (d) => {
         if (d.userId === meuId) return;
-        useDigitando.getState().marcar(d.channelId, d.userId);
+        useDigitando.getState().marcar(d.conversationId ?? d.channelId ?? '', d.userId);
       }),
 
       ws.on('PRESENCE_UPDATE', (d) => {
@@ -218,6 +236,10 @@ export function useGateway(): void {
         });
       }),
 
+      ws.on('CONVERSATION_UPDATE', (d) => {
+        receberConversa(qc, d.conversation);
+      }),
+
       ws.on('POLL_UPDATE', (d) => {
         receberEnquete(qc, d.poll);
       }),
@@ -272,17 +294,17 @@ export function useGateway(): void {
     return ws.onAbertura(({ reconexao }) => {
       if (!reconexao) return;
 
-      // Só os canais que já estão no cache: buscar histórico de canal que
-      // ninguém abriu é trabalho para ninguém ver.
-      const canais = qc
+      // Só o que já está no cache — canal ou conversa: buscar histórico de
+      // lugar que ninguém abriu é trabalho para ninguém ver.
+      const abertos = qc
         .getQueryCache()
         .findAll({ queryKey: ['messages'] })
         .map((q) => q.queryKey[1])
         .filter((id): id is string => typeof id === 'string');
 
-      for (const channelId of canais) {
-        void recuperarDesdeAUltima(qc, channelId).catch(() => {
-          void qc.invalidateQueries({ queryKey: chaveDoCanal(channelId) });
+      for (const alvoId of abertos) {
+        void recuperarDesdeAUltima(qc, alvoDoCache(qc, alvoId)).catch(() => {
+          void qc.invalidateQueries({ queryKey: chaveDoCanal(alvoId) });
         });
       }
     });
@@ -317,10 +339,23 @@ function motivoDaMensagem(
  */
 function respondeuVoce(
   qc: QueryClient,
-  d: { channelId: string; replyToId: string | null },
+  d: Pick<Message, 'channelId' | 'conversationId' | 'replyToId'>,
   meuId: string,
 ): boolean {
   if (!d.replyToId) return false;
-  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(d.channelId));
+  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(idDoAlvo(d)));
   return cache?.mensagens.some((m) => m.id === d.replyToId && m.author.id === meuId) ?? false;
+}
+
+/**
+ * Canal ou conversa, a partir do que já está no cache.
+ *
+ * A chave do cache é só o id, e ele não diz de que tipo é. A primeira mensagem
+ * guardada diz — e quando não há nenhuma, `recuperarDesdeAUltima` não tem de
+ * onde continuar e sai sozinha, então o palpite de canal não custa nada.
+ */
+function alvoDoCache(qc: QueryClient, alvoId: string): Alvo {
+  const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(alvoId));
+  const primeira = cache?.mensagens.find((m) => !m.local);
+  return primeira ? alvoDaMensagem(primeira) : canal(alvoId);
 }

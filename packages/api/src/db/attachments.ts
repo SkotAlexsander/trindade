@@ -12,7 +12,9 @@ export interface AttachmentRow {
   id: string;
   message_id: string | null;
   uploader_id: string;
-  channel_id: string;
+  /** Um dos dois: o anexo nasce num canal ou numa conversa privada. */
+  channel_id: string | null;
+  conversation_id: string | null;
   storage_key: string;
   filename: string;
   content_type: string;
@@ -25,13 +27,14 @@ export interface AttachmentRow {
 }
 
 const COLUNAS = sql`
-  id, message_id, uploader_id, channel_id, storage_key, filename,
+  id, message_id, uploader_id, channel_id, conversation_id, storage_key, filename,
   content_type, byte_size, width, height, blurhash, sort_order, created_at
 `;
 
 export async function criarPendente(entrada: {
   uploaderId: string;
-  channelId: string;
+  channelId?: string | null;
+  conversationId?: string | null;
   storageKey: string;
   filename: string;
   contentType: string;
@@ -42,10 +45,11 @@ export async function criarPendente(entrada: {
 }): Promise<AttachmentRow> {
   const linhas = await sql<AttachmentRow[]>`
     insert into attachments
-      (uploader_id, channel_id, storage_key, filename, content_type,
+      (uploader_id, channel_id, conversation_id, storage_key, filename, content_type,
        byte_size, width, height, blurhash)
     values
-      (${entrada.uploaderId}, ${entrada.channelId}, ${entrada.storageKey},
+      (${entrada.uploaderId}, ${entrada.channelId ?? null}, ${entrada.conversationId ?? null},
+       ${entrada.storageKey},
        ${entrada.filename}, ${entrada.contentType}, ${entrada.byteSize},
        ${entrada.width}, ${entrada.height}, ${entrada.blurhash})
     returning ${COLUNAS}
@@ -84,7 +88,7 @@ export async function costurar(
   messageId: string,
   ids: readonly string[],
   uploaderId: string,
-  channelId: string,
+  alvo: { channelId?: string | null; conversationId?: string | null },
 ): Promise<AttachmentRow[]> {
   if (ids.length === 0) return [];
   // `with ordinality` traz o índice de cada id no array, e é dele que sai a
@@ -96,9 +100,13 @@ export async function costurar(
       from unnest(${sql.array(ids as string[])}::uuid[]) with ordinality as escolha(id, ord)
      where a.id = escolha.id
        and a.uploader_id = ${uploaderId}
-       and a.channel_id = ${channelId}
+       and ${
+         alvo.conversationId
+           ? sql`a.conversation_id = ${alvo.conversationId}`
+           : sql`a.channel_id = ${alvo.channelId ?? null}`
+       }
        and a.message_id is null
-    returning ${sql`a.id, a.message_id, a.uploader_id, a.channel_id, a.storage_key,
+    returning ${sql`a.id, a.message_id, a.uploader_id, a.channel_id, a.conversation_id, a.storage_key,
                     a.filename, a.content_type, a.byte_size, a.width, a.height,
                     a.blurhash, a.sort_order, a.created_at`}
   `;

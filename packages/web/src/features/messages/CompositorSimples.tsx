@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { IconButton } from '../../components';
 import { Send } from '../../components/icones';
 import { useEnviarMensagem } from './useEnviar';
+import type { Alvo } from './alvo';
 import styles from './messages.module.css';
 
 /**
@@ -17,12 +18,12 @@ const ALTURA_MIN = 36;
 const ALTURA_MAX = 140;
 
 export interface CompositorSimplesProps {
-  channelId: string;
+  alvo: Alvo;
   parentId: string;
   rotulo: string;
 }
 
-export function CompositorSimples({ channelId, parentId, rotulo }: CompositorSimplesProps) {
+export function CompositorSimples({ alvo, parentId, rotulo }: CompositorSimplesProps) {
   const { enviar } = useEnviarMensagem();
   const campo = useRef<HTMLTextAreaElement>(null);
   const [texto, setTexto] = useState('');
@@ -41,9 +42,9 @@ export function CompositorSimples({ channelId, parentId, rotulo }: CompositorSim
   const submeter = useCallback(() => {
     const conteudo = texto.trim();
     if (!conteudo) return;
-    enviar({ channelId, content: conteudo, parentId });
+    enviar({ alvo, content: conteudo, parentId });
     setTexto('');
-  }, [texto, enviar, channelId, parentId]);
+  }, [texto, enviar, alvo, parentId]);
 
   return (
     <div className={styles.compositorPainel}>

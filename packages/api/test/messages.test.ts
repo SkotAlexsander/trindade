@@ -319,7 +319,7 @@ describe('menções e leitura', () => {
     const citados = await messagesDb.resolveMentions('oi @bruno, e eu @ana também');
     expect(citados).toHaveLength(2);
 
-    await messagesDb.somarMencoes(canalId, citados, ana.id);
+    await messagesDb.somarMencoes({ channelId: canalId }, citados, ana.id);
 
     const estados = await messagesDb.listReadState(ana.id);
     expect(estados.find((e) => e.channelId === canalId)?.mentionCount ?? 0).toBe(0);
@@ -333,7 +333,7 @@ describe('menções e leitura', () => {
     client = createClient(app);
     const { access, id } = await entrar('ana');
     const { row } = await escrever(id, 'qualquer coisa');
-    await messagesDb.somarMencoes(canalId, [id], 'outra-pessoa');
+    await messagesDb.somarMencoes({ channelId: canalId }, [id], 'outra-pessoa');
 
     const res = await client.inject({
       method: 'PUT',

@@ -72,7 +72,15 @@ export interface Reaction {
 
 export interface Message {
   id: string;
-  channelId: string;
+  /**
+   * O alvo: exatamente um dos dois vem preenchido.
+   *
+   * Conversa privada usa a mesma tabela e o mesmo tipo de mensagem — é isso
+   * que reaproveita busca, reações, anexos, threads e o gateway sem duplicar
+   * nada. Ver design/10-conversas-privadas.md.
+   */
+  channelId: string | null;
+  conversationId: string | null;
   author: MessageAuthor;
   content: string | null;
   /**
@@ -159,6 +167,32 @@ export interface Task {
   createdBy: string;
   createdAt: string;
   completedAt: string | null;
+}
+
+/**
+ * Uma conversa privada: direta entre duas pessoas, ou grupo de três a quatro.
+ *
+ * `members` traz só quem não saiu. Quem saiu de um grupo continua no histórico
+ * dos outros, e é por isso que a lista de membros não serve para ler mensagem
+ * antiga — serve para desenhar quem está lá agora.
+ */
+export interface Conversation {
+  id: string;
+  kind: 'direct' | 'group';
+  /** Só grupo tem nome, e mesmo grupo pode não ter. */
+  name: string | null;
+  members: string[];
+  createdBy: string | null;
+  createdAt: string;
+  lastMessageAt: string | null;
+  /** Prévia da última mensagem, para a lista. */
+  lastMessage: string | null;
+  lastAuthorId: string | null;
+  unreadCount: number;
+  mentionCount: number;
+  mutedUntil: string | null;
+  /** Escondida da sua lista; volta na próxima mensagem. */
+  hidden: boolean;
 }
 
 /**

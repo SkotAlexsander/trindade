@@ -6,6 +6,7 @@ import { CriarConta } from './features/auth/CriarConta';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { AppShell } from './features/shell/AppShell';
 import { Canal } from './routes/Canal';
+import { Conversa } from './routes/Conversa';
 import { Config } from './routes/Config';
 import { DevUi } from './routes/DevUi';
 
@@ -28,6 +29,7 @@ export function App() {
       >
         <Route path="/" element={<Canal />} />
         <Route path="/c/:slug" element={<Canal />} />
+        <Route path="/d/:id" element={<Conversa />} />
         <Route path="/config/:secao" element={<Config />} />
       </Route>
 

@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import type { Channel, Message, Poll, Reaction, Task, User, UserStatus } from './types.js';
+import type {
+  Channel,
+  Conversation,
+  Message,
+  Poll,
+  Reaction,
+  Task,
+  User,
+  UserStatus,
+} from './types.js';
 import { ANEXOS_POR_MENSAGEM, messageBodySchema, userStatusSchema } from './schemas.js';
 
 /**
@@ -16,7 +25,11 @@ export const clientEventSchema = z.discriminatedUnion('op', [
     op: z.literal('MESSAGE_CREATE'),
     d: z
       .object({
-        channelId: z.string().uuid(),
+        /* Exatamente um dos dois: canal ou conversa privada. A mensagem é a
+           mesma coisa nos dois casos, e é isso que reaproveita reações,
+           anexos, threads e busca sem duplicar nada. */
+        channelId: z.string().uuid().nullish(),
+        conversationId: z.string().uuid().nullish(),
         content: messageBodySchema,
         // UUID gerado no cliente. É o que evita duplicata quando a rede oscila:
         // o índice único (author_id, client_nonce) é a barreira final.
@@ -30,9 +43,19 @@ export const clientEventSchema = z.discriminatedUnion('op', [
       .refine((d) => d.content.trim().length > 0 || (d.attachmentIds?.length ?? 0) > 0, {
         message: 'mensagem vazia',
         path: ['content'],
+      })
+      .refine((d) => Boolean(d.channelId) !== Boolean(d.conversationId), {
+        message: 'mensagem precisa de um alvo, e de um só',
+        path: ['channelId'],
       }),
   }),
-  z.object({ op: z.literal('TYPING_START'), d: z.object({ channelId: z.string().uuid() }) }),
+  z.object({
+    op: z.literal('TYPING_START'),
+    d: z.object({
+      channelId: z.string().uuid().nullish(),
+      conversationId: z.string().uuid().nullish(),
+    }),
+  }),
   /**
    * Microfone e surdez.
    *
@@ -92,7 +115,15 @@ export type ClientEvent = z.infer<typeof clientEventSchema>;
 // --- servidor → cliente ----------------------------------------------------
 
 export interface ReadStateEntry {
-  channelId: string;
+  /**
+   * O alvo, canal ou conversa — exatamente um dos dois.
+   *
+   * Não lidas, menções e silêncio valem para conversa privada exatamente como
+   * valem para canal, e por isso são a mesma linha de `read_state` e o mesmo
+   * evento. O cliente guarda tudo num mapa só, indexado pelo id do alvo.
+   */
+  channelId: string | null;
+  conversationId: string | null;
   lastReadMessageId: string | null;
   /**
    * Quantas mensagens de outras pessoas há depois da última lida.
@@ -134,13 +165,18 @@ export type ServerEvent =
   | { op: 'READY'; d: ReadyPayload }
   | { op: 'MESSAGE_CREATE'; d: Message }
   | { op: 'MESSAGE_UPDATE'; d: Message }
-  | { op: 'MESSAGE_DELETE'; d: { id: string; channelId: string } }
+  | {
+      op: 'MESSAGE_DELETE';
+      d: { id: string; channelId: string | null; conversationId: string | null };
+    }
   | { op: 'REACTION_ADD'; d: { messageId: string; channelId: string; userId: string; emoji: string } }
   | {
       op: 'REACTION_REMOVE';
       d: { messageId: string; channelId: string; userId: string; emoji: string };
     }
-  | { op: 'TYPING_START'; d: { channelId: string; userId: string } }
+  | { op: 'TYPING_START'; d: { channelId: string | null; conversationId: string | null; userId: string } }
+  /** Uma conversa privada nasceu, mudou de nome, ou alguém entrou e saiu. */
+  | { op: 'CONVERSATION_UPDATE'; d: { conversation: Conversation } }
   | { op: 'PRESENCE_UPDATE'; d: { userId: string; status: UserStatus; customStatus: string | null } }
   | { op: 'USER_UPDATE'; d: User }
   | { op: 'VOICE_STATE_UPDATE'; d: VoiceState }

@@ -335,6 +335,18 @@ esgota a cota e o próximo falha em `wait_for_url` — o que parece defeito da
 aplicação é a proteção funcionando. Espere a janela ou reinicie a API, que
 guarda a contagem em memória.
 
+**`fase-10-conversas.py`** — 11 verificações das conversas privadas, com três
+navegadores: abrir a direta pelo cartão de perfil, a lista mostrar a conversa
+só depois da primeira mensagem, o outro receber como menção, **uma terceira
+pessoa não ver nada**, e abrir a mesma direta de novo não criar uma segunda.
+
+A prova de que o administrador não passa está no teste de API, que olha a
+resposta crua — na tela só se vê o que foi desenhado, e o que vaza vaza no JSON.
+
+**"Este é o começo da conversa" não é o estado vazio.** Ela aparece quando há
+mensagens e não há mais antigas; o vazio de verdade diz "Nenhuma mensagem
+ainda". Trocar os dois fez o roteiro acusar uma regra que estava certa.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

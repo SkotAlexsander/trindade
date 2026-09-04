@@ -158,3 +158,19 @@ frase diz "nem quem administra o servidor", e essa é a pessoa com acesso ao
 banco, então a promessa precisa ser honesta: reformule para "Nem quem administra
 o servidor vê pela interface" ou implemente o que a frase promete. O pacote
 assume a reformulação.
+
+**O que foi entregue**, palavra por palavra:
+
+> Só vocês dois veem esta conversa — ninguém mais, nem quem administra o
+> servidor, vê o conteúdo pela aplicação. Não é criptografia ponta a ponta:
+> quem tem acesso ao banco de dados consegue ler.
+
+Duas frases em vez de uma, porque a segunda é a que faz a primeira ser
+verdadeira. Prometer sigilo que o produto não entrega a quem confia na frase é
+pior do que não dizer nada — e quem lê a segunda linha sabe exatamente o que
+está comprando.
+
+O que a aplicação garante de fato: nenhuma rota devolve a conversa a quem não é
+membro (`ADMINISTRATOR` inclusive), o conteúdo não aparece em busca nenhuma
+fora dela, e o gateway só entrega a mensagem aos membros — o `for` que decide
+os destinos é o lugar onde o privado deixaria de ser privado.

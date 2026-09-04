@@ -14,6 +14,7 @@ import { FormularioDeEnquete } from '../polls/FormularioDeEnquete';
 import { FaixaDeAnexos } from './FaixaDeAnexos';
 import { useComposer, useFoco } from './store';
 import { useEnviarMensagem } from './useEnviar';
+import { alvoNoEvento, type Alvo } from './alvo';
 import styles from './messages.module.css';
 
 /**
@@ -32,12 +33,17 @@ const ALTURA_MAX = 240;
 const VAZIO: never[] = [];
 
 export interface ComposerProps {
-  canal: Channel;
+  /** Canal ou conversa privada: o compositor é o mesmo. */
+  alvo: Alvo;
+  /** "#geral", "sala", "Bruno" — o que entra no "escreva em/para". */
+  nome: string;
+  /** "em" para canal, "para" numa direta. Uma preposição decide o tom. */
+  preposicao: 'em' | 'para';
   pessoas: readonly User[];
   canais: readonly Channel[];
 }
 
-export function Composer({ canal, pessoas, canais }: ComposerProps) {
+export function Composer({ alvo, nome, preposicao, pessoas, canais }: ComposerProps) {
   const qc = useQueryClient();
   const { show } = useToast();
   const meuId = useAuth((s) => s.user?.id);
@@ -53,7 +59,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
   const seletorDeArquivo = useRef<HTMLInputElement>(null);
   const ultimoTyping = useRef(0);
 
-  const pendentes = useAnexos((s) => s.porCanal[canal.id]) ?? VAZIO;
+  const pendentes = useAnexos((s) => s.porCanal[alvo.id]) ?? VAZIO;
   const anexarArquivos = useAnexos((s) => s.anexar);
   const limparAnexos = useAnexos((s) => s.limpar);
   const [texto, setTexto] = useState('');
@@ -115,7 +121,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     setTexto('');
     setEnquete(null);
     limparContexto();
-  }, [canal.id, limparContexto]);
+  }, [alvo.id, limparContexto]);
 
   // Entrar em edição traz o texto atual; responder não mexe no que já está
   // escrito — quem já digitou meia frase antes de clicar em responder não a
@@ -138,8 +144,8 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     const agora = Date.now();
     if (agora - ultimoTyping.current < TYPING_THROTTLE_MS) return;
     ultimoTyping.current = agora;
-    enviarPeloSocket({ op: 'TYPING_START', d: { channelId: canal.id } });
-  }, [canal.id]);
+    enviarPeloSocket({ op: 'TYPING_START', d: alvoNoEvento(alvo) });
+  }, [alvo]);
 
   const cancelar = useCallback(() => {
     if (editando) setTexto('');
@@ -166,10 +172,10 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     if ((!conteudo && anexos.length === 0) || algumSubindo(pendentes)) return;
 
     if (editando) {
-      const alvo = editando;
+      const emEdicao = editando;
       limparContexto();
       setTexto('');
-      void api<{ message: Message }>(`/messages/${alvo.id}`, {
+      void api<{ message: Message }>(`/messages/${emEdicao.id}`, {
         method: 'PATCH',
         body: { content: conteudo },
       })
@@ -179,13 +185,13 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     }
 
     enviar({
-      channelId: canal.id,
+      alvo: alvo,
       content: conteudo,
       ...(anexos.length > 0 ? { anexos } : {}),
       ...(respondendoA ? { replyToId: respondendoA.id } : {}),
     });
     setTexto('');
-    limparAnexos(canal.id);
+    limparAnexos(alvo.id);
     limparContexto();
     // O envio é otimista: quem escreveu já vê a mensagem, então o campo pode
     // esvaziar sem esperar resposta nenhuma.
@@ -194,7 +200,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     pendentes,
     editando,
     enviar,
-    canal.id,
+    alvo,
     qc,
     show,
     respondendoA,
@@ -204,12 +210,12 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
 
   /** `↑` no campo vazio traz a sua última mensagem para edição. */
   const editarUltima = useCallback(() => {
-    const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(canal.id));
+    const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(alvo.id));
     const minha = [...(cache?.mensagens ?? [])]
       .reverse()
       .find((m) => m.author.id === meuId && !m.local && !m.deletedAt && m.content);
     if (minha) editar(minha);
-  }, [qc, canal.id, meuId, editar]);
+  }, [qc, alvo.id, meuId, editar]);
 
   const inserir = useCallback((trecho: string) => {
     const el = campo.current;
@@ -227,10 +233,10 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     (arquivos: FileList | null) => {
       const lista = arquivos ? [...arquivos] : [];
       if (lista.length === 0) return;
-      anexarArquivos(canal.id, lista);
+      anexarArquivos(alvo.id, lista);
       campo.current?.focus();
     },
-    [anexarArquivos, canal.id],
+    [anexarArquivos, alvo.id],
   );
 
   /**
@@ -245,9 +251,9 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
       const arquivos = [...e.clipboardData.files];
       if (arquivos.length === 0) return;
       e.preventDefault();
-      anexarArquivos(canal.id, arquivos);
+      anexarArquivos(alvo.id, arquivos);
     },
-    [anexarArquivos, canal.id],
+    [anexarArquivos, alvo.id],
   );
 
   const aoTeclar = useCallback(
@@ -303,7 +309,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
       // citação, todos focáveis, e a tabulação pararia no primeiro deles. A
       // lista é **um** ponto de parada, então o salto é explícito.
       if (e.key === 'Tab' && e.shiftKey) {
-        const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(canal.id));
+        const cache = qc.getQueryData<CacheCanal>(chaveDoCanal(alvo.id));
         const ultima = cache?.mensagens[cache.mensagens.length - 1];
         if (!ultima) return;
         e.preventDefault();
@@ -327,7 +333,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
       texto,
       editarUltima,
       qc,
-      canal.id,
+      alvo.id,
       focar,
       abertas,
       sugestoes,
@@ -379,7 +385,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
 
       {enquete ? (
         <FormularioDeEnquete
-          channelId={canal.id}
+          channelId={alvo.id}
           perguntaInicial={enquete.pergunta}
           onFechar={() => {
             setEnquete(null);
@@ -399,7 +405,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
         </div>
       ) : null}
 
-      <FaixaDeAnexos channelId={canal.id} />
+      <FaixaDeAnexos channelId={alvo.id} />
 
       <div
         className={styles.compositor}
@@ -455,8 +461,8 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
           value={texto}
           // O `#` é do canal de texto. Um canal de voz tem conversa igual,
           // mas chamá-lo de `#sala` contradiz o ícone ao lado do nome.
-          placeholder={`escreva em ${canal.kind === 'voice' ? '' : '#'}${canal.name}`}
-          aria-label={`Escrever em ${canal.name}`}
+          placeholder={`escreva ${preposicao} ${nome}`}
+          aria-label={`Escrever ${preposicao} ${nome}`}
           onChange={(e) => {
             setTexto(e.target.value);
             setCursor(e.target.selectionStart);

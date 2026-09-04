@@ -90,12 +90,18 @@ export const useLeitura = create<LeituraState>((set) => ({
       },
     })),
 
-  /** O estado como o servidor mandou — inclusive o silêncio. */
+  /**
+   * O estado como o servidor mandou — inclusive o silêncio.
+   *
+   * A chave é o id do alvo: canal e conversa privada dividem este mapa, e é
+   * isso que faz o contador do título e o "não lido" valerem para os dois sem
+   * uma segunda implementação.
+   */
   aplicar: (e) =>
     set((s) => ({
       porCanal: {
         ...s.porCanal,
-        [e.channelId]: {
+        [e.conversationId ?? e.channelId ?? '']: {
           unreadCount: e.unreadCount,
           mentionCount: e.mentionCount,
           lastReadMessageId: e.lastReadMessageId,

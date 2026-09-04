@@ -5,6 +5,7 @@ import { useToast } from '../../components';
 import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
 import { atualizarMensagem, mexerNaReacao, type MensagemLocal } from './queries';
+import { idDoAlvo } from './alvo';
 
 /**
  * As ações de uma mensagem.
@@ -21,7 +22,9 @@ export function useAcoesDaMensagem() {
   const reagir = useCallback(
     (mensagem: Message, emoji: string, tirar: boolean) => {
       if (!eu) return;
-      const d = { messageId: mensagem.id, channelId: mensagem.channelId, userId: eu.id, emoji };
+      // O evento do servidor carrega o id do alvo em `channelId`, seja ele
+      // canal ou conversa: é a chave do cache, e o cache é um só.
+      const d = { messageId: mensagem.id, channelId: idDoAlvo(mensagem), userId: eu.id, emoji };
       mexerNaReacao(qc, d, eu.id, !tirar);
 
       const caminho = `/messages/${mensagem.id}/reactions/${encodeURIComponent(emoji)}`;

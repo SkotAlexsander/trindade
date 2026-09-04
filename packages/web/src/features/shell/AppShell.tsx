@@ -12,6 +12,8 @@ import { DialogoDePerfil } from '../profile/DialogoDePerfil';
 import { DialogoDeConvite } from '../people/DialogoDeConvite';
 import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 import { ChannelList } from '../channels/ChannelList';
+import { ListaDeConversas } from '../conversations/ListaDeConversas';
+import { nomeDaConversa, useConversas } from '../conversations/queries';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
 import { BarraDeChamada } from '../voice/BarraDeChamada';
@@ -85,6 +87,28 @@ export function AppShell() {
   );
   const podeGerenciar = can(permissoes, Perm.MANAGE_CHANNEL);
 
+  const { data: conversas } = useConversas();
+  // A rota da conversa é `/d/:id`; o shell precisa saber qual para o
+  // cabeçalho, e `useParams` aqui não enxerga os parâmetros da rota filha.
+  const idDaConversa = /^\/d\/([^/]+)/.exec(pathname)?.[1] ?? null;
+  const meuIdAtual = useAuth((s) => s.user?.id) ?? '';
+
+  /** O que o cabeçalho precisa de uma conversa: nome e quem está do outro lado. */
+  const conversaAberta = useMemo(() => {
+    const achada = conversas?.find((c) => c.id === idDaConversa);
+    if (!achada) return undefined;
+    const meuId = meuIdAtual;
+    return {
+      id: achada.id,
+      nome: nomeDaConversa(achada, pessoas, meuId),
+      pessoas: achada.members
+        .filter((id) => id !== meuId)
+        .map((id) => pessoas.find((p) => p.id === id))
+        .filter((p): p is (typeof pessoas)[number] => Boolean(p)),
+      completa: achada,
+      todas: pessoas,
+    };
+  }, [conversas, idDaConversa, pessoas, meuIdAtual]);
   const [painel, setPainel] = useState<PainelAberto>(null);
   const pedidoDeQuadro = useQuadro((s) => s.pedido);
   const threadAberta = useThread((s) => s.parentId);
@@ -291,7 +315,12 @@ export function AppShell() {
               <Skeleton height="20px" width="80%" />
             </div>
           ) : (
-            <ChannelList channels={canais} podeGerenciar={podeGerenciar} />
+            <>
+              {/* Acima dos canais: o que é dirigido a você vem antes do que é
+                  do grupo. Ver design/10-conversas-privadas.md. */}
+              <ListaDeConversas conversas={conversas ?? []} pessoas={pessoas} />
+              <ChannelList channels={canais} podeGerenciar={podeGerenciar} />
+            </>
           )}
         </div>
 
@@ -309,6 +338,7 @@ export function AppShell() {
       {/* --- coluna 3: conversa --- */}
       <ChannelHeader
         canal={canalAtual}
+        conversa={conversaAberta}
         painel={painel}
         onPainel={alternarPainel}
         onAbrirGaveta={() => setGaveta(true)}
