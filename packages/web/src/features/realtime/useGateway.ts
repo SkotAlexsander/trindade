@@ -15,6 +15,7 @@ import {
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
 import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { receberEnquete } from '../polls/queries';
 import { receberTarefa } from '../tasks/queries';
 import { useVoz } from '../voice/store';
 import { tocar } from '../voice/sons';
@@ -166,6 +167,10 @@ export function useGateway(): void {
       // já obedecia antes — a checagem que vale é a de lá.
       ws.on('PERMISSIONS_UPDATE', (d) => {
         useAuth.setState({ permissions: BigInt(d.permissions) });
+      }),
+
+      ws.on('POLL_UPDATE', (d) => {
+        receberEnquete(qc, d.poll);
       }),
 
       ws.on('TASK_UPDATE', (d) => {

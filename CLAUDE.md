@@ -728,6 +728,31 @@ depois de um F5 mostrou isso — nenhum teste teria pegado.
 017: o gesto que justifica o quadro é "isso virou tarefa", dito por quem estava
 na conversa.
 
+**Fatia 3: enquetes.** A enquete **é** uma mensagem — `kind = 'poll'`, com a
+pergunta em `content`. Não há tabela paralela de "itens especiais": é isso que
+a faz aparecer na busca, na citação e nas fixadas sem código próprio para cada
+um desses lugares.
+
+**O anonimato é uma regra do servidor.** Em enquete anônima a lista de quem
+votou não sai na resposta da API, nem para quem criou — e é assim que o teste
+verifica, olhando o JSON cru e não a tela. Esconder na interface e mandar no
+payload seria prometer segredo e entregar um `F12`. Pelo mesmo motivo,
+`multiple` e `anonymous` não têm rota que os altere: mudar "anônima" com votos
+dentro revelaria o que foi prometido.
+
+`POLL_UPDATE` vai **um por pessoa**, e não como broadcast. `myVotes` é do lado
+de quem recebe, e numa enquete aberta `voters` também; montar o payload uma vez
+entregaria a cada um o voto de outra pessoa marcado como o seu. São cinco
+pessoas — cinco payloads é o preço de a regra morar no servidor.
+
+**O prazo vale na hora, o worker é só a tela.** A rota de voto recusa depois do
+prazo tenha o fechamento automático passado ou não; a varredura horária existe
+para quem está com a enquete aberta ver "encerrada" sem recarregar. Ela entrou
+na faxina que já existia, em vez de um segundo relógio.
+
+A barra é proporcional **à líder** e não ao total: com o total, três empates
+viram três barras curtas e o empate some da tela.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -751,5 +776,6 @@ previstas, a fase 9 gastou três números com coisas que o pacote não antecipou
 | `018_mensagem_de_sistema` | a conclusão de tarefa precisa de uma mensagem que não é fala de ninguém; `messages.kind` chegou aqui, antes das enquetes |
 | `019_membro_mexe_no_quadro` | o mesmo da 017, para `MANAGE_TASKS` |
 
-Com isso, `polls` vira **020**, `conversations` **021** e `boards` **022**.
+Com isso, `polls` virou **020** (aplicada como `020_enquetes`), e
+`conversations` vira **021** e `boards` **022**.
 Migration aplicada não se edita; se algo estiver errado, crie a próxima.

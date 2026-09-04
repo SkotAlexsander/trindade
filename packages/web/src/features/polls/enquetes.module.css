@@ -1,0 +1,225 @@
+/* A enquete dentro da mensagem. Ver design/08-projeto.md. */
+
+/*
+ * Largura fixa e não "o que couber": a barra é uma comparação, e comparação
+ * com régua que muda de tamanho a cada opção não compara nada. 420px é o que
+ * cabe na coluna estreita e ainda deixa a barra dizer alguma coisa.
+ */
+.enquete {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--s-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  background: var(--bg-raised);
+}
+
+.opcoes {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A opção inteira é o alvo do clique — 36px de altura, a linha toda.
+ *
+ * `isolation` cria o contexto de empilhamento em que a barra fica atrás do
+ * texto sem `z-index` negativo, que a tiraria de dentro do botão.
+ */
+.opcao {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--s-1) var(--s-2);
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-primary);
+  font: var(--text-ui) / var(--leading-ui) var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcao:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.opcao:disabled {
+  cursor: default;
+}
+
+/* Vencedora de enquete encerrada em peso 600: quando não há mais o que votar,
+   o resultado é a única coisa que a linha precisa dizer. */
+.opcao[data-encerrada='true'][data-lider='true'] .rotulo {
+  font-weight: var(--weight-semi);
+}
+
+.barra {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: -1;
+  border-radius: var(--r-control);
+  background: var(--bg-active);
+  transition: width 160ms ease-out;
+}
+
+.opcao[data-lider='true'] .barra {
+  background: var(--cyan-wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra {
+    transition: none;
+  }
+}
+
+/* Círculo no voto único, quadrado no múltiplo: a forma diz a regra antes de
+   qualquer texto explicar. */
+.marca {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-full);
+}
+
+.marca[data-multipla='true'] {
+  border-radius: 3px;
+}
+
+.marca[data-marcada='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 2.5px var(--bg-raised);
+}
+
+.rotulo {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.contagem {
+  flex: none;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rodape {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin: var(--s-2) 0 0;
+  padding-left: var(--s-2);
+  color: var(--text-tertiary);
+  font: var(--text-meta) var(--font-ui);
+}
+
+.rodape [data-encerrada] {
+  color: var(--text-secondary);
+}
+
+.encerrar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-tertiary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.encerrar:hover {
+  color: var(--danger);
+}
+
+.paraNotas {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.paraNotas:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.paraNotas:disabled {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+
+/* --- o formulário no compositor ------------------------------------------- */
+
+/*
+ * Estreito como a enquete que ele vai gerar.
+ *
+ * Ocupando a conversa inteira, um campo de oito palavras vira uma faixa de mil
+ * pixels e o formulário parece uma tela de cadastro — que é exatamente o que a
+ * enquete não é.
+ */
+.formulario {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  background: var(--bg-raised);
+}
+
+/* Os campos ocupam a largura do formulário; os botões, a sua própria. */
+.formulario > label,
+.formulario > div {
+  width: 100%;
+}
+
+.cabecalhoDoForm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.linhaDeOpcao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.linhaDeOpcao > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.ajustes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text-secondary);
+  font: var(--text-meta) var(--font-ui);
+}
+
+.ajuste {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}

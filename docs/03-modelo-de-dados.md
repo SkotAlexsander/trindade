@@ -343,6 +343,59 @@ create index tasks_board on tasks (channel_id, column_key, position);
 create index tasks_prazo on tasks (assignee_id, due_at) where completed_at is null;
 ```
 
+### Enquetes
+
+A enquete **é** uma mensagem: `messages.kind = 'poll'`, e `content` guarda a
+pergunta. Não há tabela paralela de "itens especiais" do canal — assim a
+pergunta entra na busca, no histórico e nas fixadas como qualquer outra coisa
+que aconteceu ali, e o `on delete cascade` a partir de `messages` apaga tudo
+junto quando a mensagem some. Criadas na migration 020.
+
+```sql
+create table polls (
+  id          uuid primary key default gen_random_uuid(),
+  message_id  uuid not null unique references messages(id) on delete cascade,
+  channel_id  uuid not null references channels(id) on delete cascade,
+  question    text not null check (char_length(question) between 1 and 200),
+  multiple    boolean not null default false,
+  anonymous   boolean not null default false,
+  closes_at   timestamptz,
+  closed_at   timestamptz,
+  created_by  uuid not null references users(id),
+  created_at  timestamptz not null default now()
+);
+
+create index polls_canal on polls (channel_id, created_at desc);
+create index polls_prazo on polls (closes_at) where closed_at is null and closes_at is not null;
+
+create table poll_options (
+  id       uuid primary key default gen_random_uuid(),
+  poll_id  uuid not null references polls(id) on delete cascade,
+  label    text not null check (char_length(label) between 1 and 80),
+  position int not null
+);
+
+create index poll_options_da_enquete on poll_options (poll_id, position);
+
+create table poll_votes (
+  poll_id    uuid not null references polls(id) on delete cascade,
+  option_id  uuid not null references poll_options(id) on delete cascade,
+  user_id    uuid not null references users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (poll_id, option_id, user_id)
+);
+
+create index poll_votes_da_enquete on poll_votes (poll_id);
+```
+
+Nenhuma contagem materializada: com cinco pessoas, contar na hora é uma
+varredura de dezenas de linhas, e um total guardado em coluna seria um segundo
+lugar onde a verdade mora.
+
+`multiple` e `anonymous` são escolhidos ao criar e não mudam depois — trocar
+"anônima" com votos dentro revelaria o que foi prometido em segredo. Quem
+garante isso é a API: **não existe rota que altere esses dois campos.**
+
 `position` é `double precision` de propósito. Arrastar uma tarefa entre duas
 outras vira a média das duas posições vizinhas — uma única linha atualizada em
 vez de reindexar a coluna inteira.
@@ -401,6 +454,7 @@ Retenção de 180 dias, apagado por tarefa periódica.
 017_membro_edita_notas      -- não previsto; ver CLAUDE.md
 018_mensagem_de_sistema     -- não previsto; ver CLAUDE.md
 019_membro_mexe_no_quadro   -- não previsto; ver CLAUDE.md
+020_enquetes                -- era 011_polls no pacote; ver CLAUDE.md
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

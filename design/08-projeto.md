@@ -180,8 +180,13 @@ Tarefa concluída não é apagada nunca. É o registro do que o grupo fez.
 
 ## Enquetes
 
-Nascem no compositor, com `/enquete` ou pelo menu de anexo. Renderizam como
-mensagem, dentro do fluxo.
+Nascem no compositor, com `/enquete`. Renderizam como mensagem, dentro do fluxo.
+
+O que vier depois do comando já entra como pergunta: quem digita
+`/enquete janela de deploy?` acabou de escrever a pergunta, e pedir que a
+digite de novo seria cobrar duas vezes pelo mesmo gesto. O formulário é inline,
+acima do compositor — um modal por cima da conversa esconderia justamente o que
+se está perguntando.
 
 ```
   ◉ Ana Silva                              14:32
@@ -203,15 +208,37 @@ mensagem, dentro do fluxo.
 - Aberta ou anônima, escolhido ao criar e imutável depois. Aberta mostra quem
   votou em cada opção no hover; anônima mostra só o número.
 - Prazo opcional. Sem prazo, fecha quando o autor fechar.
-- Votar de novo troca o voto. Não há "desfazer" separado.
+- Votar de novo troca o voto. Não há "desfazer" separado — votar na opção que
+  já está marcada tira o voto.
+
+O anonimato é uma regra do **servidor**: numa enquete anônima a lista de quem
+votou não sai na resposta da API, nem para quem criou. Esconder na interface e
+mandar no JSON seria prometer segredo e entregar um `F12`.
+
+O prazo também vale no servidor, e vale **na hora**: o voto que chega um minuto
+depois do fim é recusado, tenha o worker de fechamento passado ou não. Ele roda
+junto da faxina, de hora em hora, e serve para a tela dizer "encerrada" a quem
+está com ela aberta.
 
 ### Visual
 
-A barra é a informação. Preenchida em `--accent` para a opção líder, em
-`--bg-active` para as demais. A sua escolha tem o círculo preenchido.
+A pergunta fica **no corpo da mensagem**, e a caixa abaixo tem as opções e nada
+mais. Repeti-la dentro da caixa seria dizer a mesma coisa duas vezes na mesma
+linha; e é por estar no corpo que a enquete aparece na busca, na citação e no
+painel de fixadas como qualquer outra frase.
 
-Contagem em `tabular-nums`. "4 de 5 votaram" é mais útil que porcentagem — com
-cinco pessoas, o número absoluto é o que importa.
+A barra é a informação. Preenchida em `--cyan-wash` para a opção líder, em
+`--bg-active` para as demais, atrás do texto e não abaixo dele. A largura é a
+proporção **sobre a líder**, não sobre o total: com o total, três empates
+viram três barras curtas e o empate some.
+
+A sua escolha tem a marca preenchida — círculo no voto único, quadrado no
+múltiplo. A forma diz a regra antes de qualquer texto explicar.
+
+Contagem em `tabular-nums`. "3 pessoas votaram" é mais útil que porcentagem —
+com cinco pessoas, o número absoluto é o que importa, e "60%" de cinco é uma
+precisão inventada. **Pessoas, não votos**: no múltiplo, quem marca três opções
+continua sendo uma.
 
 Enquete fechada perde a interação, mantém o resultado, e ganha "Encerrada" no
 rodapé. A opção vencedora fica em peso 600.

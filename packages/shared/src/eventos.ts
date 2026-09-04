@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Channel, Message, Reaction, Task, User, UserStatus } from './types.js';
+import type { Channel, Message, Poll, Reaction, Task, User, UserStatus } from './types.js';
 import { ANEXOS_POR_MENSAGEM, messageBodySchema, userStatusSchema } from './schemas.js';
 
 /**
@@ -164,6 +164,15 @@ export type ServerEvent =
    * em dia. `removida` cobre o apagar sem um segundo op.
    */
   | { op: 'TASK_UPDATE'; d: { task: Task; removida?: boolean } }
+  /**
+   * A enquete mudou: alguém votou, ou ela fechou.
+   *
+   * Vai **um payload por pessoa**, e não um broadcast só: `myVotes` é do lado
+   * de quem recebe, e numa enquete aberta `voters` também depende de quem
+   * pergunta. Montar uma vez e mandar para todos entregaria a cada um o voto
+   * de outra pessoa como se fosse o seu.
+   */
+  | { op: 'POLL_UPDATE'; d: { poll: Poll } }
   | { op: 'ERROR'; d: { code: string; message: string; retryAfter?: number } };
 
 export type ServerEventName = ServerEvent['op'];

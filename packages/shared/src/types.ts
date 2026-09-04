@@ -161,6 +161,43 @@ export interface Task {
   completedAt: string | null;
 }
 
+/**
+ * Uma enquete, que **é** uma mensagem — `Message.kind === 'poll'`.
+ *
+ * `voters` só vem preenchido em enquete aberta. Na anônima o servidor não
+ * manda os nomes para ninguém, nem para quem criou: o segredo prometido na
+ * criação não é um detalhe da interface. Ver design/08-projeto.md.
+ */
+export interface Poll {
+  id: string;
+  messageId: string;
+  channelId: string;
+  question: string;
+  /** Voto único ou múltiplo, escolhido ao criar e imutável depois. */
+  multiple: boolean;
+  anonymous: boolean;
+  closesAt: string | null;
+  closedAt: string | null;
+  createdBy: string;
+  options: PollOption[];
+  /** As opções em que **você** votou. Do seu voto você sempre sabe. */
+  myVotes: string[];
+  /** Quantas pessoas votaram — não quantos votos, que no múltiplo diferem. */
+  voterCount: number;
+}
+
+export interface PollOption {
+  id: string;
+  label: string;
+  count: number;
+  /** Vazio em enquete anônima. */
+  voters: string[];
+}
+
+/** Duas a seis. Sete alternativas é problema de escopo, não de enquete. */
+export const OPCOES_MIN = 2;
+export const OPCOES_MAX = 6;
+
 export const COLUNAS = ['todo', 'doing', 'done'] as const;
 export type ColunaDoQuadro = (typeof COLUNAS)[number];
 

@@ -1,5 +1,12 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
-import { NOME_DA_COLUNA, type Channel, type Role, type Task, type User } from '@trindade/shared';
+import {
+  NOME_DA_COLUNA,
+  type Channel,
+  type Poll,
+  type Role,
+  type Task,
+  type User,
+} from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
 import { Clock, Pin, Tasks } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
@@ -8,6 +15,7 @@ import { Anexos } from './Anexos';
 import { CartaoDePerfil } from '../profile/CartaoDePerfil';
 import { PreviaDeLink } from './PreviaDeLink';
 import { useQuadro } from '../tasks/store';
+import { Enquete } from '../polls/Enquete';
 import { haQuantoTempo, hora } from './linhas';
 import { analisarMarkdown, mencionados, primeiroLink } from './markdown';
 import type { MensagemLocal } from './queries';
@@ -94,6 +102,8 @@ export interface MessageProps {
   destacada: boolean;
   /** A tarefa que nasceu desta mensagem, se existir. */
   tarefa: Task | undefined;
+  /** A enquete, quando esta mensagem é uma (`kind === 'poll'`). */
+  enquete: Poll | undefined;
   acoes: AcoesDisponiveis;
 }
 
@@ -110,6 +120,7 @@ export const Message = memo(function Message({
   assumirFoco,
   destacada,
   tarefa,
+  enquete,
   acoes,
 }: MessageProps) {
   const abrirQuadro = useQuadro((s) => s.abrir);
@@ -285,6 +296,12 @@ export const Message = memo(function Message({
               canais={canais}
               meuUsername={meuUsername}
             />
+            {/* A pergunta fica no corpo da mensagem, como qualquer outra
+                frase — é o que a faz aparecer na busca, na citação e no
+                painel de fixadas. A caixa abaixo tem as opções, e nada mais:
+                repetir a pergunta dentro dela seria dizer a mesma coisa duas
+                vezes na mesma linha da conversa. */}
+            {enquete ? <Enquete poll={enquete} pessoas={pessoas} /> : null}
             {mensagem.editedAt ? <span className={styles.editado}>(editado)</span> : null}
             {mensagem.attachments.length > 0 ? (
               <Anexos anexos={mensagem.attachments} />

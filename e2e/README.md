@@ -299,6 +299,17 @@ primeira corrida acusar um arrasto que tinha funcionado. E o clique que expande
 rodapé "Virou tarefa · Feito", `button` com texto "Feito" passou a acertar a
 mensagem em vez da coluna.
 
+**`fase-09-enquetes.py`** — 11 verificações das enquetes, com dois navegadores:
+`/enquete` abre o formulário, a enquete chega no canal do outro sem recarregar,
+o voto de um move a barra do outro, trocar de opção não conta duas pessoas,
+encerrar tira a interação para todo mundo, e "adicionar o resultado às notas"
+grava a decisão na nota do canal.
+
+A verificação que importa é a da enquete anônima: o roteiro confere que o nome
+de quem votou **não aparece** na tela de quem perguntou. A garantia de verdade
+está no teste de API, que olha a resposta crua — na tela só se vê o que foi
+desenhado, e o que vaza vaza no JSON.
+
 **O login tem limite de 5 por 15 minutos por IP.** Rodar os roteiros em sequência
 esgota a cota e o próximo falha em `wait_for_url` — o que parece defeito da
 aplicação é a proteção funcionando. Espere a janela ou reinicie a API, que

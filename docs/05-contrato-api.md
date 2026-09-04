@@ -386,6 +386,25 @@ da resposta sem erro nenhum.
 
 ---
 
+## Enquetes
+
+- `GET /channels/:id/polls` → `200 { polls: Poll[] }` — todas as do canal, já do ponto de vista de quem pergunta
+- `POST /channels/:id/polls` `{ question, options[2..6], multiple, anonymous, closesAt, clientNonce }` → `200 { poll }` — `SEND_MESSAGE`. Cria a mensagem `kind: 'poll'` junto. O mesmo `clientNonce` devolve a enquete que já existe
+- `PUT /polls/:id/vote` `{ optionIds }` → `200 { poll }` — `SEND_MESSAGE`. Substitui o voto inteiro; lista vazia é como se tira o voto
+- `POST /polls/:id/close` → `200 { poll }` — só quem criou
+- `POST /polls/:id/para-notas` → `200 { ok }` — `MANAGE_NOTES`, e só depois de encerrada
+
+`Poll.options[].voters` vem **vazio em enquete anônima**, para todo mundo —
+inclusive para quem criou. `myVotes` é sempre do lado de quem pergunta: do seu
+próprio voto você sempre sabe. `voterCount` conta pessoas e não votos, que no
+voto múltiplo diferem.
+
+Erros próprios: `POLL_CLOSED` (encerrada ou com prazo vencido),
+`POLL_SINGLE_CHOICE`, `POLL_BAD_OPTION` (opção de outra enquete),
+`POLL_DUPLICATE_OPTION`, `POLL_OPEN` (resultado pedido antes de encerrar).
+
+---
+
 ## Voz
 
 ### `POST /channels/:id/voice/token` — exige `CONNECT_VOICE`
@@ -441,6 +460,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `VOICE_STATE_UPDATE` | entrou/saiu/mutou | `{ userId, channelId, muted, deafened, screenSharing, connected }` |
 | `CHANNEL_CREATE` / `UPDATE` / `DELETE` | canal | `Channel` |
 | `TASK_UPDATE` | tarefa nasceu, mudou ou saiu | `{ task: Task, removida?: true }` |
+| `POLL_UPDATE` | alguém votou, ou a enquete fechou | `{ poll: Poll }` — **um payload por pessoa**, porque `myVotes` e `voters` dependem de quem recebe |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |
 | `ERROR` | operação falhou | `{ code, message }` |
 

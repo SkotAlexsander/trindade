@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Perm, can, type Channel, type Task, type User } from '@trindade/shared';
+import { Perm, can, type Channel, type Poll, type Task, type User } from '@trindade/shared';
 import { Skeleton, Spinner } from '../../components';
 import { ArrowDown } from '../../components/icones';
 import { useAuth } from '../auth/store';
@@ -10,6 +10,7 @@ import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco, useThread } fro
 import { useAcoesDaMensagem } from './useAcoes';
 import { useMarcarLido } from './leitura';
 import { useTarefas } from '../tasks/queries';
+import { useEnquetes } from '../polls/queries';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
 
@@ -71,6 +72,13 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   // O quadro já está no cache por causa do painel; aqui ele serve só para a
   // mensagem saber que virou tarefa — e para a linha mudar sozinha quando
   // alguém arrasta o cartão.
+  const { data: enquetes } = useEnquetes(channelId);
+  const enquetePorMensagem = useMemo(() => {
+    const mapa = new Map<string, Poll>();
+    for (const p of enquetes ?? []) mapa.set(p.messageId, p);
+    return mapa;
+  }, [enquetes]);
+
   const { data: tarefas } = useTarefas(channelId);
   const tarefaPorMensagem = useMemo(() => {
     const mapa = new Map<string, Task>();
@@ -375,6 +383,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
                 assumirFoco={linha.mensagem.id === focoId}
                 destacada={linha.mensagem.id === destaqueId}
                 tarefa={tarefaPorMensagem.get(linha.mensagem.id)}
+                enquete={enquetePorMensagem.get(linha.mensagem.id)}
                 acoes={acoes}
               />
             ))}

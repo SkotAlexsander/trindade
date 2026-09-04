@@ -10,6 +10,7 @@ import { atualizarMensagem, chaveDoCanal, type CacheCanal } from './queries';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
 import { gatilhoAtivo, sugerir, type Sugestao } from './autocompletar';
 import { algumSubindo, prontos, useAnexos } from './useAnexos';
+import { FormularioDeEnquete } from '../polls/FormularioDeEnquete';
 import { FaixaDeAnexos } from './FaixaDeAnexos';
 import { useComposer, useFoco } from './store';
 import { useEnviarMensagem } from './useEnviar';
@@ -62,6 +63,8 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
   // próxima tecla reabriria a mesma lista.
   const [dispensado, setDispensado] = useState('');
   const [arrastando, setArrastando] = useState(false);
+  /** O formulário de enquete aberto por `/enquete`, com a pergunta que veio junto. */
+  const [enquete, setEnquete] = useState<{ pergunta: string } | null>(null);
 
   const gatilho = useMemo(() => gatilhoAtivo(texto, cursor), [texto, cursor]);
   const sugestoes = useMemo(
@@ -110,6 +113,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
   // Trocar de canal limpa o que estava escrito para outro lugar.
   useEffect(() => {
     setTexto('');
+    setEnquete(null);
     limparContexto();
   }, [canal.id, limparContexto]);
 
@@ -146,6 +150,17 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
   const submeter = useCallback(() => {
     const conteudo = texto.trim();
     const anexos = prontos(pendentes);
+
+    /* `/enquete` não é uma mensagem: é um pedido de formulário. O que vier
+       depois do comando já entra como pergunta — quem digita "/enquete janela
+       de deploy?" acabou de escrever a pergunta, e pedir que a digite de novo
+       seria cobrar duas vezes pelo mesmo gesto. */
+    const comando = /^\/enquete(\s[\s\S]*)?$/i.exec(conteudo);
+    if (comando && !editando) {
+      setEnquete({ pergunta: (comando[1] ?? '').trim() });
+      setTexto('');
+      return;
+    }
     // Uma foto sem legenda é uma mensagem inteira; um `Enter` num campo vazio
     // não é. E enquanto algum upload não terminou, enviar perderia o arquivo.
     if ((!conteudo && anexos.length === 0) || algumSubindo(pendentes)) return;
@@ -360,6 +375,17 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
             </button>
           ))}
         </div>
+      ) : null}
+
+      {enquete ? (
+        <FormularioDeEnquete
+          channelId={canal.id}
+          perguntaInicial={enquete.pergunta}
+          onFechar={() => {
+            setEnquete(null);
+            campo.current?.focus();
+          }}
+        />
       ) : null}
 
       {contexto ? (

@@ -1,13 +1,15 @@
 import type { FastifyBaseLogger } from 'fastify';
 import { sql } from '../db/index.js';
 import { varrerAnexosOrfaos } from './varredura-de-anexos.js';
+import { fecharVencidas } from './enquete.js';
 
 /**
  * A faxina periódica.
  *
  * Quatro coisas que crescem para sempre se ninguém as varrer: arquivo que
  * ninguém enviou, nonce de deduplicação que já cumpriu o prazo, token de
- * atualização vencido e trilha de auditoria antiga.
+ * atualização vencido e trilha de auditoria antiga. Mais uma que não cresce mas
+ * vence: a enquete com prazo.
  *
  * Cada uma é uma função sozinha, e por isso testável sem esperar uma hora. O
  * agendador só as chama. Ver prompts/fase-08-endurecimento.md.
@@ -65,6 +67,7 @@ export interface ResultadoDaFaxina {
   nonces: number;
   refresh: number;
   auditoria: number;
+  enquetes: number;
 }
 
 /**
@@ -74,13 +77,23 @@ export interface ResultadoDaFaxina {
  * tenta de novo. Uma faxina que aborta na primeira pedra deixa o resto crescendo.
  */
 export async function faxinar(log: FastifyBaseLogger): Promise<ResultadoDaFaxina> {
-  const resultado: ResultadoDaFaxina = { anexos: 0, nonces: 0, refresh: 0, auditoria: 0 };
+  const resultado: ResultadoDaFaxina = {
+    anexos: 0,
+    nonces: 0,
+    refresh: 0,
+    auditoria: 0,
+    enquetes: 0,
+  };
 
   const tarefas: [keyof ResultadoDaFaxina, () => Promise<number>][] = [
     ['anexos', () => varrerAnexosOrfaos(log)],
     ['nonces', limparNonces],
     ['refresh', limparRefreshVencidos],
     ['auditoria', limparAuditoriaAntiga],
+    // A única que não é limpeza: ela **fecha** o que venceu. Está aqui porque
+    // é a mesma volta de hora em hora, e ligar um segundo relógio para uma
+    // varredura de dezenas de linhas seria peso sem motivo.
+    ['enquetes', fecharVencidas],
   ];
 
   for (const [nome, tarefa] of tarefas) {
