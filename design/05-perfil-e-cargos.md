@@ -34,8 +34,14 @@ largura, `--bg-raised`, `--r-surface`, `--shadow-pop`.
 ```
 
 A faixa do topo usa `accent_color` da pessoa, ou o cargo de maior posição se ela
-não escolheu, ou `--mid` se nenhum dos dois. É a única personalização
+não escolheu, ou uma cor neutra se nenhum dos dois. É a única personalização
 cromática que cada pessoa controla.
+
+> Corrigido em 4 de setembro de 2026: o padrão era `--mid`, e no tema escuro
+> `--bg-raised` **é** `--mid` — a faixa saía da cor exata do cartão e
+> desaparecia justamente no caso mais comum, o de quem não escolheu cor
+> nenhuma. Passou a ser `--bg-panel`, que é mais escura que a superfície nos
+> dois temas.
 
 Chip de cargo: `--r-full`, altura 20px, fundo com 12% da cor do cargo, texto na
 cor do cargo ajustada para contraste, com um ponto de 6px antes.

@@ -98,6 +98,17 @@ de download, e o cartão de link com a miniatura vinda do nosso domínio.
 
 Precisa de internet: uma verificação busca a prévia de `https://example.com/`.
 
+**`fase-06-cartao.py`** — 17 verificações do cartão de perfil: que ele **não**
+abre antes dos 400ms, que não fecha na hora em que o mouse sai (o atraso de
+300ms é o assunto principal — sem ele, atravessar a borda fecha o cartão na
+cara de quem ia clicar), a faixa de 56px que não pode ser da cor do cartão, o
+contraste de todo chip de cargo acima de 4.5:1, e o menu do servidor sem os
+itens que a pessoa não pode usar — escondidos, nunca esmaecidos.
+
+O `pnpm dev:seed` dá ao cargo `Admin` um azul-marinho de propósito: é escuro
+demais para o tema escuro, e sem uma cor difícil no banco o ajuste de contraste
+nunca é exercitado por ninguém olhando a tela.
+
 ### Se o Vite servir 404 num módulo que existe
 
 Renomear um arquivo deixa o grafo de módulos do Vite apontando para o nome

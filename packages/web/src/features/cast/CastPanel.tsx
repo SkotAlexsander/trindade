@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
 import { Headphones, Mark, Mic, MicOff, HeadphonesOff, Settings } from '../../components/icones';
 import { useAuth } from '../auth/store';
+import { CartaoDePerfil } from '../profile/CartaoDePerfil';
 import styles from './cast.module.css';
 
 /**
@@ -160,28 +161,36 @@ function EspacoPessoa({
   const estado: EstadoElenco = user.status;
   const rotulo = `${user.displayName}${digitando ? ', digitando' : `, ${estado}`}`;
 
+  // O `onSelect` continua no clique, e o cartão também abre no clique. Não
+  // brigam: o cartão é um popover, e quem clica num rosto quer as duas coisas
+  // — ir para a pessoa e ver quem ela é.
   return (
-    <button
-      type="button"
-      className={styles.espaco}
-      data-estado={estado}
-      // 60ms entre cada, da esquerda para a direita.
-      style={{ animationDelay: `${indice * 60}ms` }}
-      aria-label={rotulo}
-      onClick={() => onSelect?.(user)}
-    >
-      <span className={styles.avatarBox}>
-        <Avatar id={user.id} name={user.displayName} src={user.avatarUrl} size="md" />
-      </span>
-      {digitando ? (
-        <span className={styles.pontos} aria-hidden="true">
-          <span className={styles.ponto} />
-          <span className={styles.ponto} />
-          <span className={styles.ponto} />
-        </span>
-      ) : (
-        <span className={styles.nome}>{nomeCurto(user.displayName)}</span>
-      )}
-    </button>
+    <CartaoDePerfil
+      user={user}
+      trigger={
+        <button
+          type="button"
+          className={styles.espaco}
+          data-estado={estado}
+          // 60ms entre cada, da esquerda para a direita.
+          style={{ animationDelay: `${indice * 60}ms` }}
+          aria-label={rotulo}
+          onClick={() => onSelect?.(user)}
+        >
+          <span className={styles.avatarBox}>
+            <Avatar id={user.id} name={user.displayName} src={user.avatarUrl} size="md" />
+          </span>
+          {digitando ? (
+            <span className={styles.pontos} aria-hidden="true">
+              <span className={styles.ponto} />
+              <span className={styles.ponto} />
+              <span className={styles.ponto} />
+            </span>
+          ) : (
+            <span className={styles.nome}>{nomeCurto(user.displayName)}</span>
+          )}
+        </button>
+      }
+    />
   );
 }

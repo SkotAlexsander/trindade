@@ -151,3 +151,23 @@ export function colorFromId(id: string): string {
   const matiz = AVATAR_HUE_MIN + (hash % (AVATAR_HUE_MAX - AVATAR_HUE_MIN));
   return toHex(hslToRgb({ h: matiz / 360, s: 0.45, l: 0.42 }));
 }
+
+/**
+ * A cor sobre o fundo, com transparência, achatada num hex.
+ *
+ * O chip de cargo tem fundo com 12% da cor do cargo, e o texto precisa ter
+ * contraste contra **o resultado dessa mistura** — não contra a cor pura nem
+ * contra o fundo puro. Medir contra qualquer um dos dois erra para os dois
+ * lados: cor clara sobre fundo escuro fica com o texto escuro demais, e o
+ * contrário some.
+ */
+export function sobrepor(cor: string, fundo: string, alfa: number): string {
+  const c = parseHex(cor);
+  const f = parseHex(fundo);
+  if (!c || !f) return fundo;
+  return toHex({
+    r: c.r * alfa + f.r * (1 - alfa),
+    g: c.g * alfa + f.g * (1 - alfa),
+    b: c.b * alfa + f.b * (1 - alfa),
+  });
+}

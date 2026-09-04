@@ -1,6 +1,7 @@
 import { forwardRef, useState } from 'react';
 import type { UserStatus } from '@trindade/shared';
 import { colorFromId, ensureContrast } from '../lib/contraste';
+import { lerToken } from '../lib/tokens';
 import styles from './Avatar.module.css';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -13,13 +14,6 @@ export interface AvatarProps {
   size?: AvatarSize;
   status?: UserStatus;
   className?: string;
-}
-
-/** Lê um token de cor já resolvido pelo navegador, no tema em vigor. */
-function lerToken(nome: string): string {
-  if (typeof window === 'undefined') return '#ffffff';
-  const valor = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
-  return valor || '#ffffff';
 }
 
 /** Uma letra até duas palavras, duas se houver sobrenome. */

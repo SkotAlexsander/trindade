@@ -28,5 +28,6 @@ export function toApiUser(row: UserRow, roles: readonly RoleRow[]): User {
     customStatus: row.custom_status,
     roles: roles.map(toApiRole),
     disabled: row.disabled_at !== null,
+    createdAt: row.created_at.toISOString(),
   };
 }

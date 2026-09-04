@@ -466,6 +466,8 @@ export interface User {
   displayName: string;
   avatarUrl: string | null;
   avatarBlurhash: string | null;
+  /** Quando entrou. O cartão de perfil escreve "Está aqui desde março". */
+  createdAt: string;
   bio: string | null;
   accentColor: string | null;
   status: 'online' | 'idle' | 'busy' | 'invisible' | 'offline';

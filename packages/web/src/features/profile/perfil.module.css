@@ -1,0 +1,132 @@
+/*
+ * Cartão de perfil e chips de cargo.
+ * Ver design/05-perfil-e-cargos.md.
+ */
+
+.cartao {
+  width: 300px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.faixa {
+  height: 56px;
+}
+
+/* O avatar sobrepõe a faixa pela metade: é o que amarra os dois blocos e
+   impede que o cartão pareça duas caixas empilhadas. */
+.avatarSobreposto {
+  margin: -32px 0 0 16px;
+  width: fit-content;
+  border-radius: var(--r-full);
+  /* O anel na cor da superfície recorta o avatar da faixa colorida sem
+     precisar de sombra. */
+  box-shadow: 0 0 0 4px var(--bg-raised);
+}
+
+.corpo {
+  padding: 10px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nome {
+  font: var(--weight-semibold) 18px var(--font-ui);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.usuario {
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.cargos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--r-full);
+  font: var(--weight-medium) 11px var(--font-ui);
+  color: var(--text-secondary);
+  background: var(--bg-base);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipPonto {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: currentColor;
+  flex: none;
+}
+
+.bio {
+  font: var(--weight-regular) 13px / 1.5 var(--font-ui);
+  color: var(--text-primary);
+  margin: 10px 0 0;
+  /* Bio longa não pode fazer o cartão passar da altura da janela. */
+  max-height: 6.5em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.separador {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 12px 0;
+}
+
+.linhaStatus {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: var(--weight-regular) 12px var(--font-ui);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pontoStatus {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  flex: none;
+  background: var(--status-offline);
+}
+
+.pontoStatus[data-status='online'] {
+  background: var(--status-online);
+}
+.pontoStatus[data-status='idle'] {
+  background: var(--status-idle);
+}
+.pontoStatus[data-status='busy'] {
+  background: var(--status-busy);
+}
+
+.desde {
+  font: var(--weight-regular) 12px var(--font-ui);
+  color: var(--text-tertiary);
+  margin: 4px 0 0;
+}
+
+.acao {
+  width: 100%;
+}

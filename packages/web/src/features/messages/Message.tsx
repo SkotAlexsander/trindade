@@ -5,6 +5,7 @@ import { Clock, Pin } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
 import { Conteudo } from './Conteudo';
 import { Anexos } from './Anexos';
+import { CartaoDePerfil } from '../profile/CartaoDePerfil';
 import { PreviaDeLink } from './PreviaDeLink';
 import { haQuantoTempo, hora } from './linhas';
 import { analisarMarkdown, mencionados, primeiroLink } from './markdown';
@@ -177,12 +178,17 @@ export const Message = memo(function Message({
 
       <div className={styles.gutter}>
         {cabeca ? (
-          <Avatar
-            id={mensagem.author.id}
-            name={mensagem.author.displayName}
-            src={mensagem.author.avatarUrl}
-            size="md"
-          />
+          // O cartão precisa do `User` inteiro — cargos, bio, entrada. O
+          // `author` da mensagem é só o suficiente para desenhar a linha, e
+          // por isso o cartão só existe quando a pessoa está no cache.
+          <PerfilSeConhecido user={autor}>
+            <Avatar
+              id={mensagem.author.id}
+              name={mensagem.author.displayName}
+              src={mensagem.author.avatarUrl}
+              size="md"
+            />
+          </PerfilSeConhecido>
         ) : local === 'na-fila' ? (
           <Tooltip label="Na fila — sai quando a conexão voltar">
             <span className={styles.horaGutter}>
@@ -208,9 +214,15 @@ export const Message = memo(function Message({
       <div className={styles.conteudo}>
         {cabeca ? (
           <div className={styles.cabecalho}>
-            <span className={styles.nome} style={cor ? { color: cor } : undefined}>
-              {mensagem.author.displayName}
-            </span>
+            <PerfilSeConhecido user={autor}>
+              <button
+                type="button"
+                className={styles.nome}
+                style={cor ? { color: cor } : undefined}
+              >
+                {mensagem.author.displayName}
+              </button>
+            </PerfilSeConhecido>
             {cargo ? <span className={styles.cargo}>{cargo.name}</span> : null}
             <time className={styles.hora} dateTime={mensagem.createdAt}>
               {hora(mensagem.createdAt)}
@@ -329,3 +341,22 @@ export const Message = memo(function Message({
     </article>
   );
 });
+
+/**
+ * Abre o cartão de perfil, quando dá.
+ *
+ * A mensagem carrega só o `author` — id, nome, avatar — que é o bastante para
+ * desenhar a linha. O cartão quer cargos, bio e data de entrada, e isso vem do
+ * cache de pessoas. Se a pessoa não estiver lá (histórico antigo de alguém que
+ * saiu), o gatilho aparece igual e simplesmente não abre nada.
+ */
+function PerfilSeConhecido({
+  user,
+  children,
+}: {
+  user: User | undefined;
+  children: React.ReactElement;
+}) {
+  if (!user) return children;
+  return <CartaoDePerfil user={user} trigger={children} />;
+}

@@ -51,6 +51,12 @@ async function main(): Promise<void> {
   const admin = cargos.find((c) => c.name === 'Admin')?.id;
   const membro = cargos.find((c) => c.is_default)?.id;
 
+  // Um azul-marinho de propósito: é escuro demais para o tema escuro, e o
+  // ajuste de contraste tem de clareá-lo até o nome do cargo ficar legível.
+  // Sem uma cor difícil no banco de desenvolvimento, esse caminho nunca é
+  // exercitado por ninguém olhando a tela.
+  if (admin) await sql`update roles set color = '#0b1d5c' where id = ${admin}`;
+
   const hash = await hashPassword(SENHA);
 
   for (const pessoa of ELENCO) {

@@ -60,6 +60,7 @@ export const userSchema = z.object({
   customStatus: z.string().max(64).nullable(),
   roles: z.array(roleSchema),
   disabled: z.boolean(),
+  createdAt: z.string(),
 });
 
 export const channelSchema = z.object({

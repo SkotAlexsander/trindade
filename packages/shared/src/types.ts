@@ -26,6 +26,12 @@ export interface User {
   customStatus: string | null;
   roles: Role[];
   disabled: boolean;
+  /**
+   * Quando a pessoa entrou. O cartão de perfil escreve "Está aqui desde
+   * março" — ver design/05-perfil-e-cargos.md. Não estava no contrato
+   * original, e sem ele a linha não teria de onde sair.
+   */
+  createdAt: string;
 }
 
 export type MessageAuthor = Pick<User, 'id' | 'username' | 'displayName' | 'avatarUrl'>;
