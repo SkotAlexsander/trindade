@@ -671,6 +671,32 @@ dizendo onde se verifica. Os quatro que dependem do servidor real — firewall,
 LUKS, 2FA das cinco contas — ficaram **desmarcados de propósito**: marcar item
 não verificado é pior que não ter checklist.
 
+### Fase 9 — em andamento
+
+**Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte
+pelo **mesmo** WebSocket de tudo o mais — uma segunda conexão só para notas
+seria outro caminho para autenticar, reconectar e depurar, e reconexão é a parte
+cara, já resolvida uma vez.
+
+O servidor não arbitra nada: aplica, guarda e repassa. `content` guarda o texto
+achatado para busca e prévia; `ydoc` é o estado de verdade. Grava 2s depois da
+última tecla, e **na hora** quando o último editor fecha o painel — esperar o
+debounce deixaria a janela em que fechar a aba perde o fim da frase.
+
+**O StrictMode mordeu de novo, com outra cara.** Eu criava o provedor durante a
+renderização e o destruía na limpeza do efeito: a limpeza matava o provedor que
+a renderização já tinha criado, e o `NOTE_CLOSE` cancelava a inscrição no
+servidor. O editor continuava na tela, o texto ainda chegava ao banco, e nada
+dos outros voltava — sem cursor, sem faixa, sem uma letra. Agora o provedor
+nasce e morre dentro do efeito, e o editor é remontado por `key` quando ele
+troca: as extensões de colaboração guardam o documento no momento em que são
+configuradas, e trocá-lo por baixo não funciona.
+
+**O cargo `Membro` passou a poder editar as notas** (migration 017). A 003 tinha
+deixado `MANAGE_NOTES` de fora, e rodando ficou claro que não é permissão de
+administração: numa equipe de cinco, quem participa da decisão é quem a
+registra. Uma nota que só o administrador edita seria um mural.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

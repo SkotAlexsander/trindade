@@ -267,6 +267,20 @@ O primeiro defeito que ele pegou foi nosso: o `index.html` carimbava o tema com
 um `<script>` inline, que `script-src 'self'` recusa. A correção foi mover o
 bloco para `/tema.js` — corrigir o código, não relaxar a política.
 
+**`fase-09-notas.py`** — 12 verificações das notas colaborativas, com dois
+navegadores no mesmo documento: o que um escreve aparece no outro, as duas
+edições sobrevivem, os documentos convergem, o cursor de quem está junto
+aparece, fechar a aba no meio da edição não perde nada, e "adicionar às notas"
+leva a mensagem com autor e link de volta.
+
+**Fixe o canal.** Cada pessoa cai no seu primeiro não lido, e a nota é por
+canal: sem `goto('/c/geral')` o roteiro compara documentos diferentes e conclui
+que a sincronia está quebrada. Foi o que aconteceu na primeira corrida — e o
+sintoma parecia defeito do Yjs.
+
+O rótulo do cursor entra no `innerText` do editor. Para comparar os dois lados,
+o roteiro clona o nó e remove os cursores antes de ler o texto.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

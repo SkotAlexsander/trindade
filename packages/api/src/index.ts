@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { closePool } from './db/index.js';
 import { garantirBalde, storageConfigurado } from './lib/storage.js';
 import { agendarFaxina } from './services/faxina.js';
+import { gravarTudo } from './services/notas.js';
 
 const app = await buildApp();
 
@@ -38,6 +39,10 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
       try {
         pararFaxina();
         await app.close();
+        // As notas em memória vão para o banco antes do processo morrer: o
+        // debounce de 2s não sobrevive a um `docker compose up -d` no meio de
+        // uma frase.
+        await gravarTudo();
         await closePool();
         process.exit(0);
       } catch (err) {

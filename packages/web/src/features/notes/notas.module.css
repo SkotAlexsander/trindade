@@ -1,0 +1,146 @@
+/* A nota do canal. Ver design/08-projeto.md. */
+
+.painel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+}
+
+.editando {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.avatares {
+  display: flex;
+}
+
+.avatares > * + * {
+  margin-left: -6px;
+}
+
+.somenteLeitura {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--text-label);
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.corpo {
+  overflow-y: auto;
+  min-height: 0;
+  padding: var(--s-3);
+}
+
+.carregando {
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+}
+
+/* Mesma tipografia das mensagens, de propósito: nota e mensagem são o mesmo
+   tipo de conteúdo — um é fluxo, o outro é estado. */
+.editor {
+  font-family: var(--font-read);
+  font-size: var(--text-body);
+  line-height: var(--leading-read);
+  color: var(--text-primary);
+  outline: none;
+  min-height: 100%;
+}
+
+.editor :global(p) {
+  margin: 0 0 var(--s-3);
+}
+
+.editor :global(h1),
+.editor :global(h2),
+.editor :global(h3) {
+  margin: var(--s-4) 0 var(--s-2);
+  line-height: var(--leading-tight);
+}
+
+.editor :global(h1) {
+  font-size: var(--text-title);
+}
+.editor :global(h2) {
+  font-size: var(--text-section);
+}
+.editor :global(h3) {
+  font-size: var(--text-ui);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+}
+
+.editor :global(ul),
+.editor :global(ol) {
+  margin: 0 0 var(--s-3);
+  padding-left: var(--s-5);
+}
+
+.editor :global(blockquote) {
+  margin: 0 0 var(--s-3);
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.editor :global(code) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-raised);
+  padding: 1px 4px;
+  border-radius: var(--r-field);
+}
+
+/* O cursor de quem está junto: barra de 2px na cor da pessoa, com a etiqueta
+   aparecendo só quando o cursor se move. Etiqueta permanente é poluição. */
+.editor :global(.collaboration-carets__caret) {
+  border-left: 1px solid;
+  border-right: 1px solid;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+.editor :global(.collaboration-carets__label) {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  padding: 1px 4px;
+  border-radius: 3px 3px 3px 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: var(--weight-semi);
+  line-height: 1.2;
+  color: var(--text-on-accent);
+  white-space: nowrap;
+  user-select: none;
+  animation: sumirEtiqueta 2s ease-out forwards;
+}
+
+@keyframes sumirEtiqueta {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor :global(.collaboration-carets__label) {
+    animation: none;
+    opacity: 0.85;
+  }
+}

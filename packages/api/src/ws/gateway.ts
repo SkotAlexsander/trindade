@@ -26,6 +26,8 @@ export interface Connection {
   /** Status declarado pela pessoa. `invisible` some para os outros. */
   status: UserStatus;
   customStatus: string | null;
+  /** Notas que esta conexão tem abertas — o painel, não o canal. */
+  notas: Set<string>;
   timers: NodeJS.Timeout[];
 }
 
@@ -41,6 +43,11 @@ export function register(conn: Connection): void {
   const sessoes = byUser.get(conn.userId) ?? new Set<string>();
   sessoes.add(conn.sessionId);
   byUser.set(conn.userId, sessoes);
+}
+
+/** As conexões que estão com a nota de um canal aberta. */
+export function comNotaAberta(channelId: string): Connection[] {
+  return [...connections.values()].filter((c) => c.notas.has(channelId));
 }
 
 /** Devolve `true` se esta era a última conexão da pessoa. */

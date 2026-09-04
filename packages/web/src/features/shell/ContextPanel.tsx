@@ -7,6 +7,7 @@ import { PainelFixadas, PainelGuardadas } from '../messages/Paineis';
 import { PainelThread } from '../messages/PainelThread';
 import type { PainelAberto } from './ChannelHeader';
 import styles from './shell.module.css';
+import { PainelDeNotas } from '../notes/PainelDeNotas';
 
 const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
   busca: 'Buscar',
@@ -63,9 +64,10 @@ export const ContextPanel = forwardRef<HTMLDivElement, ContextPanelProps>(functi
           {aberto === 'guardadas' ? <PainelGuardadas /> : null}
           {aberto === 'busca' ? <PainelBusca canal={canal} pessoas={pessoas} /> : null}
           {aberto === 'thread' ? <PainelThread pessoas={pessoas} canais={canais} /> : null}
-          {aberto === 'notas' || aberto === 'tarefas'
-            ? 'Entra na fase em que este painel é implementado.'
-            : null}
+          {aberto === 'notas' && canal ? (
+            <PainelDeNotas canal={canal} pessoas={pessoas} />
+          ) : null}
+          {aberto === 'tarefas' ? 'Entra na fase em que este painel é implementado.' : null}
         </div>
       </aside>
     </div>

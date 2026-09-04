@@ -1,5 +1,5 @@
 import { IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
-import { Mark, Pin, Reply, Smile, Trash } from '../../components/icones';
+import { Mark, Notes, Pin, Reply, Smile, Trash } from '../../components/icones';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
 import { RAPIDOS } from './emojis';
 import type { MensagemLocal } from './queries';
@@ -26,6 +26,8 @@ export interface AcoesDaMensagemProps {
   onResponder: () => void;
   onGuardar: () => void;
   onFixar: () => void;
+  podeAnotar: boolean;
+  onParaNotas: () => void;
   onEditar: () => void;
   onApagar: () => void;
   onThread: () => void;
@@ -40,6 +42,8 @@ export function AcoesDaMensagem({
   onResponder,
   onGuardar,
   onFixar,
+  podeAnotar,
+  onParaNotas,
   onEditar,
   onApagar,
   onThread,
@@ -123,6 +127,13 @@ export function AcoesDaMensagem({
         <MenuItem onSelect={() => void navigator.clipboard?.writeText(mensagem.content ?? '')}>
           Copiar texto
         </MenuItem>
+        {/* O gesto central das ferramentas de projeto: a decisão tomada aqui
+            vira registro na nota do canal, com autor e link de volta. */}
+        {podeAnotar ? (
+          <MenuItem icon={<Notes size={16} />} onSelect={onParaNotas}>
+            Adicionar às notas
+          </MenuItem>
+        ) : null}
         {podeApagar ? (
           <>
             <MenuSeparator />

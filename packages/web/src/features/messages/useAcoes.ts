@@ -78,5 +78,21 @@ export function useAcoesDaMensagem() {
     [show],
   );
 
-  return { reagir, guardar, fixar, apagar };
+  /**
+   * "Adicionar às notas".
+   *
+   * Sem estado otimista: quem clica pode nem estar com o painel de notas
+   * aberto, e o aviso é a confirmação. Quem estiver com ele aberto vê a citação
+   * aparecer sozinha, pelo mesmo caminho de qualquer outra edição.
+   */
+  const paraNotas = useCallback(
+    (mensagem: Message) => {
+      void api(`/messages/${mensagem.id}/para-notas`, { method: 'POST' })
+        .then(() => show('Adicionado às notas do canal.'))
+        .catch(() => show('Não foi possível adicionar às notas.', 'danger'));
+    },
+    [show],
+  );
+
+  return { reagir, guardar, fixar, apagar, paraNotas };
 }

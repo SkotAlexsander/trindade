@@ -9,6 +9,10 @@ import * as attachmentsDb from '../db/attachments.js';
 import { toApiMessage, toApiMessages } from '../services/message-view.js';
 import { agruparAnexos } from '../services/attachment-view.js';
 import { gateway } from '../ws/index.js';
+import * as usersDb from '../db/users.js';
+import * as notas from '../services/notas.js';
+import { userKey } from '../lib/client-key.js';
+import { config } from '../config.js';
 
 const LIMITE_PADRAO = 50;
 const LIMITE_MAXIMO = 100;
@@ -50,6 +54,50 @@ const mensagemSchema = z.object({
 
 export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.authenticate);
+
+  /**
+   * "Adicionar às notas".
+   *
+   * O gesto central das ferramentas de projeto: uma decisão tomada na conversa
+   * vira registro em um clique, sem copiar e colar. Vai como citação, com o
+   * nome de quem disse e o link de volta — sem a origem, a nota vira uma cópia
+   * sem procedência, e daí ninguém confia nela.
+   */
+  app.post(
+    '/messages/:id/para-notas',
+    {
+      config: { rateLimit: { max: 60, timeWindow: '1 hour', keyGenerator: userKey } },
+      schema: {
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: z.object({ ok: z.boolean() }) },
+      },
+    },
+    async (req) => {
+      const me = requireUser(req);
+      if (!can(me.permissions, Perm.MANAGE_NOTES)) {
+        throw forbidden('MISSING_PERMISSION', 'você não pode editar as notas');
+      }
+
+      const mensagem = await messagesDb.findMessageById(req.params.id);
+      if (!mensagem || mensagem.deleted_at) {
+        throw notFound('MESSAGE_NOT_FOUND', 'esta mensagem não existe');
+      }
+
+      const autor = await usersDb.findUserById(mensagem.author_id);
+      const canal = await channelsDb.findChannelById(mensagem.channel_id);
+
+      await notas.citarMensagem({
+        channelId: mensagem.channel_id,
+        userId: me.id,
+        texto: mensagem.content ?? '',
+        autor: autor?.display_name ?? 'Alguém',
+        link: `${config.WEB_ORIGIN}/c/${canal?.slug ?? ''}?m=${mensagem.id}`,
+        log: app.log,
+      });
+
+      return { ok: true };
+    },
+  );
 
   /** O envio é por WebSocket; o HTTP cobre histórico e operações pontuais. */
   app.get(

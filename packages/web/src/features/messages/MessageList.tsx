@@ -42,7 +42,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const { data, isPending } = useMessages(channelId);
   const { carregar, carregando } = useCarregarAntigas(channelId);
   const { tentarDeNovo, descartar } = useEnviarMensagem();
-  const { reagir, guardar, fixar, apagar } = useAcoesDaMensagem();
+  const { reagir, guardar, fixar, apagar, paraNotas } = useAcoesDaMensagem();
 
   const responder = useComposer((s) => s.responder);
   const editar = useComposer((s) => s.editar);
@@ -276,6 +276,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
     () => ({
       podeFixar: can(permissoes, Perm.PIN_MESSAGE),
       podeApagarDosOutros: can(permissoes, Perm.DELETE_ANY_MESSAGE),
+      podeAnotar: can(permissoes, Perm.MANAGE_NOTES),
       onReagir: reagir,
       onResponder: responder,
       onGuardar: (m) => guardar(m, !m.saved),
@@ -289,6 +290,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       onPular: pular,
       onFocar: focar,
       onThread: (m) => abrirThread(m.id),
+      onParaNotas: paraNotas,
     }),
     [
       permissoes,
@@ -298,6 +300,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       fixar,
       editar,
       apagar,
+      paraNotas,
       tentarDeNovo,
       descartar,
       pular,

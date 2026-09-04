@@ -51,11 +51,13 @@ export function corDoCargo(roles: readonly Role[] | undefined): string | undefin
 
 export interface AcoesDisponiveis {
   podeFixar: boolean;
+  podeAnotar: boolean;
   podeApagarDosOutros: boolean;
   onReagir: (mensagem: MensagemLocal, emoji: string, tirar: boolean) => void;
   onResponder: (mensagem: MensagemLocal) => void;
   onGuardar: (mensagem: MensagemLocal) => void;
   onFixar: (mensagem: MensagemLocal) => void;
+  onParaNotas: (mensagem: MensagemLocal) => void;
   onEditar: (mensagem: MensagemLocal) => void;
   onApagar: (mensagem: MensagemLocal) => void;
   onTentarDeNovo: (mensagem: MensagemLocal) => void;
@@ -325,6 +327,7 @@ export const Message = memo(function Message({
           mensagem={mensagem}
           souOAutor={souOAutor}
           podeFixar={acoes.podeFixar}
+          podeAnotar={acoes.podeAnotar}
           podeApagar={souOAutor || acoes.podeApagarDosOutros}
           onReagir={(emoji) => {
             const minha = mensagem.reactions.find((r) => r.emoji === emoji)?.me ?? false;
@@ -333,6 +336,7 @@ export const Message = memo(function Message({
           onResponder={() => acoes.onResponder(mensagem)}
           onGuardar={() => acoes.onGuardar(mensagem)}
           onFixar={() => acoes.onFixar(mensagem)}
+          onParaNotas={() => acoes.onParaNotas(mensagem)}
           onEditar={() => acoes.onEditar(mensagem)}
           onApagar={() => acoes.onApagar(mensagem)}
           onThread={() => acoes.onThread(mensagem)}

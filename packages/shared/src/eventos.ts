@@ -59,6 +59,31 @@ export const clientEventSchema = z.discriminatedUnion('op', [
     op: z.literal('SUBSCRIBE'),
     d: z.object({ channelIds: z.array(z.string().uuid()).max(50) }),
   }),
+  /**
+   * Notas colaborativas.
+   *
+   * O delta do Yjs viaja em base64 dentro do mesmo WebSocket de tudo o mais —
+   * uma segunda conexão só para notas seria outro caminho para autenticar,
+   * reconectar e depurar. `NOTE_OPEN` assina o canal e recebe o estado
+   * inteiro; `NOTE_UPDATE` leva as alterações; `NOTE_AWARENESS` leva cursor e
+   * seleção, que são efêmeros e não passam pelo banco.
+   */
+  z.object({ op: z.literal('NOTE_OPEN'), d: z.object({ channelId: z.string().uuid() }) }),
+  z.object({ op: z.literal('NOTE_CLOSE'), d: z.object({ channelId: z.string().uuid() }) }),
+  z.object({
+    op: z.literal('NOTE_UPDATE'),
+    d: z.object({
+      channelId: z.string().uuid(),
+      // 256 KB em base64: um delta de digitação tem dezenas de bytes, e o
+      // estado inteiro de uma nota longa não passa disto. O teto existe para
+      // um cliente defeituoso não empurrar um megabyte a cada tecla.
+      update: z.string().max(262_144),
+    }),
+  }),
+  z.object({
+    op: z.literal('NOTE_AWARENESS'),
+    d: z.object({ channelId: z.string().uuid(), estado: z.string().max(8_192) }),
+  }),
   z.object({ op: z.literal('HEARTBEAT'), d: z.object({}).passthrough().optional() }),
 ]);
 
@@ -125,6 +150,12 @@ export type ServerEvent =
   | { op: 'PERMISSIONS_UPDATE'; d: { permissions: string } }
   /** Outra aba sua marcou um canal como lido. Só vai para você. */
   | { op: 'READ_STATE_UPDATE'; d: ReadStateEntry }
+  /** O documento inteiro, ao abrir o painel. Só vai para quem pediu. */
+  | { op: 'NOTE_STATE'; d: { channelId: string; update: string; podeEditar: boolean } }
+  | { op: 'NOTE_UPDATE'; d: { channelId: string; update: string; de: string } }
+  | { op: 'NOTE_AWARENESS'; d: { channelId: string; estado: string; de: string } }
+  /** Quem está com a nota aberta. A faixa "fulano e beltrano editando". */
+  | { op: 'NOTE_PRESENCE'; d: { channelId: string; userIds: string[] } }
   | { op: 'ERROR'; d: { code: string; message: string; retryAfter?: number } };
 
 export type ServerEventName = ServerEvent['op'];

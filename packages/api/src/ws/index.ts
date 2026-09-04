@@ -23,6 +23,7 @@ import { definirMicrofone, esquecerUsuario, estadosDeVoz } from '../services/est
 import { toApiUser } from '../services/user-view.js';
 import * as gw from './gateway.js';
 import { mensagensCriadas } from '../lib/metricas.js';
+import * as notas from '../services/notas.js';
 
 const REVALIDACAO_MS = 60_000;
 
@@ -67,6 +68,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       sessionId: randomUUID(),
       permissions: effectivePermissions(cargos),
       subscribed: new Set(),
+      notas: new Set(),
       lastHeartbeat: Date.now(),
       status: linha.status === 'offline' ? 'online' : linha.status,
       customStatus: linha.custom_status,
@@ -117,6 +119,14 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
     });
 
     socket.on('close', () => {
+      // Fechar a aba no meio da edição não pode perder nada: cada nota aberta
+      // por esta conexão é fechada, e a última a sair grava na hora.
+      for (const channelId of [...conn.notas]) {
+        void fecharPainelDeNotas(conn, channelId).catch((err: unknown) => {
+          app.log.error({ err, channelId }, 'não consegui fechar a nota ao desconectar');
+        });
+      }
+
       const saida = gw.unregister(conn.sessionId);
       // Só marque offline quando **todas** as conexões caírem: fechar uma aba
       // não pode deixar a pessoa offline para os outros.
@@ -204,6 +214,108 @@ async function tratar(conn: gw.Connection, bruto: Buffer, app: FastifyInstance):
     case 'MESSAGE_CREATE':
       await criarMensagem(conn, evento.d, app);
       return;
+
+    case 'NOTE_OPEN':
+      await abrirPainelDeNotas(conn, evento.d.channelId);
+      return;
+
+    case 'NOTE_CLOSE':
+      await fecharPainelDeNotas(conn, evento.d.channelId);
+      return;
+
+    case 'NOTE_UPDATE': {
+      // **Só com `MANAGE_NOTES`.** Esconder o editor na interface não é
+      // controle de acesso: sem esta linha, um delta mandado à mão entraria.
+      if (!can(conn.permissions, Perm.MANAGE_NOTES)) {
+        gw.send(conn, {
+          op: 'ERROR',
+          d: { code: 'MISSING_PERMISSION', message: 'você não pode editar as notas' },
+        });
+        return;
+      }
+      const nota = await notas.abrirNota(evento.d.channelId, conn.userId);
+      notas.aplicar(
+        evento.d.channelId,
+        nota,
+        Buffer.from(evento.d.update, 'base64'),
+        conn.userId,
+        app.log,
+      );
+
+      // Repassa a quem está com a nota aberta, e só a eles: o delta não
+      // interessa a quem nem abriu o painel.
+      for (const outra of gw.comNotaAberta(evento.d.channelId)) {
+        if (outra.sessionId === conn.sessionId) continue;
+        gw.send(outra, {
+          op: 'NOTE_UPDATE',
+          d: { channelId: evento.d.channelId, update: evento.d.update, de: conn.userId },
+        });
+      }
+      return;
+    }
+
+    case 'NOTE_AWARENESS':
+      // Cursor e seleção não passam pelo banco nem exigem permissão: quem só
+      // lê também aparece, e é assim que se sabe que alguém está olhando.
+      for (const outra of gw.comNotaAberta(evento.d.channelId)) {
+        if (outra.sessionId === conn.sessionId) continue;
+        gw.send(outra, {
+          op: 'NOTE_AWARENESS',
+          d: { channelId: evento.d.channelId, estado: evento.d.estado, de: conn.userId },
+        });
+      }
+      return;
+  }
+}
+
+/**
+ * Abre o painel de notas: manda o documento inteiro e avisa quem já está lá.
+ *
+ * Sem `MANAGE_NOTES` a nota abre **em leitura** — o painel existe para todo
+ * mundo, porque uma decisão registrada que só alguns podem ler não é registro.
+ */
+async function abrirPainelDeNotas(conn: gw.Connection, channelId: string): Promise<void> {
+  const nota = await notas.abrirNota(channelId, conn.userId);
+  conn.notas.add(channelId);
+
+  gw.send(conn, {
+    op: 'NOTE_STATE',
+    d: {
+      channelId,
+      update: Buffer.from(notas.estadoDaNota(nota)).toString('base64'),
+      podeEditar: can(conn.permissions, Perm.MANAGE_NOTES),
+    },
+  });
+
+  avisarPresencaDaNota(channelId);
+}
+
+async function fecharPainelDeNotas(conn: gw.Connection, channelId: string): Promise<void> {
+  conn.notas.delete(channelId);
+  // O serviço só solta a nota da memória quando ninguém mais a tem aberta —
+  // e aí grava na hora, sem esperar o debounce.
+  if (!gw.comNotaAberta(channelId).some((c) => c.userId === conn.userId)) {
+    await notas.fecharNota(channelId, conn.userId);
+  }
+  avisarPresencaDaNota(channelId);
+}
+
+/* O serviço avisa por aqui quando algo mudou a nota fora do WebSocket — hoje,
+   "adicionar às notas" a partir de uma mensagem. */
+notas.definirAviso((channelId, delta) => {
+  for (const conexao of gw.comNotaAberta(channelId)) {
+    gw.send(conexao, {
+      op: 'NOTE_UPDATE',
+      d: { channelId, update: Buffer.from(delta).toString('base64'), de: 'servidor' },
+    });
+  }
+});
+
+function avisarPresencaDaNota(channelId: string): void {
+  const abertas = gw.comNotaAberta(channelId);
+  const userIds = [...new Set(abertas.map((c) => c.userId))];
+  for (const outra of abertas) {
+    gw.send(outra, { op: 'NOTE_PRESENCE', d: { channelId, userIds } });
   }
 }
 
