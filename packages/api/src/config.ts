@@ -1,0 +1,47 @@
+import { z } from 'zod';
+import dotenv from 'dotenv';
+import { resolve } from 'node:path';
+
+// O .env vive na raiz do monorepo, não no pacote.
+dotenv.config({ path: resolve(process.cwd(), '../../.env'), quiet: true });
+dotenv.config({ quiet: true });
+
+// Nesta fase só o que o health check e o bootstrap precisam é obrigatório. As
+// chaves de mídia e storage existem no .env.example desde já — ver
+// docs/04-seguranca.md — mas só viram obrigatórias na fase em que são usadas.
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(3000),
+  WEB_ORIGIN: z.string().url().default('http://localhost:5173'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória — copie o .env.example'),
+
+  JWT_PRIVATE_KEY: z.string().optional(),
+  JWT_PUBLIC_KEY: z.string().optional(),
+  TOTP_ENCRYPTION_KEY: z.string().optional(),
+
+  S3_ENDPOINT: z.string().optional(),
+  S3_KEY: z.string().optional(),
+  S3_SECRET: z.string().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default('auto'),
+
+  // Endereços de mídia sempre por variável de ambiente, mesmo com tudo no
+  // mesmo servidor. Ver "Decisões" no CLAUDE.md.
+  LIVEKIT_URL: z.string().optional(),
+  LIVEKIT_API_KEY: z.string().optional(),
+  LIVEKIT_API_SECRET: z.string().optional(),
+  TURN_URL: z.string().optional(),
+  TURN_STATIC_SECRET: z.string().optional(),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n');
+  console.error(`Configuração inválida:\n${issues}`);
+  process.exit(1);
+}
+
+export const config = parsed.data;
+export type Config = typeof config;
+export const isProduction = config.NODE_ENV === 'production';

@@ -1,0 +1,44 @@
+# Dev. Portas só em 127.0.0.1 — nada de banco exposto na rede.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trindade
+      POSTGRES_PASSWORD: trindade_dev
+      POSTGRES_DB: trindade
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U trindade -d trindade']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # MinIO é o S3 de desenvolvimento. Em produção o mesmo código fala com o R2,
+  # trocando apenas S3_ENDPOINT/S3_KEY/S3_SECRET. Ver "Decisões" no CLAUDE.md.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: trindade
+      MINIO_ROOT_PASSWORD: trindade_dev
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'mc ready local || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  minio_data:

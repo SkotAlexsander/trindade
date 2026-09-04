@@ -152,11 +152,11 @@ Tomadas no Passo 0. Não reabrir sem me perguntar.
   - Upload continua passando pela API (multipart, 8 MB, re-encode obrigatório).
     Não invente URL assinada para o cliente subir direto ao R2 — isso pularia o
     re-encode e violaria a regra de metadado de imagem.
-  - API, Postgres, coturn e LiveKit ficam num VPS único por ora. **Mídia não
-    passa pela Cloudflare** — é UDP. O IP do TURN é visível por natureza; se
-    isso incomodar depois, coturn e LiveKit saem para um segundo servidor. Por
-    isso os endereços deles são variável de ambiente desde a fase 1, nunca
-    literal no código.
+  - **Servidor único.** API, Postgres, coturn e LiveKit no mesmo VPS. Decidido,
+    não é provisório: não proponha separar a mídia. **Mídia não passa pela
+    Cloudflare** — é UDP, vai direto ao VPS, e o IP do TURN é visível por
+    natureza. Isso é aceito. Ainda assim os endereços de coturn e LiveKit são
+    variável de ambiente desde a fase 1, nunca literal no código.
 - **Desktop:** sim, Tauri na fase 8. A partir de agora, evite APIs de navegador
   que o Tauri trata diferente — notificação, bandeja e atalho global passam por
   uma camada de abstração em `packages/web/src/lib/`, nunca chamadas diretas

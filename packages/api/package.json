@@ -1,0 +1,36 @@
+{
+  "name": "@trindade/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"sem testes na fase 1\" && exit 0",
+    "migrate": "node --import tsx ./src/scripts/migrate.ts",
+    "bootstrap": "tsx src/scripts/bootstrap.ts",
+    "keygen": "tsx src/scripts/keygen.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@trindade/shared": "workspace:*",
+    "argon2": "^0.41.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.0",
+    "fastify-type-provider-zod": "^4.0.2",
+    "node-pg-migrate": "^7.9.0",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.1",
+    "fastify-plugin": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "pino-pretty": "^13.0.0"
+  }
+}

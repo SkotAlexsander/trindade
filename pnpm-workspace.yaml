@@ -1,0 +1,12 @@
+packages:
+  - 'packages/*'
+
+allowBuilds:
+  argon2: set this to true or false
+  esbuild: set this to true or false
+
+# argon2 é módulo nativo e esbuild baixa binário: os dois precisam rodar script
+# de instalação. O pnpm exige a lista explícita.
+onlyBuiltDependencies:
+  - argon2
+  - esbuild
