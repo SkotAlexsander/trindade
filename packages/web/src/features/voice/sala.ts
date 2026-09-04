@@ -4,12 +4,15 @@ import {
   Room,
   RoomEvent,
   Track,
+  TrackEvent,
   VideoPresets,
   type LocalTrackPublication,
+  type LocalVideoTrack,
   type RemoteParticipant,
+  type RemoteVideoTrack,
 } from 'livekit-client';
 import type { CadeiaDeEntrada } from '../../lib/midia';
-import { aplicarSaida, podeEscolherSaida } from '../../lib/midia';
+import { abrirCamera, aplicarSaida, encerrar, podeEscolherSaida } from '../../lib/midia';
 import { lerPreferencias } from '../../lib/preferencias';
 import type { FaseDaChamada, Qualidade } from './store';
 
@@ -28,6 +31,22 @@ export interface Retornos {
   aoMudarQualidade: (qualidade: Qualidade) => void;
   /** O navegador barrou o áudio até haver um clique na página. */
   aoBloquearAudio: (bloqueado: boolean) => void;
+  /** Alguém entrou, saiu, ligou ou desligou a câmera. */
+  aoMudarParticipantes: (lista: Participante[]) => void;
+  /** A trilha de vídeo morreu sozinha — aparelho removido, outro programa. */
+  aoCairACamera: () => void;
+}
+
+/**
+ * O que a grade precisa saber de cada pessoa.
+ *
+ * A trilha vai junto, e não um identificador dela: quem desenha o cartão chama
+ * `attach` no elemento de vídeo, e é o SDK que cuida do resto.
+ */
+export interface Participante {
+  identity: string;
+  eu: boolean;
+  video: RemoteVideoTrack | LocalVideoTrack | null;
 }
 
 export interface Credenciais {
@@ -99,7 +118,15 @@ export async function entrar(
       // Quem chega depois entra no mesmo volume: sem isto, ensurdecer valeria
       // só para quem já estava na sala.
       if (surdo) p.setVolume(0);
+      avisarParticipantes(retornos);
     })
+    .on(RoomEvent.ParticipantDisconnected, () => avisarParticipantes(retornos))
+    .on(RoomEvent.TrackSubscribed, () => avisarParticipantes(retornos))
+    .on(RoomEvent.TrackUnsubscribed, () => avisarParticipantes(retornos))
+    .on(RoomEvent.TrackMuted, () => avisarParticipantes(retornos))
+    .on(RoomEvent.TrackUnmuted, () => avisarParticipantes(retornos))
+    .on(RoomEvent.LocalTrackPublished, () => avisarParticipantes(retornos))
+    .on(RoomEvent.LocalTrackUnpublished, () => avisarParticipantes(retornos))
     .on(RoomEvent.Disconnected, (motivo) => {
       const esperado =
         motivo === DisconnectReason.CLIENT_INITIATED || motivo === undefined;
@@ -128,6 +155,96 @@ export async function entrar(
 
   await aplicarSaidaSalva(room);
   retornos.aoBloquearAudio(!room.canPlaybackAudio);
+  avisarParticipantes(retornos);
+}
+
+/**
+ * A grade inteira, refeita a cada evento.
+ *
+ * Recalcular tudo é mais barato do que manter um espelho do estado do SDK em
+ * sincronia — e é a diferença entre um cartão fantasma de quem já saiu e nada.
+ */
+function avisarParticipantes(retornos: Retornos): void {
+  if (!sala) return;
+  const room = sala;
+
+  const doParticipante = (p: {
+    identity: string;
+    getTrackPublication: (source: Track.Source) => { videoTrack?: unknown; isMuted: boolean } | undefined;
+  }): Participante => {
+    const pub = p.getTrackPublication(Track.Source.Camera);
+    // Trilha muda não é trilha: quem desliga a câmera no meio some do vídeo
+    // sem sair da grade, e o cartão volta a ser o avatar.
+    const video = pub && !pub.isMuted ? ((pub.videoTrack as RemoteVideoTrack) ?? null) : null;
+    return { identity: p.identity, eu: p.identity === room.localParticipant.identity, video };
+  };
+
+  retornos.aoMudarParticipantes([
+    doParticipante(room.localParticipant),
+    ...[...room.remoteParticipants.values()].map(doParticipante),
+  ]);
+}
+
+let cameraLocal: MediaStream | null = null;
+let publicacaoDeVideo: LocalTrackPublication | null = null;
+
+/**
+ * Liga e desliga a câmera.
+ *
+ * A permissão é pedida **aqui**, no clique, e não ao entrar na chamada: entrar
+ * numa chamada de voz nunca acende a luz da câmera.
+ * Ver docs/07-permissoes-do-navegador.md.
+ */
+export async function definirCamera(ligada: boolean, retornos: Retornos): Promise<void> {
+  if (!sala) return;
+
+  if (!ligada) {
+    const trilhaPublicada = publicacaoDeVideo?.track;
+    publicacaoDeVideo = null;
+    if (trilhaPublicada) {
+      await sala.localParticipant.unpublishTrack(trilhaPublicada);
+      // `stopLocalTrackOnUnpublish` está desligado por causa do áudio, então
+      // apagar a luz é responsabilidade nossa — e é uma responsabilidade séria:
+      // luz acesa é o contrato de que alguém está sendo filmado. São duas
+      // chamadas porque o SDK publica um **clone**: encerrar só o nosso stream
+      // deixaria o clone vivo, com a luz acesa e ninguém vendo.
+      trilhaPublicada.stop();
+    }
+    encerrar(cameraLocal);
+    cameraLocal = null;
+    avisarParticipantes(retornos);
+    return;
+  }
+
+  const prefs = lerPreferencias();
+  const stream = await abrirCamera({
+    qualidade: prefs.qualidadeDaCamera,
+    ...(prefs.camera ? { deviceId: prefs.camera.deviceId } : {}),
+  });
+  const trilha = stream.getVideoTracks()[0];
+  if (!trilha) throw new Error('câmera sem trilha');
+
+  cameraLocal = stream;
+  publicacaoDeVideo =
+    (await sala.localParticipant.publishTrack(trilha, { source: Track.Source.Camera })) ?? null;
+
+  /* O aviso de fim vai na trilha **do SDK**, não na que abrimos.
+     `publishTrack` clona a trilha recebida e encerra a original, então um
+     `ended` na nossa dispara no instante seguinte à publicação — a câmera
+     acendia e se apagava sozinha, com o toast de "a câmera parou" por cima. A
+     do SDK só termina quando o aparelho some de verdade ou outro programa o
+     toma, que é o caso que interessa: botão aceso com imagem congelada é pior
+     que desligado. */
+  publicacaoDeVideo?.track?.on(TrackEvent.Ended, () => {
+    void definirCamera(false, retornos);
+    retornos.aoCairACamera();
+  });
+
+  avisarParticipantes(retornos);
+}
+
+export function cameraLigada(): boolean {
+  return publicacaoDeVideo !== null;
 }
 
 /** A saída escolhida nas configurações, se este navegador deixar escolher. */
@@ -147,7 +264,12 @@ export async function sair(): Promise<void> {
   const anterior = sala;
   sala = null;
   publicacao = null;
+  publicacaoDeVideo = null;
   surdo = false;
+  // A câmera é apagada antes de desconectar: esperar a desconexão terminar
+  // deixaria a luz acesa por um instante depois de a chamada ter acabado.
+  encerrar(cameraLocal);
+  cameraLocal = null;
   await anterior.disconnect();
 }
 

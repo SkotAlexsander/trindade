@@ -1,0 +1,243 @@
+/* A grade de participantes. Ver design/07-chamada.md. */
+
+.grade {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-rows: var(--header-h) minmax(0, 1fr) 56px;
+  background: var(--bg-app);
+  min-height: 0;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.titulo {
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.contagem {
+  color: var(--text-secondary);
+  font-weight: var(--weight-normal);
+}
+
+.fechar {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.fechar:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sozinho {
+  position: absolute;
+  top: calc(var(--header-h) + var(--s-3));
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+  pointer-events: none;
+}
+
+.cartoes {
+  display: grid;
+  gap: 8px;
+  padding: var(--s-3);
+  align-content: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* 1 ocupa tudo; 2 lado a lado; 3 e 4 em 2x2. */
+.cartoes[data-quantidade='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.cartoes[data-quantidade='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.cartoes[data-quantidade='3'],
+.cartoes[data-quantidade='4'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 5 em 3+2: seis colunas, cada cartão ocupando duas. Os dois de baixo começam
+   deslocados de uma coluna, o que os deixa centrados sob os três de cima. */
+.cartoes[data-quantidade='5'] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.cartoes[data-quantidade='5'] > * {
+  grid-column: span 2;
+}
+.cartoes[data-quantidade='5'] > *:nth-child(4) {
+  grid-column: 2 / span 2;
+}
+.cartoes[data-quantidade='5'] > *:nth-child(5) {
+  grid-column: 4 / span 2;
+}
+
+.cartao {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-width: 0;
+  border-radius: var(--r-media);
+  background: var(--bg-raised);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  /* Saindo em 400ms. A borda de quem fala entra em 120ms — a assimetria está
+     na regra abaixo, e é ela que evita o estroboscópio com quatro pessoas
+     conversando ao mesmo tempo. */
+  box-shadow: inset 0 0 0 2px transparent;
+  transition: box-shadow 400ms ease;
+}
+
+.cartao[data-falando='true'] {
+  box-shadow: inset 0 0 0 2px var(--live);
+  transition-duration: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartao {
+    transition: none;
+  }
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--void, #000);
+}
+
+/* Só a sua prévia. O que sai para os outros nunca é espelhado. */
+.video[data-espelhado='true'] {
+  transform: scaleX(-1);
+}
+
+.semVideo {
+  display: grid;
+  place-items: center;
+}
+
+.rodape {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  font-size: var(--text-label);
+  color: var(--text-primary);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+}
+
+.nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mudo {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  color: var(--danger);
+}
+
+.controles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  border-top: 1px solid var(--border-soft);
+  position: relative;
+}
+
+.controle {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--bg-active);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.controle:hover {
+  background: var(--bg-hover);
+}
+
+/* Desligado nunca é só cor: o ícone já vem cortado pela diagonal. */
+.controle[data-desligado='true'] {
+  background: var(--crimson-wash);
+  color: var(--danger);
+}
+
+/* A câmera ligada é presença ao vivo, como a borda de quem fala. */
+.controle[data-aceso='true'] {
+  background: var(--magenta-wash);
+  color: var(--live);
+}
+
+.sair {
+  position: absolute;
+  right: var(--s-3);
+  /* Posicionado à mão: dentro de um flex, um elemento absoluto herda a posição
+     estática da linha e escorrega para fora da faixa. */
+  top: 50%;
+  transform: translateY(-50%);
+  height: 32px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--danger);
+  color: var(--text-on-accent);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  cursor: pointer;
+}
+
+.sair:hover {
+  background: var(--crimson-hover);
+}
+
+/* Numa faixa estreita a grade vira uma coluna só: dois cartões de 16:9 lado a
+   lado em 400px não mostram rosto nenhum. */
+@media (max-width: 700px) {
+  .cartoes[data-quantidade],
+  .cartoes[data-quantidade='5'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cartoes[data-quantidade='5'] > *,
+  .cartoes[data-quantidade='5'] > *:nth-child(4),
+  .cartoes[data-quantidade='5'] > *:nth-child(5) {
+    grid-column: auto;
+  }
+}

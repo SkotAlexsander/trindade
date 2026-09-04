@@ -139,6 +139,9 @@
 /* --- coluna 3: conversa --------------------------------------------------- */
 
 .conversa {
+  /* Referência para a grade da chamada, que se sobrepõe a esta coluna
+     inteira — cabeçalho incluído. */
+  position: relative;
   display: grid;
   grid-template-rows: auto var(--header-h) minmax(0, 1fr);
   min-width: 0;

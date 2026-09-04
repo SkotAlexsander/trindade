@@ -15,6 +15,7 @@ import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
 import { BarraDeChamada } from '../voice/BarraDeChamada';
+import { GradeDaChamada } from '../voice/GradeDaChamada';
 import { useVoz } from '../voice/store';
 import { useChamada } from '../voice/useChamada';
 import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
@@ -117,7 +118,14 @@ export function AppShell() {
     [canais, slug, navigate],
   );
 
-  const { alternarMudo, alternarSurdo, sair: sairDaChamada } = useChamada();
+  const {
+    alternarMudo,
+    alternarSurdo,
+    alternarCamera,
+    alternarGrade,
+    sair: sairDaChamada,
+  } = useChamada();
+  const gradeAberta = useVoz((state) => state.grade);
   const canalDaChamada = useVoz((state) => (state.fase === 'fora' ? null : state.channelId));
 
   // `Alt ⇧ C` leva ao canal da chamada em andamento. Serve para achar de volta
@@ -155,6 +163,7 @@ export function AppShell() {
     { key: 'm', mod: true, shift: true, emCampo: true, run: alternarMudo },
     { key: 'a', mod: true, shift: true, emCampo: true, run: alternarSurdo },
     { key: 'd', mod: true, shift: true, emCampo: true, run: () => void sairDaChamada() },
+    { key: 'v', mod: true, shift: true, emCampo: true, run: alternarCamera },
     { key: 'c', alt: true, shift: true, run: irParaChamada },
     { key: 'ArrowDown', alt: true, run: () => irParaVizinho(1) },
     { key: 'ArrowUp', alt: true, run: () => irParaVizinho(-1) },
@@ -162,6 +171,12 @@ export function AppShell() {
       key: 'Escape',
       emCampo: true,
       run: () => {
+        // A grade cobre a conversa; sair dela é o primeiro significado de
+        // Escape enquanto está aberta. Fechá-la não sai da chamada.
+        if (gradeAberta) {
+          alternarGrade();
+          return;
+        }
         if (gaveta) {
           setGaveta(false);
           return;
@@ -257,6 +272,7 @@ export function AppShell() {
         onPainel={alternarPainel}
         onAbrirGaveta={() => setGaveta(true)}
         mostrarGaveta={estreito}
+        sobreposicao={<GradeDaChamada canais={canais} pessoas={pessoas} />}
       >
         <Outlet />
       </ChannelHeader>

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useToast } from '../../components';
+import { useToast, type ToastKind } from '../../components';
 import { api, HttpError } from '../../lib/http';
 import * as ws from '../../lib/ws';
 import {
@@ -56,7 +56,36 @@ export interface Chamada {
   sair: () => Promise<void>;
   alternarMudo: () => void;
   alternarSurdo: () => void;
+  alternarCamera: () => void;
+  alternarGrade: () => void;
   destravarAudio: () => void;
+}
+
+/**
+ * Os avisos que a sala manda de volta.
+ *
+ * Fora do hook porque a câmera também precisa deles: passar um objeto
+ * diferente ali faria os eventos de participante pararem de chegar depois do
+ * primeiro `definirCamera`, e o defeito só apareceria com duas pessoas.
+ */
+function retornosDaSala(show: (mensagem: string, tipo?: ToastKind) => void): sala.Retornos {
+  return {
+    aoMudarFase: (fase, erro) => {
+      useVoz.getState().definir({ fase, erro: erro ?? null });
+      if (fase === 'fora' || fase === 'falhou') {
+        void cadeia?.fechar();
+        cadeia = null;
+      }
+      if (erro) show(erro, 'danger');
+    },
+    aoFalar: (falando) => useVoz.getState().definir({ falando }),
+    aoMudarQualidade: (qualidade) => useVoz.getState().definir({ qualidade }),
+    aoBloquearAudio: (audioBloqueado) => useVoz.getState().definir({ audioBloqueado }),
+    aoMudarParticipantes: (participantes) =>
+      useVoz.getState().definir({ participantes, camera: sala.cameraLigada() }),
+    aoCairACamera: () =>
+      show('A câmera parou. O aparelho foi removido ou está em uso por outro programa.'),
+  };
 }
 
 export function useChamada(): Chamada {
@@ -106,19 +135,7 @@ export function useChamada(): Chamada {
           show(`Microfone não encontrado. Usando ${escolha.dispositivo.label || 'o padrão'}.`);
         }
 
-        await sala.entrar(credenciais, cadeia, {
-          aoMudarFase: (fase, erro) => {
-            useVoz.getState().definir({ fase, erro: erro ?? null });
-            if (fase === 'fora' || fase === 'falhou') {
-              void cadeia?.fechar();
-              cadeia = null;
-            }
-            if (erro) show(erro, 'danger');
-          },
-          aoFalar: (falando) => useVoz.getState().definir({ falando }),
-          aoMudarQualidade: (qualidade) => useVoz.getState().definir({ qualidade }),
-          aoBloquearAudio: (audioBloqueado) => useVoz.getState().definir({ audioBloqueado }),
-        });
+        await sala.entrar(credenciais, cadeia, retornosDaSala(show));
 
         useVoz.getState().definir({ fase: 'conectado', muted: false, deafened: false });
         anunciar(channelId, false, false);
@@ -167,11 +184,47 @@ export function useChamada(): Chamada {
     tocar(muted ? 'mudo' : 'aberto');
   }, []);
 
+  /**
+   * A câmera entra **desligada, sempre**.
+   *
+   * Ao contrário do microfone, que entra aberto porque a borda saturada torna o
+   * estado impossível de ignorar, a câmera não tem sinal equivalente e o custo
+   * do engano é de outra ordem. Ligar pede a permissão naquele momento.
+   */
+  const alternarCamera = useCallback(() => {
+    const voz = useVoz.getState();
+    if (voz.fase !== 'conectado') return;
+    const ligar = !voz.camera;
+    // O estado só muda quando a trilha existe de verdade: botão aceso sem
+    // imagem é a mesma mentira que botão aceso com imagem congelada.
+    void sala
+      .definirCamera(ligar, retornosDaSala(show))
+      .then(() => useVoz.getState().definir({ camera: sala.cameraLigada() }))
+      .catch((erro: unknown) => {
+        useVoz.getState().definir({ camera: sala.cameraLigada() });
+        show(explicarErroDeMidia(erro, 'camera') ?? 'Não consegui abrir a câmera.', 'danger');
+      });
+  }, [show]);
+
+  const alternarGrade = useCallback(() => {
+    const voz = useVoz.getState();
+    if (voz.fase === 'fora') return;
+    voz.definir({ grade: !voz.grade });
+  }, []);
+
   const destravarAudio = useCallback(() => {
     void sala.destravarAudio().then(() => useVoz.getState().definir({ audioBloqueado: false }));
   }, []);
 
-  return { entrar, sair: sairDaChamada, alternarMudo, alternarSurdo, destravarAudio };
+  return {
+    entrar,
+    sair: sairDaChamada,
+    alternarMudo,
+    alternarSurdo,
+    alternarCamera,
+    alternarGrade,
+    destravarAudio,
+  };
 }
 
 /**

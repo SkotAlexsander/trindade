@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import type { Channel, User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
-import { Headphones, HeadphonesOff, Mic, MicOff } from '../../components/icones';
+import {
+  Expandir,
+  Headphones,
+  HeadphonesOff,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+} from '../../components/icones';
 import { naChamada, useVoz } from './store';
 import { useChamada } from './useChamada';
 import styles from './voz.module.css';
@@ -33,7 +41,10 @@ export function BarraDeChamada({
   const audioBloqueado = useVoz((s) => s.audioBloqueado);
   const estados = useVoz((s) => s.estados);
 
-  const { entrar, sair, alternarMudo, alternarSurdo, destravarAudio } = useChamada();
+  const camera = useVoz((s) => s.camera);
+  const grade = useVoz((s) => s.grade);
+  const { entrar, sair, alternarMudo, alternarSurdo, alternarCamera, alternarGrade, destravarAudio } =
+    useChamada();
 
   const canal = canais.find((c) => c.id === channelId);
   const dentro = useMemo(
@@ -127,6 +138,35 @@ export function BarraDeChamada({
             onClick={alternarSurdo}
           >
             {deafened ? <HeadphonesOff size={18} /> : <Headphones size={18} />}
+          </button>
+        </Tooltip>
+
+        <Tooltip label={camera ? 'Desligar a câmera' : 'Ligar a câmera'}>
+          <button
+            type="button"
+            className={styles.controle}
+            // Só `data-aceso`: câmera desligada é o estado normal dela, não um
+            // alerta, então não leva o vermelho que os outros dois levam.
+            data-aceso={camera}
+            aria-pressed={camera}
+            aria-label={camera ? 'Câmera ligada' : 'Câmera desligada'}
+            disabled={!conectado}
+            onClick={alternarCamera}
+          >
+            {camera ? <Video size={18} /> : <VideoOff size={18} />}
+          </button>
+        </Tooltip>
+
+        <Tooltip label={grade ? 'Fechar a grade' : 'Ver quem está na chamada'}>
+          <button
+            type="button"
+            className={styles.controle}
+            aria-pressed={grade}
+            aria-label="Grade de participantes"
+            disabled={!conectado}
+            onClick={alternarGrade}
+          >
+            <Expandir size={18} />
           </button>
         </Tooltip>
 

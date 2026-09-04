@@ -258,3 +258,26 @@ export const ExternalLink = (p: IconeProps) => (
     <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
   </Base>
 );
+
+export const Video = (p: IconeProps) => (
+  <Base {...p}>
+    <rect x="2" y="6" width="13" height="12" rx="2" />
+    <path d="m15 11 6-3v8l-6-3Z" />
+  </Base>
+);
+
+/** Barra diagonal, não só a cor: daltonismo. */
+export const VideoOff = (p: IconeProps) => (
+  <Base {...p}>
+    <rect x="2" y="6" width="13" height="12" rx="2" />
+    <path d="m15 11 6-3v8l-6-3Z" />
+    <path d="m3 3 18 18" />
+  </Base>
+);
+
+/** Abrir a grade: quatro setas para fora, não uma diagonal só. */
+export const Expandir = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M9 3H3v6M21 9V3h-6M15 21h6v-6M3 15v6h6" />
+  </Base>
+);

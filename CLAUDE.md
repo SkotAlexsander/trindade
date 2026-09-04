@@ -503,6 +503,22 @@ de setembro de 2026. Clicar conecta e abre a conversa; sair da chamada não fech
 a conversa. A regra que proibia anexo em canal de voz caiu junto: era uma regra
 sem motivo depois disso.
 
+**Fatia 4: a grade e a câmera.** Sobreposição sobre a conversa, layout
+automático de 1 a 5, borda de quem fala entrando em 120ms e saindo em 400ms, e a
+câmera desligada ao entrar — sempre.
+
+**O aviso de fim da trilha vai na trilha do SDK, não na nossa.** `publishTrack`
+substitui a trilha recebida pela sua e encerra a original, então um `ended` na
+nossa dispara no instante seguinte à publicação: a câmera acendia e se apagava
+sozinha. E, como `stopLocalTrackOnUnpublish` está desligado por causa do áudio,
+despublicar não apaga a luz — é preciso parar a trilha do SDK à mão. Luz acesa é
+o contrato de que alguém está sendo filmado.
+
+**A câmera falsa do Chrome não serve para testar imagem** nesta máquina: a
+trilha morre sozinha ~150ms depois de abrir, em qualquer combinação de flags. O
+teste verifica a recuperação, que é o caso real de quem perde a câmera para
+outro programa no meio da chamada.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

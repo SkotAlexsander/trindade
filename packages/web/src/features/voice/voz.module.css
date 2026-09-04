@@ -185,6 +185,14 @@
   background: var(--crimson-wash);
 }
 
+/* A câmera é a exceção e por isso não usa `data-desligado`: desligada é o
+   estado **normal** dela — entra assim sempre —, e o vermelho diria que algo
+   está errado. Ligada, ela é presença ao vivo, como a borda de quem fala. */
+.controle[data-aceso='true'] {
+  color: var(--live);
+  background: var(--magenta-wash);
+}
+
 .sair {
   margin-left: auto;
   border: 0;

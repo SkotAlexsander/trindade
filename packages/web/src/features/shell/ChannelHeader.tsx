@@ -33,6 +33,12 @@ export interface ChannelHeaderProps {
   /** Só aparece abaixo de 900px, onde a navegação vira pilha. */
   onAbrirGaveta?: () => void;
   mostrarGaveta?: boolean;
+  /**
+   * Cobre a conversa inteira, cabeçalho incluído — a grade da chamada. É
+   * sobreposição e não outra rota: a chamada e o que se escreve nela são a
+   * mesma sala, e trocar de tela obrigaria a escolher uma das duas.
+   */
+  sobreposicao?: ReactNode;
   children: ReactNode;
 }
 
@@ -42,6 +48,7 @@ export function ChannelHeader({
   onPainel,
   onAbrirGaveta,
   mostrarGaveta = false,
+  sobreposicao,
   children,
 }: ChannelHeaderProps) {
   return (
@@ -94,6 +101,8 @@ export function ChannelHeader({
       {/* A rolagem e o compositor pertencem à rota, não à moldura: `/config`
           usa este mesmo cabeçalho e não tem onde escrever. */}
       <div className={styles.historico}>{children}</div>
+
+      {sobreposicao}
     </div>
   );
 }

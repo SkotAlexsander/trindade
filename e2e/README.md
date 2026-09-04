@@ -176,6 +176,41 @@ ganhando um traço ao fechar — a barra diagonal, que é o que cobre daltonismo
 ensurdecer calando junto, a conversa do canal de voz e a saída aparecendo do
 outro lado.
 
+**`fase-07-grade.py`** — 18 verificações da grade de participantes. Que ela
+**sobrepõe** a conversa em vez de trocar de tela (a URL não muda e o compositor
+continua montado atrás), que entrar numa chamada de voz não liga vídeo nenhum,
+que o cartão de quem está sem câmera é o avatar e não um retângulo preto, que
+dois participantes ficam lado a lado em 16:9, e que `Escape` fecha a grade sem
+sair da chamada.
+
+### A câmera falsa do Chrome encerra a trilha sozinha
+
+Nesta máquina, `--use-fake-device-for-media-stream` dá um microfone que funciona
+e uma câmera que morre: a trilha de vídeo vai a `ended` cerca de 150ms depois de
+abrir. Testado com e sem janela, com `--use-fake-ui-for-media-stream`, e com o
+headless antigo — em todos, o mesmo.
+
+Isso tira do teste a verificação da imagem, e por um tempo pareceu defeito
+nosso: a interface acendia a câmera e a apagava sozinha, com o toast de "a
+câmera parou" por cima. O que ficou no lugar é melhor do que nada — a
+verificação de que a interface **se recupera** de uma trilha que morre, que é
+exatamente o caso de quem tem a câmera tomada por outro programa no meio da
+chamada.
+
+Ao investigar isso apareceu um defeito de verdade, esse nosso: o aviso de fim
+estava na trilha que abrimos, e `publishTrack` a substitui pela sua. O aviso
+agora vai na trilha do SDK.
+
+### Participante fantasma na sala
+
+O LiveKit mantém quem não se despediu direito até o tempo limite, e um roteiro
+interrompido no meio deixa esse rastro — a grade abre com três cartões onde
+deviam estar dois. Reiniciar o SFU limpa tudo, porque as salas vivem em memória:
+
+```bash
+docker compose restart livekit
+```
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

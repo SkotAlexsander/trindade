@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { VoiceState } from '@trindade/shared';
+import type { Participante } from './sala';
 
 /**
  * Quem está em qual chamada, e como está a minha.
@@ -39,6 +40,10 @@ interface VozState {
   falando: ReadonlySet<string>;
   /** O navegador barrou o áudio até haver um clique na página. */
   audioBloqueado: boolean;
+  /** A grade sobreposta à conversa. Fechá-la não sai da chamada. */
+  grade: boolean;
+  camera: boolean;
+  participantes: Participante[];
 
   definir: (mudanca: Partial<Omit<VozState, 'definir'>>) => void;
   esquecerChamada: () => void;
@@ -53,6 +58,9 @@ const SEM_CHAMADA = {
   qualidade: 'desconhecida' as Qualidade,
   falando: new Set<string>() as ReadonlySet<string>,
   audioBloqueado: false,
+  grade: false,
+  camera: false,
+  participantes: [] as Participante[],
 };
 
 export const useVoz = create<VozState>((set) => ({
