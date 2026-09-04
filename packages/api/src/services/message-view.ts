@@ -15,6 +15,8 @@ export function toApiMessage(
     reactions?: ReactionRow[];
     meuId: string;
     threadReplies?: number;
+    /** Se quem pediu guardou esta. Sem isto, `false` — nunca `undefined`. */
+    saved?: boolean;
   },
 ): Message {
   const apagada = row.deleted_at !== null;
@@ -40,6 +42,7 @@ export function toApiMessage(
     attachments: [],
     reactions: reacoes,
     pinnedAt: row.pinned_at ? row.pinned_at.toISOString() : null,
+    saved: opcoes.saved ?? false,
     editedAt: row.edited_at ? row.edited_at.toISOString() : null,
     deletedAt: row.deleted_at ? row.deleted_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
@@ -54,6 +57,7 @@ export function toApiMessages(
   rows: readonly MessageRow[],
   reactions: readonly ReactionRow[],
   meuId: string,
+  guardadas: ReadonlySet<string> = new Set(),
 ): Message[] {
   const porMensagem = new Map<string, ReactionRow[]>();
   for (const r of reactions) {
@@ -62,6 +66,10 @@ export function toApiMessages(
     porMensagem.set(r.message_id, lista);
   }
   return rows.map((row) =>
-    toApiMessage(row, { reactions: porMensagem.get(row.id) ?? [], meuId }),
+    toApiMessage(row, {
+      reactions: porMensagem.get(row.id) ?? [],
+      meuId,
+      saved: guardadas.has(row.id),
+    }),
   );
 }

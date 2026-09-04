@@ -80,8 +80,10 @@ autor. Ao fechar, sugestão de "Adicionar o resultado às notas" ao autor.
 
 ### Fixadas
 
-Painel listando as fixadas em ordem inversa, link de volta. Aviso acima de 25
-sugerindo mover para as notas.
+**Antecipado para a fase 5** em 4 de setembro de 2026, junto com a barra de
+ações da mensagem: o botão já existia no cabeçalho desde a fase 4 e `Ctrl/⌘ P`
+já estava na tabela de atalhos. Se ainda não estiver pronto, é lá que ele
+mora — painel em ordem inversa, link de volta, aviso acima de 25.
 
 ### Notificações
 

@@ -210,6 +210,23 @@ Soft delete. → `204` e broadcast `MESSAGE_DELETE`.
 
 ### `PUT /messages/:id/pin` / `DELETE` — exige `PIN_MESSAGE`
 ### `GET /channels/:id/pins` → `200 { messages: Message[] }`
+
+### `PUT /messages/:id/save` / `DELETE` → `204`
+
+Guardar para você. **Sem permissão nenhuma** — guardar não muda nada para
+ninguém — e **sem broadcast**: a lista é sua e não sai daqui. Idempotente nos
+dois sentidos: guardar o que já está guardado devolve `204` igual.
+
+### `GET /saved` → `200 { messages: (Message & { channel: Channel })[], hasMore }`
+
+Atravessa canais, do mais recente guardado para o mais antigo. Aceita `limit` e
+`before` (id de mensagem), como o histórico. Cada linha traz o canal de origem,
+senão a lista é um monte de frases sem lugar.
+
+Mensagem apagada não aparece: o `on delete cascade` já a tirou da tabela.
+
+`Message` ganha `saved: boolean` — sempre do ponto de vista de quem pediu,
+como o `me` das reações.
 ### `PUT /messages/:id/reactions/:emoji` / `DELETE`
 Emoji vai percent-encoded na URL.
 
@@ -346,6 +363,8 @@ export interface Message {
   attachments: Attachment[];
   reactions: { emoji: string; count: number; me: boolean }[];
   pinnedAt: string | null;
+  /** Se **você** guardou. Nunca diz nada sobre os outros. */
+  saved: boolean;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;

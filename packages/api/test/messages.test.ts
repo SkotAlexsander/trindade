@@ -440,3 +440,193 @@ describe('reações agregadas', () => {
     ]);
   });
 });
+
+describe('guardar (favoritar)', () => {
+  async function guardar(access: string, id: string, metodo: 'PUT' | 'DELETE' = 'PUT') {
+    return client.inject({
+      method: metodo,
+      url: `/api/messages/${id}/save`,
+      headers: { authorization: `Bearer ${access}` },
+    });
+  }
+
+  it('guardar é do indivíduo: uma pessoa guarda e a outra não vê nada', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const bruno = await entrar('bruno');
+    const { row } = await escrever(ana.id, 'decisão importante');
+
+    expect((await guardar(ana.access, row.id)).statusCode).toBe(204);
+
+    const daAna = await client.inject({
+      method: 'GET',
+      url: `/api/channels/${canalId}/messages`,
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    const doBruno = await client.inject({
+      method: 'GET',
+      url: `/api/channels/${canalId}/messages`,
+      headers: { authorization: `Bearer ${bruno.access}` },
+    });
+
+    // O mesmo id de mensagem, dois valores de `saved`. É a diferença inteira
+    // entre guardar e fixar: fixar mudaria a linha para os dois.
+    expect(daAna.json().messages[0].saved).toBe(true);
+    expect(doBruno.json().messages[0].saved).toBe(false);
+
+    const lista = await client.inject({
+      method: 'GET',
+      url: '/api/saved',
+      headers: { authorization: `Bearer ${bruno.access}` },
+    });
+    expect(lista.json().messages).toHaveLength(0);
+  });
+
+  it('guardar duas vezes não é erro nem duplica', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const { row } = await escrever(ana.id, 'clicada duas vezes');
+
+    expect((await guardar(ana.access, row.id)).statusCode).toBe(204);
+    expect((await guardar(ana.access, row.id)).statusCode).toBe(204);
+
+    const lista = await client.inject({
+      method: 'GET',
+      url: '/api/saved',
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    expect(lista.json().messages).toHaveLength(1);
+
+    // Desguardar o que não está guardado também devolve 204: quem clica por
+    // engano não merece um erro.
+    expect((await guardar(ana.access, row.id, 'DELETE')).statusCode).toBe(204);
+    expect((await guardar(ana.access, row.id, 'DELETE')).statusCode).toBe(204);
+  });
+
+  it('não exige permissão nenhuma', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const { row } = await escrever(ana.id, 'sem cargo nenhum');
+
+    // `entrar` cria a conta sem cargo. Fixar recusaria; guardar não muda nada
+    // para ninguém e por isso não tem o que autorizar.
+    await sql`delete from user_roles where user_id = ${ana.id}`;
+
+    expect((await guardar(ana.access, row.id)).statusCode).toBe(204);
+
+    const fixar = await client.inject({
+      method: 'PUT',
+      url: `/api/messages/${row.id}/pin`,
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    expect(fixar.statusCode).toBe(403);
+  });
+
+  it('a lista atravessa canais e nomeia o de origem', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+
+    const outros = await sql<{ id: string }[]>`
+      insert into channels (slug, name, kind, position)
+      values ('produto', 'produto', 'text', 1)
+      returning id
+    `;
+    const outroCanal = outros[0]?.id ?? '';
+
+    const aqui = await escrever(ana.id, 'aqui no geral');
+    const ali = await messagesDb.createMessage({
+      channelId: outroCanal,
+      authorId: ana.id,
+      content: 'ali no produto',
+      clientNonce: crypto.randomUUID(),
+      replyToId: null,
+      parentId: null,
+    });
+
+    await guardar(ana.access, aqui.row.id);
+    await guardar(ana.access, ali.row.id);
+
+    const lista = await client.inject({
+      method: 'GET',
+      url: '/api/saved',
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    const mensagens = lista.json().messages as Array<{
+      content: string;
+      channel: { slug: string };
+    }>;
+
+    // Ordem de quando **guardou**, não de quando foi escrita: a última
+    // guardada vem primeiro.
+    expect(mensagens.map((m) => m.content)).toEqual(['ali no produto', 'aqui no geral']);
+    expect(mensagens.map((m) => m.channel.slug)).toEqual(['produto', 'geral']);
+  });
+
+  it('apagar a mensagem a tira da lista, sem lápide', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const { row } = await escrever(ana.id, 'vai ser apagada');
+    await guardar(ana.access, row.id);
+
+    await messagesDb.softDelete(row.id);
+
+    const lista = await client.inject({
+      method: 'GET',
+      url: '/api/saved',
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    // Guardar é um ponteiro, não uma cópia. Manter o texto aqui seria desfazer
+    // o apagar por outro caminho.
+    expect(lista.json().messages).toHaveLength(0);
+  });
+
+  it('apagar de verdade a linha da mensagem leva a guardada junto', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const { row } = await escrever(ana.id, 'some de vez');
+    await guardar(ana.access, row.id);
+
+    await sql`delete from messages where id = ${row.id}`;
+
+    const restou = await sql<{ n: string }[]>`
+      select count(*)::text as n from saved_messages where message_id = ${row.id}
+    `;
+    expect(restou[0]?.n).toBe('0');
+  });
+
+  it('guardar mensagem que não existe é 404', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    const res = await guardar(ana.access, '00000000-0000-4000-8000-000000000000');
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('a lista pagina por `before`', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+
+    for (let i = 1; i <= 5; i += 1) {
+      const { row } = await escrever(ana.id, `guardada ${i}`);
+      await guardar(ana.access, row.id);
+    }
+
+    const p1 = await client.inject({
+      method: 'GET',
+      url: '/api/saved?limit=2',
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    const pagina1 = p1.json().messages as Array<{ id: string; content: string }>;
+    expect(pagina1.map((m) => m.content)).toEqual(['guardada 5', 'guardada 4']);
+    expect(p1.json().hasMore).toBe(true);
+
+    const p2 = await client.inject({
+      method: 'GET',
+      url: `/api/saved?limit=2&before=${pagina1[1]?.id}`,
+      headers: { authorization: `Bearer ${ana.access}` },
+    });
+    expect((p2.json().messages as Array<{ content: string }>).map((m) => m.content)).toEqual([
+      'guardada 3',
+      'guardada 2',
+    ]);
+  });
+});

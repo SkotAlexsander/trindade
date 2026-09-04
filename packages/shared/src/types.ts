@@ -55,6 +55,12 @@ export interface Message {
   attachments: Attachment[];
   reactions: Reaction[];
   pinnedAt: string | null;
+  /**
+   * Se **você** guardou esta mensagem. Como o `me` das reações, sai sempre do
+   * ponto de vista de quem pediu — e, ao contrário do `count` das reações,
+   * nunca existe um número: quem mais guardou não é da conta de ninguém.
+   */
+  saved: boolean;
   editedAt: string | null;
   deletedAt: string | null;
   createdAt: string;

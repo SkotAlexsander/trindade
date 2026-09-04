@@ -22,6 +22,7 @@ function msg(parcial: Partial<MensagemLocal> & { id: string; quando: Date }): Me
     attachments: [],
     reactions: [],
     pinnedAt: null,
+    saved: false,
     editedAt: null,
     deletedAt: null,
     createdAt: quando.toISOString(),

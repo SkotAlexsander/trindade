@@ -263,7 +263,8 @@ está, depois de vagar por outros, é uma micro-frustração que se repete.
 | Tecla | Ação | |
 |---|---|---|
 | `Ctrl/⌘ F` | buscar no canal | |
-| `Ctrl/⌘ P` | painel de fixadas | **novo** |
+| `Ctrl/⌘ P` | painel de fixadas do canal | **novo** |
+| `Ctrl/⌘ ⇧ B` | suas guardadas, de todas as conversas | **novo** |
 | `Ctrl/⌘ U` | mostrar e esconder o elenco | **novo** |
 | `Ctrl/⌘ E` | seletor de emoji | **novo** |
 | `Ctrl/⌘ ⇧ U` | anexar arquivo | **novo** |
@@ -287,7 +288,8 @@ ganha o anel de foco e responde a:
 | `E` | editar — só as suas |
 | `R` | responder |
 | `T` | abrir a thread |
-| `P` | fixar e desafixar |
+| `S` | guardar e desguardar — só para você |
+| `P` | fixar e desafixar — para todo mundo |
 | `+` | abre o seletor de reação |
 | `Delete` | apagar, com confirmação |
 | `Alt Enter` | marcar como não lida a partir dela |

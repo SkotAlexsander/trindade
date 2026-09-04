@@ -275,6 +275,30 @@ Uma coisa nova de verdade: `lib/midia.ts` é a **única** porta para
 `enumerateDevices` ou `setSinkId` direto — pela mesma razão que notificação e
 atalho global passam por uma camada: o Tauri muda o comportamento embaixo.
 
+### Fixar e guardar são duas coisas
+
+Pedido de 4 de setembro de 2026. **Fixar** já existia no pacote — bit 3
+`PIN_MESSAGE`, `messages.pinned_at`, rotas na fatia 1 da fase 5. **Guardar**
+(favoritar) não existia.
+
+A confusão entre as duas é o erro que torna uma delas inútil, então a regra
+está em `design/04-mensagens.md` numa tabela de seis linhas. O resumo:
+
+- **Fixar é do canal.** Exige permissão, todo mundo vê, limite de 25, muda a
+  aparência da mensagem para todos.
+- **Guardar é seu.** Sem permissão, sem broadcast, sem limite, atravessa
+  canais, e **não muda a aparência da mensagem no histórico** — só o botão da
+  barra de ações acende. Uma marca na linha faria a mesma conversa parecer
+  diferente para cada pessoa.
+
+`Message.saved` sai sempre do ponto de vista de quem pediu, como o `me` das
+reações. **Nunca exponha quem mais guardou** — não há contagem, não há lista.
+E `saved_messages.message_id` é `on delete cascade`: guardar é um ponteiro,
+não uma cópia, e manter o texto ali seria desfazer o apagar por outro caminho.
+
+O painel de fixadas foi antecipado da fase 9 para a fase 5, porque o botão já
+existia no cabeçalho desde a fase 4.
+
 ### Tokens: nomes antigos corrigidos
 
 A troca de direção visual da fase 3 reescreveu `00-direcao-visual.md` e
@@ -314,7 +338,8 @@ e `013_boards` (fase 10). Duas migrations não previstas entraram no caminho:
 |---|---|
 | `011_recovery_codes` | o modelo de dados não previu onde guardar os códigos que `docs/04-seguranca.md` exige |
 | `012_busca_sem_acento` | `to_tsvector('portuguese', …)` não remove acento, e o aceite pede que "migracao" ache "migração" |
+| `013_saved_messages` | favoritar mensagem não existia no pacote; pedido do dono do projeto em 4 de setembro de 2026 |
 
-**As migrations das fases 9 e 10 andam dois números:** `polls` vira **013**,
-`conversations` **014** e `boards` **015**. Migration aplicada não se edita; se
+**As migrations das fases 9 e 10 andam três números:** `polls` vira **014**,
+`conversations` **015** e `boards` **016**. Migration aplicada não se edita; se
 algo estiver errado, crie a próxima.

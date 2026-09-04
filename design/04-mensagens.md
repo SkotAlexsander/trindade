@@ -201,6 +201,81 @@ cada uma vira poluição.
 
 ---
 
+## Fixar e guardar
+
+> Acrescentado em 4 de setembro de 2026, a pedido do dono do projeto. São duas
+> coisas, e confundi-las é o erro que faz uma delas virar inútil.
+
+|  | Fixar | Guardar |
+|---|---|---|
+| de quem | do **canal** | de **você** |
+| quem vê | todo mundo | ninguém, nem quem escreveu |
+| permissão | `PIN_MESSAGE` | nenhuma |
+| onde aparece | mural do canal | sua lista, atravessando canais |
+| limite | 25 por canal | nenhum |
+| ícone | alfinete | marcador |
+
+Fixar responde "isto vale para o grupo". Guardar responde "quero achar isto
+depois". A primeira é um ato público e por isso tem permissão e limite; a
+segunda não muda nada para ninguém e por isso não tem nem uma coisa nem outra.
+
+**Marcador, não estrela.** Estrela é avaliação — diz que a mensagem é boa.
+Marcador diz "volto aqui", que é o que a ação realmente faz. E o alfinete já
+está ocupado por fixar; usar dois objetos parecidos para ações opostas em
+alcance seria o pior dos dois mundos.
+
+### Na mensagem
+
+Guardada, a mensagem **não muda de aparência no histórico**. Só o botão da
+barra de ações fica aceso, em `--accent`.
+
+Isso é de propósito. Uma marca visível na linha faria a conversa parecer
+diferente para cada pessoa, e alguém acabaria perguntando "por que a sua tela
+está diferente da minha". Fixada, sim, muda para todos — porque é para todos.
+
+### O painel
+
+Guardadas abre no painel direito, com o cabeçalho dizendo o que ele é:
+
+```
+┌──────────────────────────┐
+│  Guardadas               │
+│  todas as conversas   ✕  │
+├──────────────────────────┤
+│  # produto · 4 set       │
+│  ◉ Ana                   │
+│  A migração passou no    │
+│  staging sem erro…       │
+│  ─────────────────────   │
+│  # bugs · 2 set          │
+│  ◉ Bruno                 │
+│  O erro só acontece…     │
+└──────────────────────────┘
+```
+
+Cada linha nomeia o **canal de origem** antes de tudo. Sem isso a lista é um
+amontoado de frases sem lugar, e a metade do valor de guardar — voltar ao
+contexto — se perde. Clique carrega o canal centrado na mensagem (`?around=`) e
+a pisca por 800ms, igual à busca.
+
+O gatilho não fica no cabeçalho do canal, junto de busca e fixadas: aqueles
+quatro são do canal em que você está, e este atravessa todos. Fica no menu do
+seu próprio nome, no rodapé da barra lateral, que é onde moram as coisas que
+são suas. Também na paleta de comandos, e em `Ctrl/⌘ ⇧ B`.
+
+### Vazio
+
+> Nada guardado ainda.
+> Passe o mouse numa mensagem e clique no marcador para voltar nela depois.
+
+O texto ensina o gesto. "Nenhum item" não ensina nada.
+
+### Apagada
+
+Mensagem apagada some da lista, sem lápide. Guardar não é uma cópia — é um
+ponteiro, e o ponteiro morre com o alvo. Manter o texto ali seria desfazer o
+apagar por outro caminho.
+
 ## Ações no hover
 
 Barra flutuante no canto superior direito, `--bg-raised`, `--r-control`,
@@ -212,7 +287,11 @@ Barra flutuante no canto superior direito, `--bg-raised`, `--r-control`,
                                     └──────────────────┘
 ```
 
-Reagir, responder, fixar, editar (só autor), mais. 28px cada, ícones de 16px.
+Reagir, responder, guardar, fixar, editar (só autor), mais. 28px cada, ícones
+de 16px. Guardar e fixar lado a lado de propósito: são vizinhas na intenção e a
+diferença entre elas precisa ser aprendida uma vez só.
+
+Fixar só aparece com `PIN_MESSAGE`. Guardar aparece sempre.
 
 Aparece sem atraso e sem transição — atraso aqui é frustrante e transição de
 opacidade a cada movimento do mouse cria cintilação numa lista longa.

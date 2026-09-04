@@ -32,7 +32,8 @@ export async function resetDatabase(): Promise<void> {
   await sql`
     truncate table
       recovery_codes, refresh_tokens, user_roles, invites,
-      audit_log, tasks, notes, read_state, attachments, reactions, messages,
+      audit_log, tasks, notes, read_state, attachments, reactions,
+      saved_messages, messages,
       users
     restart identity cascade
   `;

@@ -72,6 +72,8 @@ export function useEnviarMensagem() {
           attachments: [],
           reactions: [],
           pinnedAt: null,
+          // Ninguém guarda o que acabou de escrever.
+          saved: false,
           editedAt: null,
           deletedAt: null,
           createdAt: new Date().toISOString(),

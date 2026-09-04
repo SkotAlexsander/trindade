@@ -26,6 +26,7 @@ const mensagemSchema = z.object({
   attachments: z.array(z.unknown()),
   reactions: z.array(z.object({ emoji: z.string(), count: z.number(), me: z.boolean() })),
   pinnedAt: z.string().nullable(),
+  saved: z.boolean(),
   editedAt: z.string().nullable(),
   deletedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -65,8 +66,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
             limit,
           });
 
-      const reacoes = await messagesDb.listReactions(messages.map((m) => m.id));
-      return { messages: toApiMessages(messages, reacoes, me.id), hasMore };
+      const ids = messages.map((m) => m.id);
+      const [reacoes, guardadas] = await Promise.all([
+        messagesDb.listReactions(ids),
+        messagesDb.quaisGuardadas(me.id, ids),
+      ]);
+      return { messages: toApiMessages(messages, reacoes, me.id, guardadas), hasMore };
     },
   );
 
@@ -93,8 +98,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         ...(req.query.from ? { from: req.query.from } : {}),
         limit: req.query.limit,
       });
-      const reacoes = await messagesDb.listReactions(results.map((m) => m.id));
-      return { results: toApiMessages(results, reacoes, me.id), total };
+      const ids = results.map((m) => m.id);
+      const [reacoes, guardadas] = await Promise.all([
+        messagesDb.listReactions(ids),
+        messagesDb.quaisGuardadas(me.id, ids),
+      ]);
+      return { results: toApiMessages(results, reacoes, me.id, guardadas), total };
     },
   );
 
@@ -109,8 +118,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const me = requireUser(req);
       const linhas = await messagesDb.listPins(req.params.id);
-      const reacoes = await messagesDb.listReactions(linhas.map((m) => m.id));
-      return { messages: toApiMessages(linhas, reacoes, me.id) };
+      const ids = linhas.map((m) => m.id);
+      const [reacoes, guardadas] = await Promise.all([
+        messagesDb.listReactions(ids),
+        messagesDb.quaisGuardadas(me.id, ids),
+      ]);
+      return { messages: toApiMessages(linhas, reacoes, me.id, guardadas) };
     },
   );
 
@@ -130,10 +143,18 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!pai) throw notFound('MESSAGE_NOT_FOUND', 'esta mensagem não existe');
 
       const respostas = await messagesDb.listThread(pai.id);
-      const reacoes = await messagesDb.listReactions([pai.id, ...respostas.map((m) => m.id)]);
+      const ids = [pai.id, ...respostas.map((m) => m.id)];
+      const [reacoes, guardadas] = await Promise.all([
+        messagesDb.listReactions(ids),
+        messagesDb.quaisGuardadas(me.id, ids),
+      ]);
       return {
-        parent: toApiMessage(pai, { meuId: me.id, reactions: reacoes.filter((r) => r.message_id === pai.id) }),
-        replies: toApiMessages(respostas, reacoes, me.id),
+        parent: toApiMessage(pai, {
+          meuId: me.id,
+          reactions: reacoes.filter((r) => r.message_id === pai.id),
+          saved: guardadas.has(pai.id),
+        }),
+        replies: toApiMessages(respostas, reacoes, me.id, guardadas),
       };
     },
   );
@@ -247,6 +268,97 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     });
   }
+
+  // --- guardadas -----------------------------------------------------------
+  //
+  // Sem permissão e sem broadcast, e as duas ausências são a especificação:
+  // guardar não muda nada para ninguém, e a lista não sai da conta de quem
+  // guardou. Ver design/04-mensagens.md, "Fixar e guardar".
+  for (const [metodo, guardar] of [['PUT', true], ['DELETE', false]] as const) {
+    app.route({
+      method: metodo,
+      url: '/messages/:id/save',
+      schema: {
+        params: z.object({ id: z.string().uuid() }),
+        response: { 204: z.null() },
+      },
+      preHandler: app.authenticate,
+      handler: async (req, reply) => {
+        const me = requireUser(req);
+        const params = req.params as { id: string };
+
+        const alvo = await messagesDb.findMessageById(params.id);
+        if (!alvo || alvo.deleted_at) {
+          throw notFound('MESSAGE_NOT_FOUND', 'esta mensagem não existe');
+        }
+
+        // Idempotente nos dois sentidos: guardar o que já está guardado e
+        // desguardar o que não está devolvem 204 igual. Quem clica duas vezes
+        // por engano não merece um erro.
+        if (guardar) await messagesDb.guardar(me.id, alvo.id);
+        else await messagesDb.desguardar(me.id, alvo.id);
+
+        return reply.code(204).send(null);
+      },
+    });
+  }
+
+  app.get(
+    '/saved',
+    {
+      schema: {
+        querystring: z.object({
+          before: z.string().uuid().optional(),
+          limit: z.coerce.number().int().min(1).max(LIMITE_MAXIMO).default(LIMITE_PADRAO),
+        }),
+        response: {
+          200: z.object({
+            messages: z.array(
+              mensagemSchema.extend({
+                channel: z.object({
+                  id: z.string(),
+                  slug: z.string(),
+                  name: z.string(),
+                }),
+                savedAt: z.string(),
+              }),
+            ),
+            hasMore: z.boolean(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const me = requireUser(req);
+      const { rows, hasMore } = await messagesDb.listarGuardadas({
+        userId: me.id,
+        ...(req.query.before ? { before: req.query.before } : {}),
+        limit: req.query.limit,
+      });
+
+      const reacoes = await messagesDb.listReactions(rows.map((r) => r.id));
+      const porMensagem = new Map<string, typeof reacoes>();
+      for (const r of reacoes) {
+        porMensagem.set(r.message_id, [...(porMensagem.get(r.message_id) ?? []), r]);
+      }
+
+      return {
+        messages: rows.map((row) => ({
+          // `saved: true` sem consultar: se está nesta lista, você guardou.
+          ...toApiMessage(row, {
+            meuId: me.id,
+            reactions: porMensagem.get(row.id) ?? [],
+            saved: true,
+          }),
+          // O canal de origem em cada linha. Sem ele a lista é um amontoado de
+          // frases sem lugar, e metade do valor de guardar se perde.
+          channel: { id: row.channel_id, slug: row.channel_slug, name: row.channel_name },
+          savedAt: row.saved_at.toISOString(),
+        })),
+        hasMore,
+      };
+    },
+  );
 
   app.put(
     '/channels/:id/read',

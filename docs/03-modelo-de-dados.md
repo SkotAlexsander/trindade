@@ -204,8 +204,12 @@ create table messages (
   edited_at     timestamptz,
   deleted_at    timestamptz,
   created_at    timestamptz not null default now(),
+  -- `pt_unaccent` e não `portuguese`: a configuração padrão faz stemming mas
+  -- não tira acento, e o aceite pede que "migracao" ache "migração". Criada
+  -- na migration 012. Coluna gerada exige função IMMUTABLE, e é por isso que
+  -- a solução é uma configuração nomeada e não uma chamada a `unaccent()`.
   search_vector tsvector generated always as
-                (to_tsvector('portuguese', content)) stored
+                (to_tsvector('pt_unaccent', content)) stored
 );
 
 create index messages_channel_time
@@ -259,6 +263,28 @@ create table attachments (
   created_at   timestamptz not null default now()
 );
 
+create table saved_messages (
+  user_id    uuid not null references users(id) on delete cascade,
+  message_id uuid not null references messages(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, message_id)
+);
+
+create index saved_messages_recentes
+  on saved_messages (user_id, created_at desc);
+```
+
+**Favoritar não é fixar.** `messages.pinned_at` é uma coluna da mensagem porque
+fixar é do canal: exige `PIN_MESSAGE`, todo mundo vê e o mural é um só.
+`saved_messages` é uma tabela de ligação porque guardar é de quem guardou:
+cada pessoa tem a sua lista, ninguém vê a dos outros, e não há permissão a
+checar — você não muda nada para ninguém ao guardar.
+
+O `on delete cascade` no `message_id` é deliberado: mensagem apagada some da
+lista de quem a guardou. Manter uma cópia do texto ali seria uma forma de
+desfazer o apagar por outro caminho.
+
+```sql
 create table read_state (
   user_id            uuid not null references users(id) on delete cascade,
   channel_id         uuid not null references channels(id) on delete cascade,
@@ -357,6 +383,9 @@ Retenção de 180 dias, apagado por tarefa periódica.
 008_reactions_attachments_read_state
 009_notes_tasks
 010_audit_log
+011_recovery_codes          -- não previsto; ver CLAUDE.md
+012_busca_sem_acento        -- não previsto; ver CLAUDE.md
+013_saved_messages          -- não previsto; ver CLAUDE.md
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

@@ -99,6 +99,34 @@ pessoas, sem exigir letra.
 
 Upload começa ao anexar, não ao enviar.
 
+### Fixar e guardar
+
+Acrescentado em 4 de setembro de 2026. `design/04-mensagens.md`, seção "Fixar e
+guardar" — a tabela das seis diferenças não é decoração: cada linha dela vira
+uma decisão de código.
+
+**Fixar** já existe no contrato e as rotas foram na fatia 1. Falta a interface:
+botão na barra de ações (só com `PIN_MESSAGE`), atalho `P`, e o painel de
+fixadas em ordem inversa com link de volta e o aviso acima de 25. O painel
+estava listado na fase 9; foi antecipado porque o botão existe no cabeçalho
+desde a fase 4 e `Ctrl/⌘ P` já está na tabela de atalhos.
+
+**Guardar** é novo, e a migration `013_saved_messages` é a terceira não
+prevista pelo pacote.
+
+- `PUT` / `DELETE /messages/:id/save` → `204`. **Sem permissão e sem
+  broadcast**: guardar não muda nada para ninguém, e a lista não sai da conta
+  de quem guardou. Idempotente nos dois sentidos.
+- `GET /saved` atravessa canais, do mais recente para o mais antigo, com
+  `limit` e `before`. Cada linha traz o canal de origem.
+- `Message.saved` sai do ponto de vista de quem pediu, como o `me` das reações.
+  **Nunca** exponha quem mais guardou: não há contagem, não há lista.
+- Guardada **não muda a aparência da mensagem no histórico** — só o botão da
+  barra de ações fica aceso. Uma marca na linha faria a mesma conversa parecer
+  diferente para cada pessoa.
+- O gatilho do painel fica no menu do seu próprio nome, na paleta e em
+  `Ctrl/⌘ ⇧ B` — não no cabeçalho do canal, que é o lugar do que é do canal.
+
 ### Reações, ações, thread
 
 Chips conforme o CSS do documento, sem animação de entrada.
@@ -163,6 +191,10 @@ conteúdo, **não sobrepondo**. Compositor continua aceitando texto e enfileira.
 - Digitar offline enfileira e envia ao voltar
 - Mudar o cargo de alguém reflete sem reconectar
 - Desativar alguém derruba a conexão em até 60s
+- Guardar e desguardar não avisa ninguém e não aparece para mais ninguém
+- A lista de guardadas nomeia o canal de origem em cada linha
+- Apagar uma mensagem guardada a remove da lista, sem lápide
+- Fixar exige `PIN_MESSAGE` no servidor, não só no botão
 - `↑` no campo vazio entra na lista; com texto, edita a última
 - Digitar uma letra com o foco na lista leva o texto ao compositor **com a letra**
 - Toda ação da mensagem focada tem atalho e menu de contexto por `⇧ F10`

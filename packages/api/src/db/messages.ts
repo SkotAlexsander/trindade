@@ -373,3 +373,99 @@ export async function somarMencoes(
     `;
   }
 }
+
+// --- guardadas -------------------------------------------------------------
+//
+// "Guardar" é o favorito pessoal, e não tem nada a ver com fixar. Fixar é do
+// canal e mora numa coluna de `messages`; guardar é de quem guardou e mora
+// numa tabela de ligação. Ver design/04-mensagens.md, "Fixar e guardar".
+
+/** Idempotente: guardar o que já está guardado não é erro nem mudança. */
+export async function guardar(userId: string, messageId: string): Promise<boolean> {
+  const linhas = await sql<{ message_id: string }[]>`
+    insert into saved_messages (user_id, message_id)
+    values (${userId}, ${messageId})
+    on conflict do nothing
+    returning message_id
+  `;
+  return linhas.length > 0;
+}
+
+export async function desguardar(userId: string, messageId: string): Promise<boolean> {
+  const linhas = await sql<{ message_id: string }[]>`
+    delete from saved_messages
+    where user_id = ${userId} and message_id = ${messageId}
+    returning message_id
+  `;
+  return linhas.length > 0;
+}
+
+/** Quais destas mensagens **você** guardou. Nunca quem mais guardou. */
+export async function quaisGuardadas(
+  userId: string,
+  ids: readonly string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const linhas = await sql<{ message_id: string }[]>`
+    select message_id from saved_messages
+    where user_id = ${userId} and message_id in ${sql(ids as string[])}
+  `;
+  return new Set(linhas.map((l) => l.message_id));
+}
+
+export interface SavedRow extends MessageRow {
+  saved_at: Date;
+  channel_slug: string;
+  channel_name: string;
+  channel_kind: string;
+}
+
+/**
+ * A lista pessoal, atravessando canais.
+ *
+ * Ordenada por **quando você guardou**, não por quando a mensagem foi escrita:
+ * guardar hoje uma frase de março a coloca no topo, que é onde você vai
+ * procurá-la. O cursor `before` é o `message_id` da última linha da página.
+ *
+ * Apagada não aparece — o `on delete cascade` já a tirou da tabela. Guardar é
+ * um ponteiro, não uma cópia.
+ */
+export async function listarGuardadas(input: {
+  userId: string;
+  before?: string;
+  limit: number;
+}): Promise<{ rows: SavedRow[]; hasMore: boolean }> {
+  const limite = input.limit + 1;
+  const colunas = sql`
+    ${COLUNAS}, s.created_at as saved_at,
+    c.slug as channel_slug, c.name as channel_name, c.kind as channel_kind
+  `;
+
+  const linhas = input.before
+    ? await sql<SavedRow[]>`
+        select ${colunas}
+        from saved_messages s
+        join messages m on m.id = s.message_id
+        join users u on u.id = m.author_id
+        join channels c on c.id = m.channel_id
+        where s.user_id = ${input.userId} and m.deleted_at is null
+          and s.created_at < (
+            select created_at from saved_messages
+            where user_id = ${input.userId} and message_id = ${input.before}
+          )
+        order by s.created_at desc
+        limit ${limite}
+      `
+    : await sql<SavedRow[]>`
+        select ${colunas}
+        from saved_messages s
+        join messages m on m.id = s.message_id
+        join users u on u.id = m.author_id
+        join channels c on c.id = m.channel_id
+        where s.user_id = ${input.userId} and m.deleted_at is null
+        order by s.created_at desc
+        limit ${limite}
+      `;
+
+  return { rows: linhas.slice(0, input.limit), hasMore: linhas.length > input.limit };
+}
