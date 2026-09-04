@@ -9,3 +9,7 @@ build/
 .pnpm-store/
 coverage/
 PROGRESSO.md
+
+# Fixturas e cache gerados pelos roteiros de e2e.
+e2e/.tmp/
+e2e/__pycache__/

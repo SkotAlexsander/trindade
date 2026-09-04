@@ -70,6 +70,20 @@ def escrever(pg, texto):
     compositor(pg).press('Enter')
 
 
+def aparece(pg, texto, ms=12000):
+    """Espera o texto surgir, em vez de dormir um tanto e torcer.
+
+    Depois de reconectar há uma corrida real: a API acabou de reiniciar, a
+    fila esvazia e o `?after=` busca o que passou. Um `wait_for_timeout` fixo
+    aqui faz o teste passar ou falhar conforme o dia.
+    """
+    try:
+        pg.wait_for_selector(f'text={texto}', timeout=ms)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome', headless=True)
 
@@ -288,7 +302,15 @@ with sync_playwright() as p:
     compositor(pgA).click()
     compositor(pgA).press('ArrowUp')
     pgA.wait_for_timeout(400)
-    emEdicao = pgA.locator('div[class*="barraEdicao"]').count() == 1
+    # A barra é `barraContexto`, e ela serve para editar **e** para responder —
+    # é o texto que diz qual dos dois. Este seletor já esteve errado
+    # (`barraEdicao`, que nunca existiu), e o estrago não ficou aqui: o `if`
+    # abaixo era pulado, o `Esc` que cancela a edição nunca acontecia, e o
+    # compositor seguia em modo de edição pelo resto do roteiro — o que fazia a
+    # escrita fora do ar virar um PATCH em vez de entrar na fila, três
+    # verificações adiante.
+    barra = pgA.locator('div[class*="barraContexto"]')
+    emEdicao = barra.count() == 1 and 'Editando' in barra.inner_text()
     conteudo = compositor(pgA).input_value()
     check('↑ no campo vazio abre a última mensagem para edição', emEdicao and conteudo != '', conteudo[:40])
 
@@ -304,7 +326,7 @@ with sync_playwright() as p:
         pgA.wait_for_timeout(300)
         compositor(pgA).press('Escape')
         pgA.wait_for_timeout(300)
-        check('Esc cancela a edição', pgA.locator('div[class*="barraEdicao"]').count() == 0)
+        check('Esc cancela a edição', pgA.locator('div[class*="barraContexto"]').count() == 0)
 
     # --- 12. Shift+Enter quebra linha em vez de enviar --------------------
     etapa('12. Shift+Enter quebra linha em vez de enviar')
@@ -367,6 +389,7 @@ with sync_playwright() as p:
         etapa('escrever com o socket caído enfileira')
         offline_txt = f'escrita fora do ar {marca}'
         escrever(pgA, offline_txt)
+        pgA.wait_for_timeout(500)
         naFila = pgA.evaluate(
             """(t) => {
                 const p = [...document.querySelectorAll('article p')].find(e => e.textContent.includes(t));
@@ -390,24 +413,17 @@ with sync_playwright() as p:
     pgA.context.set_offline(False)
     pgA.wait_for_selector('div[class*="faixaOffline"]', state='detached', timeout=45000)
     check('reconecta sozinho, sem recarregar a página', True)
-    pgA.wait_for_timeout(2500)
 
     if offline_txt:
-        check(
-            'a mensagem da fila sai quando a conexão volta',
-            pgB.locator(f'text={offline_txt}').count() > 0,
-        )
+        check('a mensagem da fila sai quando a conexão volta', aparece(pgB, offline_txt))
 
-    check(
-        'recupera o que passou enquanto estava fora, sem recarregar',
-        pgA.locator(f'text={perdida}').count() > 0,
-    )
+    check('recupera o que passou enquanto estava fora, sem recarregar',
+          aparece(pgA, perdida))
 
     # E volta a receber ao vivo.
     depois_txt = f'depois de voltar {marca}'
     escrever(pgB, depois_txt)
-    pgA.wait_for_timeout(1500)
-    check('volta a receber ao vivo', pgA.locator(f'text={depois_txt}').count() > 0)
+    check('volta a receber ao vivo', aparece(pgA, depois_txt))
 
     pgA.screenshot(path=str(SHOTS / '54-recuperado.png'))
 

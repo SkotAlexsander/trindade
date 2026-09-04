@@ -4,8 +4,10 @@ import { Avatar, Tooltip } from '../../components';
 import { Clock, Pin } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
 import { Conteudo } from './Conteudo';
+import { Anexos } from './Anexos';
+import { PreviaDeLink } from './PreviaDeLink';
 import { haQuantoTempo, hora } from './linhas';
-import { analisarMarkdown, mencionados } from './markdown';
+import { analisarMarkdown, mencionados, primeiroLink } from './markdown';
 import type { MensagemLocal } from './queries';
 import styles from './messages.module.css';
 
@@ -115,6 +117,8 @@ export const Message = memo(function Message({
     () => (mensagem.content ? analisarMarkdown(mensagem.content) : []),
     [mensagem.content],
   );
+  // Um cartão por mensagem, e só o primeiro link. Ver `primeiroLink`.
+  const link = useMemo(() => primeiroLink(blocos), [blocos]);
   const meCitou = useMemo(
     () => Boolean(meuUsername) && mencionados(blocos).has(meuUsername),
     [blocos, meuUsername],
@@ -236,6 +240,13 @@ export const Message = memo(function Message({
               meuUsername={meuUsername}
             />
             {mensagem.editedAt ? <span className={styles.editado}>(editado)</span> : null}
+            {mensagem.attachments.length > 0 ? (
+              <Anexos anexos={mensagem.attachments} />
+            ) : null}
+            {/* O cartão só entra quando não há anexo: com os dois juntos a
+                mensagem vira um bloco de meia tela, e o anexo é o que a pessoa
+                escolheu mandar. */}
+            {link && mensagem.attachments.length === 0 ? <PreviaDeLink url={link} /> : null}
           </div>
         )}
 

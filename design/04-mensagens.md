@@ -156,6 +156,18 @@ descrição de duas linhas e miniatura à direita.
 cliente buscasse, abrir a mensagem entregaria o IP de todos os leitores a quem
 mandou o link. É o mesmo princípio de privacidade das chamadas, aplicado ao texto.
 
+Isso vale para a **miniatura** também: ela é baixada, re-encodada e servida do
+nosso domínio. Um `<img>` apontando para o site de origem devolveria o mesmo
+vazamento pela porta dos fundos, depois de todo o cuidado com o HTML.
+
+**Um cartão por mensagem, e só o primeiro link.** Cinco links colados não podem
+virar cinco cartões de 380px empurrando a conversa para fora da tela. URL
+dentro de crase ou de bloco de código não conta: ali ela é exemplo, e o
+servidor nem vai buscá-la.
+
+Quando a mensagem tem anexo, o cartão não aparece — o anexo é o que a pessoa
+escolheu mandar.
+
 ### Anexo
 
 Imagem: máximo de 400×300, `--r-media`, com blurhash enquanto carrega. Clique
@@ -165,6 +177,18 @@ Arquivo: linha de 56px com ícone por tipo, nome, tamanho e botão de baixar.
 
 Múltiplas imagens: grade de 2 colunas, `gap: 4px`. Acima de 4, mostre as 4
 primeiras com "+N" na última.
+
+A ordem é a **em que a pessoa escolheu os arquivos**, não a em que os uploads
+terminaram — os uploads correm em paralelo e o menor chega primeiro. É o que a
+coluna `sort_order` guarda.
+
+Imagem chega com `width`/`height` do servidor e o espaço já reservado antes de
+carregar. Sem isso a conversa pula para baixo a cada imagem que chega, e quem
+está lendo perde a linha.
+
+SVG **não** conta como imagem: é um formato de imagem que também é um documento
+com script. Ele cai como arquivo comum, com linha de download — ver
+docs/04-seguranca.md.
 
 ### Resposta
 
@@ -364,6 +388,16 @@ canto. Barra de progresso de 2px em `--accent` na base de cada miniatura.
 
 O upload começa ao anexar, não ao enviar. Quando a pessoa terminar de escrever, o
 arquivo já está lá.
+
+O botão de enviar espera o upload terminar: enviar no meio perderia o arquivo.
+E **anexo sem legenda é uma mensagem inteira** — uma foto sozinha se envia.
+
+Colar uma imagem anexa (é assim que a captura de tela chega); colar texto
+continua sendo colar texto. Arrastar para cima do compositor também anexa.
+
+Remover um pendente **não** avisa o servidor: o arquivo fica lá, e a varredura
+de órfãos o recolhe depois de uma hora. Um `DELETE` aqui só adiantaria a
+limpeza, e falharia exatamente quando mais importa — com a rede ruim.
 
 ### Barra de resposta
 

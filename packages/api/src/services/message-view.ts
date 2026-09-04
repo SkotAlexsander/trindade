@@ -1,4 +1,4 @@
-import type { Message, Reaction } from '@trindade/shared';
+import type { Attachment, Message, Reaction } from '@trindade/shared';
 import { agregarReacoes } from '@trindade/shared';
 import type { MessageRow, ReactionRow, ResumoDeThread } from '../db/messages.js';
 
@@ -18,6 +18,7 @@ export function toApiMessage(
     thread?: ResumoDeThread;
     /** Se quem pediu guardou esta. Sem isto, `false` — nunca `undefined`. */
     saved?: boolean;
+    attachments?: Attachment[];
   },
 ): Message {
   const apagada = row.deleted_at !== null;
@@ -42,7 +43,7 @@ export function toApiMessage(
     replyToId: row.reply_to_id,
     threadCount: opcoes.thread?.total ?? 0,
     threadLastReplyAt: opcoes.thread ? opcoes.thread.ultima.toISOString() : null,
-    attachments: [],
+    attachments: apagada ? [] : (opcoes.attachments ?? []),
     reactions: reacoes,
     pinnedAt: row.pinned_at ? row.pinned_at.toISOString() : null,
     saved: opcoes.saved ?? false,
@@ -62,6 +63,7 @@ export function toApiMessages(
   meuId: string,
   guardadas: ReadonlySet<string> = new Set(),
   threads: ReadonlyMap<string, ResumoDeThread> = new Map(),
+  anexos: ReadonlyMap<string, Attachment[]> = new Map(),
 ): Message[] {
   const porMensagem = new Map<string, ReactionRow[]>();
   for (const r of reactions) {
@@ -74,6 +76,7 @@ export function toApiMessages(
       reactions: porMensagem.get(row.id) ?? [],
       meuId,
       saved: guardadas.has(row.id),
+      attachments: anexos.get(row.id) ?? [],
       ...(threads.get(row.id) ? { thread: threads.get(row.id) as ResumoDeThread } : {}),
     }),
   );

@@ -148,3 +148,64 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 export async function tryRestoreSession(): Promise<string | null> {
   return refreshAccessToken();
 }
+
+/**
+ * Upload com progresso.
+ *
+ * `fetch` não conta bytes enviados — só `XMLHttpRequest` avisa quanto já
+ * subiu, e sem isso a barra de 2px na miniatura seria decoração. O resto
+ * segue as regras do `api`: token no cabeçalho, uma renovação em caso de 401,
+ * e só uma.
+ */
+export async function upload<T>(
+  path: string,
+  corpo: FormData,
+  opcoes: { onProgresso?: (fracao: number) => void; signal?: AbortSignal } = {},
+): Promise<T> {
+  const tentar = (token: string | null): Promise<T> =>
+    new Promise<T>((resolver, rejeitar) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api${path}`);
+      xhr.withCredentials = true;
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) opcoes.onProgresso?.(e.loaded / e.total);
+      };
+      xhr.onload = () => {
+        const corpoJson: unknown = (() => {
+          try {
+            return JSON.parse(xhr.responseText) as unknown;
+          } catch {
+            return null;
+          }
+        })();
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolver(corpoJson as T);
+          return;
+        }
+        rejeitar(
+          new HttpError(
+            xhr.status,
+            (corpoJson as ApiError | null) ?? { error: 'o upload falhou', code: 'UPLOAD' },
+          ),
+        );
+      };
+      xhr.onerror = () =>
+        rejeitar(new HttpError(0, { error: 'sem conexão com o servidor', code: 'NETWORK' }));
+      xhr.onabort = () => rejeitar(new HttpError(0, { error: 'cancelado', code: 'ABORTED' }));
+
+      opcoes.signal?.addEventListener('abort', () => xhr.abort(), { once: true });
+      xhr.send(corpo);
+    });
+
+  try {
+    return await tentar(accessToken);
+  } catch (err) {
+    if (err instanceof HttpError && err.status === 401) {
+      const renovado = await refreshAccessToken();
+      if (renovado) return tentar(renovado);
+    }
+    throw err;
+  }
+}

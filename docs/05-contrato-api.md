@@ -235,10 +235,65 @@ Emoji vai percent-encoded na URL.
 
 ### `POST /channels/:id/attachments`
 
-`multipart/form-data`. Sobe o arquivo antes de enviar a mensagem.
+`multipart/form-data`, campo `file` (aceita vários). Exige `ATTACH_FILE`. Sobe
+o arquivo **antes** de enviar a mensagem — o upload começa ao anexar.
 → `201 { attachments: Attachment[] }`. Os ids vão no `MESSAGE_CREATE`.
 
-Anexo órfão por mais de 1 hora é apagado por tarefa periódica.
+Limites: 50 MB por arquivo, 10 por mensagem, 50 uploads por hora por pessoa, e
+no máximo 30 anexos pendentes ao mesmo tempo.
+
+O que é imagem — decidido pelos **bytes**, não pela extensão nem pelo
+`Content-Type` declarado — é re-encodado para WebP e volta com `width`,
+`height` e `blurhash`. Todo o resto vira `application/octet-stream`, incluindo
+SVG: é um formato de imagem que também é um documento com script.
+
+Anexo órfão por mais de 1 hora é apagado por tarefa periódica, objeto antes da
+linha. Remover um anexo pendente na interface **não** chama o servidor; a
+varredura recolhe.
+
+Erros: `MISSING_PERMISSION`, `CHANNEL_NOT_FOUND`, `CHANNEL_NOT_TEXT`,
+`FILE_TOO_LARGE`, `EMPTY_FILE`, `BAD_IMAGE`, `TOO_MANY_PENDING`, `NO_FILE`,
+`STORAGE_OFF`.
+
+### `GET /files/*` — sem sessão
+
+Serve o anexo. **Não autenticada**, e isso é decisão e não esquecimento: o
+access token vive só na memória do JavaScript e um `<img src>` não tem como
+mandá-lo, e docs/04-seguranca.md prevê estes arquivos num domínio de CDN
+separado, que por construção não enxerga sessão nenhuma. O controle de acesso
+é a chave: 32 bytes aleatórios no caminho.
+
+`X-Content-Type-Options: nosniff` sempre. Imagem re-encodada sai `inline`; todo
+o resto sai `attachment`.
+
+### `GET /link-preview?url=` → `200 { preview: LinkPreview | null }`
+
+O servidor busca a página **no lugar de quem lê**. `preview: null` é resposta
+normal e não erro: URL recusada pela guarda, site fora do ar, página sem
+título. 120 por hora por pessoa.
+
+```typescript
+interface LinkPreview {
+  url: string;
+  title: string;
+  description: string | null;
+  siteName: string;
+  /** Sempre `/api/link-preview/thumb/...` — nunca o domínio de origem. */
+  thumbUrl: string | null;
+  thumbWidth: number | null;
+  thumbHeight: number | null;
+}
+```
+
+A guarda de SSRF está em docs/04-seguranca.md. O cache é em memória: seis horas
+para um cartão, dez minutos para a ausência dele.
+
+### `GET /link-preview/thumb/:id` — sem sessão
+
+A miniatura, re-encodada e servida dos nossos bytes. Se o cliente buscasse a
+imagem no site de origem, abrir a conversa entregaria o IP de todos os leitores
+a quem mandou o link. Vive no mesmo cache em memória, então pode dar `404`
+antes do cartão — a interface esconde a imagem e mantém o cartão.
 
 ---
 
@@ -310,6 +365,13 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `PRESENCE_UPDATE` | `{ status, customStatus }` |
 | `SUBSCRIBE` | `{ channelIds }` |
 | `HEARTBEAT` | `{}` |
+
+`content` aceita string vazia **quando há `attachmentIds`**: uma foto sem
+legenda é uma mensagem inteira. Sem uma coisa nem outra, o evento é recusado.
+
+Um `attachmentId` só é costurado se for **seu**, **deste canal** e **ainda
+solto**. O que não casar é ignorado em silêncio e a mensagem sai assim mesmo —
+ela vale mais que o anexo, e já está no banco quando a costura roda.
 
 ### Regras
 

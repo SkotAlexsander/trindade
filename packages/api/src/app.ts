@@ -2,6 +2,7 @@ import Fastify, { LogController } from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import {
   serializerCompiler,
   validatorCompiler,
@@ -17,6 +18,7 @@ import { inviteRoutes } from './routes/invites.js';
 import { channelRoutes } from './routes/channels.js';
 import { userRoutes } from './routes/users.js';
 import { messageRoutes } from './routes/messages.js';
+import { attachmentRoutes, fileRoutes } from './routes/attachments.js';
 import { registerGateway } from './ws/index.js';
 import { ipKey } from './lib/client-key.js';
 
@@ -72,6 +74,13 @@ export async function buildApp() {
     addHeaders: { 'retry-after': true, 'x-ratelimit-reset': true },
   });
 
+  // 50 MB e 10 arquivos são os números de docs/04-seguranca.md. O limite fica
+  // aqui, no plugin, e não numa checagem depois de ler: o ponto de cortar um
+  // upload grande demais é antes de ele caber na memória.
+  await app.register(multipart, {
+    limits: { fileSize: 50 * 1024 * 1024, files: 10, fields: 4, fieldSize: 1024 },
+  });
+
   await app.register(authPlugin);
 
   await app.register(
@@ -83,6 +92,8 @@ export async function buildApp() {
       await api.register(channelRoutes);
       await api.register(userRoutes);
       await api.register(messageRoutes);
+      await api.register(attachmentRoutes);
+      await api.register(fileRoutes);
     },
     { prefix: '/api' },
   );

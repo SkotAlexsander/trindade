@@ -312,3 +312,30 @@ export function mencionados(blocos: readonly Bloco[]): Set<string> {
   }
   return nomes;
 }
+
+/**
+ * O primeiro link http(s) da mensagem — o único que ganha cartão.
+ *
+ * Um por mensagem, e o primeiro: quem cola cinco links não quer cinco cartões
+ * de 380px empurrando a conversa para fora da tela. Sai da árvore pela mesma
+ * razão que `mencionados` — uma URL dentro de bloco de código é exemplo, não
+ * link, e ninguém quer que o servidor vá buscá-la.
+ */
+export function primeiroLink(blocos: readonly Bloco[]): string | null {
+  let achado: string | null = null;
+
+  function andar(nos: readonly No[]): void {
+    for (const no of nos) {
+      if (achado) return;
+      if (no.tipo === 'link' && /^https?:/i.test(no.href)) achado = no.href;
+      else if ('filhos' in no) andar(no.filhos);
+    }
+  }
+
+  for (const bloco of blocos) {
+    if (achado) break;
+    if (bloco.tipo === 'lista') bloco.itens.forEach(andar);
+    else if (bloco.tipo !== 'bloco-de-codigo') andar(bloco.filhos);
+  }
+  return achado;
+}

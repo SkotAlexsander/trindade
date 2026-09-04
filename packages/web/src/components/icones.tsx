@@ -230,3 +230,31 @@ export const Clock = (p: IconeProps) => (
     <path d="M12 7v5l3.5 2" />
   </Base>
 );
+
+export const Download = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M12 4v11M8 11l4 4 4-4" />
+    <path d="M5 19h14" />
+  </Base>
+);
+
+export const Arquivo = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M14 3v5h5" />
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+  </Base>
+);
+
+export const ChevronRight = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="m9 6 6 6-6 6" />
+  </Base>
+);
+
+export const ExternalLink = (p: IconeProps) => (
+  <Base {...p}>
+    <path d="M14 4h6v6" />
+    <path d="M20 4 11 13" />
+    <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  </Base>
+);

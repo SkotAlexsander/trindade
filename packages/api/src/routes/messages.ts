@@ -5,7 +5,9 @@ import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { requireUser } from '../plugins/auth.js';
 import * as messagesDb from '../db/messages.js';
 import * as channelsDb from '../db/channels.js';
+import * as attachmentsDb from '../db/attachments.js';
 import { toApiMessage, toApiMessages } from '../services/message-view.js';
+import { agruparAnexos } from '../services/attachment-view.js';
 import { gateway } from '../ws/index.js';
 
 const LIMITE_PADRAO = 50;
@@ -23,7 +25,18 @@ const mensagemSchema = z.object({
   content: z.string().nullable(),
   parentId: z.string().nullable(),
   replyToId: z.string().nullable(),
-  attachments: z.array(z.unknown()),
+  attachments: z.array(
+    z.object({
+      id: z.string(),
+      filename: z.string(),
+      contentType: z.string(),
+      byteSize: z.number(),
+      width: z.number().nullable(),
+      height: z.number().nullable(),
+      blurhash: z.string().nullable(),
+      url: z.string(),
+    }),
+  ),
   reactions: z.array(z.object({ emoji: z.string(), count: z.number(), me: z.boolean() })),
   threadCount: z.number(),
   threadLastReplyAt: z.string().nullable(),
@@ -69,13 +82,14 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           });
 
       const ids = messages.map((m) => m.id);
-      const [reacoes, guardadas, threads] = await Promise.all([
+      const [reacoes, guardadas, threads, anexos] = await Promise.all([
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
         messagesDb.countThreadReplies(ids),
+        attachmentsDb.listarDeMensagens(ids),
       ]);
       return {
-        messages: toApiMessages(messages, reacoes, me.id, guardadas, threads),
+        messages: toApiMessages(messages, reacoes, me.id, guardadas, threads, agruparAnexos(anexos)),
         hasMore,
       };
     },
@@ -105,11 +119,15 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         limit: req.query.limit,
       });
       const ids = results.map((m) => m.id);
-      const [reacoes, guardadas] = await Promise.all([
+      const [reacoes, guardadas, anexos] = await Promise.all([
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
+        attachmentsDb.listarDeMensagens(ids),
       ]);
-      return { results: toApiMessages(results, reacoes, me.id, guardadas), total };
+      return {
+        results: toApiMessages(results, reacoes, me.id, guardadas, new Map(), agruparAnexos(anexos)),
+        total,
+      };
     },
   );
 
@@ -125,11 +143,14 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const me = requireUser(req);
       const linhas = await messagesDb.listPins(req.params.id);
       const ids = linhas.map((m) => m.id);
-      const [reacoes, guardadas] = await Promise.all([
+      const [reacoes, guardadas, anexos] = await Promise.all([
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
+        attachmentsDb.listarDeMensagens(ids),
       ]);
-      return { messages: toApiMessages(linhas, reacoes, me.id, guardadas) };
+      return {
+        messages: toApiMessages(linhas, reacoes, me.id, guardadas, new Map(), agruparAnexos(anexos)),
+      };
     },
   );
 
@@ -150,10 +171,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
 
       const respostas = await messagesDb.listThread(pai.id);
       const ids = [pai.id, ...respostas.map((m) => m.id)];
-      const [reacoes, guardadas] = await Promise.all([
+      const [reacoes, guardadas, anexos] = await Promise.all([
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
+        attachmentsDb.listarDeMensagens(ids),
       ]);
+      const porMensagem = agruparAnexos(anexos);
       const resumo = await messagesDb.countThreadReplies([pai.id]);
       const doPai = resumo.get(pai.id);
 
@@ -162,9 +185,10 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           meuId: me.id,
           reactions: reacoes.filter((r) => r.message_id === pai.id),
           saved: guardadas.has(pai.id),
+          attachments: porMensagem.get(pai.id) ?? [],
           ...(doPai ? { thread: doPai } : {}),
         }),
-        replies: toApiMessages(respostas, reacoes, me.id, guardadas),
+        replies: toApiMessages(respostas, reacoes, me.id, guardadas, new Map(), porMensagem),
       };
     },
   );
@@ -347,6 +371,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       });
 
       const reacoes = await messagesDb.listReactions(rows.map((r) => r.id));
+      const anexos = agruparAnexos(await attachmentsDb.listarDeMensagens(rows.map((r) => r.id)));
       const porMensagem = new Map<string, typeof reacoes>();
       for (const r of reacoes) {
         porMensagem.set(r.message_id, [...(porMensagem.get(r.message_id) ?? []), r]);
@@ -359,6 +384,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
             meuId: me.id,
             reactions: porMensagem.get(row.id) ?? [],
             saved: true,
+            attachments: anexos.get(row.id) ?? [],
           }),
           // O canal de origem em cada linha. Sem ele a lista é um amontoado de
           // frases sem lugar, e metade do valor de guardar se perde.

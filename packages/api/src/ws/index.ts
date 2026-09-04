@@ -15,8 +15,10 @@ import { effectivePermissions } from '../lib/auth/permissions.js';
 import * as usersDb from '../db/users.js';
 import * as channelsDb from '../db/channels.js';
 import * as messagesDb from '../db/messages.js';
+import * as attachmentsDb from '../db/attachments.js';
 import { toApiChannel } from '../services/channel-view.js';
 import { toApiMessage } from '../services/message-view.js';
+import { toApiAttachment } from '../services/attachment-view.js';
 import { toApiUser } from '../services/user-view.js';
 import * as gw from './gateway.js';
 
@@ -232,12 +234,38 @@ async function criarMensagem(
   });
 
   // Reenvio por rede instável cai aqui: a linha já existia, então confirmamos
-  // para quem mandou e não repetimos o broadcast.
+  // para quem mandou e não repetimos o broadcast — com os anexos que ela já
+  // tem, porque foi a primeira tentativa que os costurou.
   if (!novo) {
-    gw.send(conn, { op: 'MESSAGE_CREATE', d: toApiMessage(row, { meuId: conn.userId }) });
+    const jaAnexados = await attachmentsDb.listarDeMensagens([row.id]);
+    gw.send(conn, {
+      op: 'MESSAGE_CREATE',
+      d: toApiMessage(row, {
+        meuId: conn.userId,
+        attachments: jaAnexados.map(toApiAttachment),
+      }),
+    });
     app.log.debug({ nonce: d.clientNonce }, 'nonce repetido, sem duplicar');
     return;
   }
+
+  // Os anexos já estão no disco desde que a pessoa os arrastou; aqui eles só
+  // ganham dono. O `costurar` devolve **o que casou** — anexo de outra pessoa,
+  // de outro canal ou já usado em outra mensagem fica de fora em silêncio, e a
+  // mensagem sai assim mesmo: ela vale mais que o anexo, e já está no banco.
+  const anexos = await attachmentsDb.costurar(
+    row.id,
+    d.attachmentIds ?? [],
+    conn.userId,
+    d.channelId,
+  );
+  if (anexos.length < (d.attachmentIds?.length ?? 0)) {
+    app.log.warn(
+      { pedidos: d.attachmentIds?.length ?? 0, costurados: anexos.length },
+      'anexo recusado na costura',
+    );
+  }
+  const paraApi = anexos.map(toApiAttachment);
 
   // Menções contam para o badge de quem foi citado, nunca para quem escreveu.
   const mencionados = await messagesDb.resolveMentions(d.content);
@@ -248,14 +276,17 @@ async function criarMensagem(
   // O broadcast inclui o autor: é assim que ele casa pelo `clientNonce` e
   // substitui a mensagem otimista pela real.
   for (const outra of [...gw.sessionsOf(conn.userId)]) {
-    gw.send(outra, { op: 'MESSAGE_CREATE', d: toApiMessage(row, { meuId: outra.userId }) });
+    gw.send(outra, {
+      op: 'MESSAGE_CREATE',
+      d: toApiMessage(row, { meuId: outra.userId, attachments: paraApi }),
+    });
   }
   for (const c of gw.online()) {
     if (c === conn.userId) continue;
     gw.sendToUser(c, {
       op: 'MESSAGE_CREATE',
       // Sem o nonce para os outros: ele só serve a quem enviou.
-      d: { ...toApiMessage(row, { meuId: c }), clientNonce: undefined },
+      d: { ...toApiMessage(row, { meuId: c, attachments: paraApi }), clientNonce: undefined },
     });
   }
 }

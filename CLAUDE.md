@@ -126,7 +126,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 2 — autenticação
 - [x] Fase 3 — design system
 - [x] Fase 4 — shell da aplicação
-- [ ] Fase 5 — mensagens em tempo real
+- [x] Fase 5 — mensagens em tempo real
 - [ ] Fase 6 — perfil e cargos
 - [ ] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
@@ -375,6 +375,34 @@ Confira com:
 diff <(sed -n '/^:root {/,/^}/p' packages/web/src/styles/tokens.css)      <(sed -n '/^:root {/,/^}/p' design/01-tokens.md)
 ```
 
+### Fase 5 — concluída
+
+Sete fatias. As duas últimas fecharam buracos que a especificação tinha:
+
+**Anexo servido sem sessão, de propósito.** O access token vive só na memória
+do JavaScript, e um `<img src>` não tem como mandá-lo. A chave de 32 bytes
+aleatórios é o controle de acesso. O que isso custa está escrito por extenso em
+docs/04-seguranca.md, "Servir": quem já teve a URL continua tendo o arquivo.
+
+**SVG não é imagem.** É um formato de imagem que também é um documento com
+script. Fica fora da lista do `sniffImagem`, vira `application/octet-stream` e
+baixa. O teste sobe um SVG com `<script>` renomeado para `.png` e declarado
+como `image/png` — as três mentiras juntas.
+
+**A prévia de link tem guarda de SSRF de seis partes**, e nada disso estava no
+contrato antes desta fatia. A parte que se esquece com mais facilidade: conectar
+no endereço já conferido, e não no nome, porque entre a nossa consulta de DNS e
+a do cliente HTTP existe uma janela de rebind.
+
+**A miniatura da prévia também é nossa.** Deixar o `<img>` apontar para o site
+de origem devolveria, pela porta dos fundos, exatamente o vazamento de IP que a
+busca no servidor existe para evitar.
+
+**`content` vazio é válido quando há anexo.** Uma foto sem legenda é uma
+mensagem inteira. `messageBodySchema` (sem `min(1)`) mais um `refine` de
+"sobrou alguma coisa" — não confundir com `messageContentSchema`, que continua
+exigindo texto onde texto é obrigatório.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -385,7 +413,9 @@ e `013_boards` (fase 10). Duas migrations não previstas entraram no caminho:
 | `011_recovery_codes` | o modelo de dados não previu onde guardar os códigos que `docs/04-seguranca.md` exige |
 | `012_busca_sem_acento` | `to_tsvector('portuguese', …)` não remove acento, e o aceite pede que "migracao" ache "migração" |
 | `013_saved_messages` | favoritar mensagem não existia no pacote; pedido do dono do projeto em 4 de setembro de 2026 |
+| `014_anexos_pendentes` | a 008 declarou `attachments.message_id not null`, e o upload começa **antes** da mensagem existir; faltavam também `uploader_id` e `channel_id` |
+| `015_ordem_dos_anexos` | sem `sort_order` a grade saía na ordem em que os uploads terminaram, não na que a pessoa escolheu |
 
-**As migrations das fases 9 e 10 andam três números:** `polls` vira **014**,
-`conversations` **015** e `boards` **016**. Migration aplicada não se edita; se
+**As migrations das fases 9 e 10 andam cinco números:** `polls` vira **016**,
+`conversations` **017** e `boards` **018**. Migration aplicada não se edita; se
 algo estiver errado, crie a próxima.

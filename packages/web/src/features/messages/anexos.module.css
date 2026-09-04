@@ -1,0 +1,362 @@
+/*
+ * Anexos, prévia de link e a faixa de anexo pendente.
+ * Ver design/04-mensagens.md, "Anexo", "Link" e "Anexo pendente".
+ */
+
+/* --- imagens na mensagem ------------------------------------------------ */
+
+.grade {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.grade[data-quantas='1'] {
+  grid-template-columns: 1fr;
+}
+
+.grade[data-quantas='2'],
+.grade[data-quantas='3'],
+.grade[data-quantas='4'] {
+  grid-template-columns: repeat(2, 198px);
+}
+
+.imagemBotao {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r-media);
+  /* A mancha do blurhash entra como fundo, esticada: são 32×32 pixels que só
+     precisam sugerir a cor certa enquanto a imagem não chega. */
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-raised);
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+.grade[data-quantas='2'] .imagemBotao,
+.grade[data-quantas='3'] .imagemBotao,
+.grade[data-quantas='4'] .imagemBotao {
+  aspect-ratio: 1;
+  width: 198px;
+}
+
+.imagemBotao img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.grade[data-quantas='1'] .imagemBotao img {
+  object-fit: contain;
+}
+
+.imagemBotao:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mais {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font: var(--weight-semibold) 20px / 1 var(--font-ui);
+}
+
+/* --- arquivo em linha ---------------------------------------------------- */
+
+.arquivo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  max-width: 400px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.arquivo:hover {
+  border-color: var(--accent);
+}
+
+.arquivoIcone {
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  flex: none;
+}
+
+.arquivoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.arquivoNome {
+  font: var(--weight-medium) 13px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arquivoTamanho {
+  font: var(--weight-regular) 11px var(--font-ui);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.arquivoBaixar {
+  color: var(--text-secondary);
+  flex: none;
+}
+
+/* --- lightbox ------------------------------------------------------------ */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 64px 72px;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.lightboxImagem {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--r-media);
+}
+
+.lightboxTopo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  color: #fff;
+}
+
+.lightboxNome {
+  font: var(--weight-medium) 13px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightboxContagem {
+  font: var(--weight-regular) 12px var(--font-ui);
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+
+.lightboxNome:last-of-type {
+  margin-right: auto;
+}
+
+.lightboxBaixar {
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.seta:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.seta[data-lado='esquerda'] {
+  left: 16px;
+}
+
+.seta[data-lado='direita'] {
+  right: 16px;
+}
+
+/* --- prévia de link ------------------------------------------------------ */
+
+.previa {
+  display: flex;
+  gap: 12px;
+  width: 380px;
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  /* A guia à esquerda é o que diz "isto pertence à mensagem acima" sem
+     precisar de rótulo. */
+  border-left: 2px solid var(--accent);
+  border-radius: var(--r-media);
+  background: var(--bg-raised);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.previa:hover {
+  border-color: var(--accent);
+}
+
+.previaTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.previaSite {
+  font: var(--weight-medium) 11px var(--font-ui);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.previaTitulo {
+  font: var(--weight-semibold) 13px var(--font-ui);
+  color: var(--accent);
+}
+
+.previaDescricao {
+  font: var(--weight-regular) 12px / 1.45 var(--font-ui);
+  color: var(--text-secondary);
+  /* Duas linhas e para: o cartão é um convite, não o artigo. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.previaImagem {
+  width: 80px;
+  height: 80px;
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--r-control);
+}
+
+/* --- faixa de anexo pendente -------------------------------------------- */
+
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-bottom: none;
+  border-radius: var(--r-control) var(--r-control) 0 0;
+  background: var(--bg-raised);
+}
+
+.pendente {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.pendente[data-estado='falhou'] {
+  border-color: var(--danger);
+}
+
+.pendenteMiniatura {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pendenteArquivo {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.pendenteNome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 3px;
+  font: var(--weight-regular) 9px var(--font-ui);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pendenteRemover {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+}
+
+.pendenteRemover:hover {
+  background: var(--danger);
+}
+
+/* 2px na base da miniatura: dá para ver de canto de olho e não rouba espaço
+   de imagem nenhuma. */
+.barra {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.pendente[data-estado='falhou'] .barra {
+  background: var(--danger);
+  width: 100% !important;
+}
+
+.erroDoAnexo {
+  width: 100%;
+  font: var(--weight-regular) 11px var(--font-ui);
+  color: var(--danger);
+}

@@ -39,6 +39,23 @@ export interface Attachment {
   url: string;
 }
 
+/**
+ * O cartão de um link, montado pelo servidor.
+ *
+ * `thumbUrl` aponta para **nós**, nunca para o site de origem: quem lê não
+ * pode acabar baixando uma imagem de terceiro só por abrir a conversa. Ver
+ * design/04-mensagens.md, "Link".
+ */
+export interface LinkPreview {
+  url: string;
+  title: string;
+  description: string | null;
+  siteName: string;
+  thumbUrl: string | null;
+  thumbWidth: number | null;
+  thumbHeight: number | null;
+}
+
 export interface Reaction {
   emoji: string;
   count: number;

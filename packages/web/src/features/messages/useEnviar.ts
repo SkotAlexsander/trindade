@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Message } from '@trindade/shared';
+import type { Attachment, Message } from '@trindade/shared';
 import { useAuth } from '../auth/store';
 import { enviar as enviarPeloSocket } from '../../lib/ws';
 import {
@@ -42,6 +42,12 @@ export interface Rascunho {
   content: string;
   replyToId?: string | null;
   parentId?: string | null;
+  /**
+   * Os anexos **já subidos**. O upload terminou antes de a pessoa apertar
+   * Enter — ver `useAnexos.ts` — então aqui eles são só ids a costurar, e a
+   * linha otimista já pode desenhá-los.
+   */
+  anexos?: readonly Attachment[];
 }
 
 export function useEnviarMensagem() {
@@ -72,7 +78,7 @@ export function useEnviarMensagem() {
           replyToId: rascunho.replyToId ?? null,
           threadCount: 0,
           threadLastReplyAt: null,
-          attachments: [],
+          attachments: [...(rascunho.anexos ?? [])],
           reactions: [],
           pinnedAt: null,
           // Ninguém guarda o que acabou de escrever.
@@ -96,6 +102,9 @@ export function useEnviarMensagem() {
           channelId: rascunho.channelId,
           content: rascunho.content,
           clientNonce,
+          ...(rascunho.anexos?.length
+            ? { attachmentIds: rascunho.anexos.map((a) => a.id) }
+            : {}),
           ...(rascunho.replyToId ? { replyToId: rascunho.replyToId } : {}),
           ...(rascunho.parentId ? { parentId: rascunho.parentId } : {}),
         },
@@ -124,11 +133,15 @@ export function useEnviarMensagem() {
 
   const tentarDeNovo = useCallback(
     (mensagem: MensagemLocal) => {
-      if (!mensagem.clientNonce || !mensagem.content) return;
+      if (!mensagem.clientNonce) return;
+      if (!mensagem.content && mensagem.attachments.length === 0) return;
       enviar(
         {
           channelId: mensagem.channelId,
-          content: mensagem.content,
+          content: mensagem.content ?? '',
+          // Os anexos continuam pendentes no servidor: a mensagem é que não
+          // chegou. Reenviar sem eles publicaria a legenda sem a foto.
+          anexos: mensagem.attachments,
           replyToId: mensagem.replyToId,
           parentId: mensagem.parentId,
         },

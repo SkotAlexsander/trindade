@@ -9,6 +9,8 @@ import { useAuth } from '../auth/store';
 import { atualizarMensagem, chaveDoCanal, type CacheCanal } from './queries';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
 import { gatilhoAtivo, sugerir, type Sugestao } from './autocompletar';
+import { algumSubindo, prontos, useAnexos } from './useAnexos';
+import { FaixaDeAnexos } from './FaixaDeAnexos';
 import { useComposer, useFoco } from './store';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
@@ -24,6 +26,9 @@ import styles from './messages.module.css';
 
 const ALTURA_MIN = 40;
 const ALTURA_MAX = 240;
+
+/** Referência estável: `?? []` num seletor de store remonta a cada render. */
+const VAZIO: never[] = [];
 
 export interface ComposerProps {
   canal: Channel;
@@ -44,13 +49,19 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
   const limparContexto = useComposer((s) => s.limpar);
 
   const campo = useRef<HTMLTextAreaElement>(null);
+  const seletorDeArquivo = useRef<HTMLInputElement>(null);
   const ultimoTyping = useRef(0);
+
+  const pendentes = useAnexos((s) => s.porCanal[canal.id]) ?? VAZIO;
+  const anexarArquivos = useAnexos((s) => s.anexar);
+  const limparAnexos = useAnexos((s) => s.limpar);
   const [texto, setTexto] = useState('');
   const [cursor, setCursor] = useState(0);
   const [escolhida, setEscolhida] = useState(0);
   // Fechado à mão com `Esc`, até o gatilho mudar. Sem isto, `Esc` fecharia e a
   // próxima tecla reabriria a mesma lista.
   const [dispensado, setDispensado] = useState('');
+  const [arrastando, setArrastando] = useState(false);
 
   const gatilho = useMemo(() => gatilhoAtivo(texto, cursor), [texto, cursor]);
   const sugestoes = useMemo(
@@ -134,7 +145,10 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
 
   const submeter = useCallback(() => {
     const conteudo = texto.trim();
-    if (!conteudo) return;
+    const anexos = prontos(pendentes);
+    // Uma foto sem legenda é uma mensagem inteira; um `Enter` num campo vazio
+    // não é. E enquanto algum upload não terminou, enviar perderia o arquivo.
+    if ((!conteudo && anexos.length === 0) || algumSubindo(pendentes)) return;
 
     if (editando) {
       const alvo = editando;
@@ -152,13 +166,26 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
     enviar({
       channelId: canal.id,
       content: conteudo,
+      ...(anexos.length > 0 ? { anexos } : {}),
       ...(respondendoA ? { replyToId: respondendoA.id } : {}),
     });
     setTexto('');
+    limparAnexos(canal.id);
     limparContexto();
     // O envio é otimista: quem escreveu já vê a mensagem, então o campo pode
     // esvaziar sem esperar resposta nenhuma.
-  }, [texto, editando, enviar, canal.id, qc, show, respondendoA, limparContexto]);
+  }, [
+    texto,
+    pendentes,
+    editando,
+    enviar,
+    canal.id,
+    qc,
+    show,
+    respondendoA,
+    limparContexto,
+    limparAnexos,
+  ]);
 
   /** `↑` no campo vazio traz a sua última mensagem para edição. */
   const editarUltima = useCallback(() => {
@@ -180,6 +207,33 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
       el.setSelectionRange(inicio + trecho.length, inicio + trecho.length);
     });
   }, []);
+
+  const escolherArquivos = useCallback(
+    (arquivos: FileList | null) => {
+      const lista = arquivos ? [...arquivos] : [];
+      if (lista.length === 0) return;
+      anexarArquivos(canal.id, lista);
+      campo.current?.focus();
+    },
+    [anexarArquivos, canal.id],
+  );
+
+  /**
+   * Colar uma imagem anexa; colar texto não é da nossa conta.
+   *
+   * A captura de tela vai para a área de transferência como arquivo, e é de
+   * longe o anexo mais comum numa conversa de trabalho. `preventDefault` só
+   * quando há arquivo — sem isso, colar texto pararia de funcionar.
+   */
+  const aoColar = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const arquivos = [...e.clipboardData.files];
+      if (arquivos.length === 0) return;
+      e.preventDefault();
+      anexarArquivos(canal.id, arquivos);
+    },
+    [anexarArquivos, canal.id],
+  );
 
   const aoTeclar = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -319,12 +373,53 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
         </div>
       ) : null}
 
-      <div className={styles.compositor} data-contexto={contexto !== null}>
+      <FaixaDeAnexos channelId={canal.id} />
+
+      <div
+        className={styles.compositor}
+        data-contexto={contexto !== null}
+        data-arrastando={arrastando}
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault();
+          setArrastando(true);
+        }}
+        onDragLeave={(e) => {
+          // `relatedTarget` fora do compositor: sem esta checagem, passar por
+          // cima de um botão de dentro contaria como sair.
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setArrastando(false);
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault();
+          setArrastando(false);
+          escolherArquivos(e.dataTransfer.files);
+        }}
+      >
         <Tooltip label="Anexar arquivo">
-          <IconButton label="Anexar arquivo" size="sm" disabled>
+          <IconButton
+            label="Anexar arquivo"
+            size="sm"
+            onClick={() => seletorDeArquivo.current?.click()}
+          >
             <Paperclip size={18} />
           </IconButton>
         </Tooltip>
+        {/* O input fica escondido e o botão o aciona: o seletor nativo é feio
+            e não aceita estilo, mas é o único que abre o diálogo do sistema. */}
+        <input
+          ref={seletorDeArquivo}
+          type="file"
+          multiple
+          hidden
+          onChange={(e) => {
+            escolherArquivos(e.target.files);
+            // Sem isto, escolher o mesmo arquivo duas vezes seguidas não
+            // dispara `change` na segunda.
+            e.target.value = '';
+          }}
+        />
 
         <textarea
           ref={campo}
@@ -342,6 +437,7 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
           onKeyUp={(e) => setCursor(e.currentTarget.selectionStart)}
           onClick={(e) => setCursor(e.currentTarget.selectionStart)}
           onKeyDown={aoTeclar}
+          onPaste={aoColar}
         />
 
         <SeletorDeEmoji
@@ -359,7 +455,10 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
           <IconButton
             label={editando ? 'Salvar' : 'Enviar'}
             size="sm"
-            disabled={texto.trim().length === 0}
+            disabled={
+              (texto.trim().length === 0 && prontos(pendentes).length === 0) ||
+              algumSubindo(pendentes)
+            }
             onClick={submeter}
           >
             <Send size={18} />

@@ -12,8 +12,12 @@ mais nada ao monorepo.
 Uma vez:
 
 ```bash
-python -m pip install playwright
+python -m pip install playwright requests pillow
 ```
+
+`requests` e `pillow` são da fatia de anexos: o Pillow gera a foto de teste
+**com EXIF de GPS dentro**, que é o que prova que o re-encode do servidor apaga
+o metadado.
 
 Usa o Chrome já instalado (`channel='chrome'`), sem baixar navegador.
 
@@ -71,8 +75,38 @@ e três verificações passam sem exercitar nada:
 docker compose exec -T postgres psql -U trindade -d trindade < e2e/semear-historico.sql
 ```
 
-O roteiro fala com `#geral` explicitamente, que é o canal semeado. O destino
-automático depende do estado de leitura, que ainda é de espaço reservado.
+O roteiro fala com `#geral` explicitamente, que é o canal semeado.
+
+O mesmo arquivo deixa uma **menção pendente em `#bugs`** para cada pessoa. É do
+que `fase-04-shell.py` precisa para conferir a pílula com contador: sem semear,
+essa verificação passava por acaso — pelo resto que corridas anteriores
+deixavam no banco — e falhava assim que o banco era limpo.
+
+**`fase-05-upload-api.py`** — 37 verificações **sem navegador**, direto na API.
+O que está em jogo aqui não é interface: é o que o servidor faz com um arquivo
+e com uma URL que outra pessoa escolheu. Confere que o JPEG vira WebP, que o
+EXIF de GPS some, que a orientação foi aplicada antes de ser descartada, que a
+chave da URL não carrega o nome do arquivo, que o SVG disfarçado de PNG baixa
+em vez de renderizar, e que a prévia de link recusa `127.0.0.1`, `localhost`,
+`169.254.169.254`, `[::1]`, as portas do Postgres e do MinIO, e `file://`.
+
+**`fase-05-anexos.py`** — 31 verificações no navegador: o upload que começa ao
+anexar (o arquivo sobe sozinho, sem ninguém apertar Enter), a faixa de
+pendentes, foto sem legenda como mensagem inteira, a grade de duas imagens na
+ordem em que foram escolhidas, a lightbox com setas, o arquivo comum como linha
+de download, e o cartão de link com a miniatura vinda do nosso domínio.
+
+Precisa de internet: uma verificação busca a prévia de `https://example.com/`.
+
+### Se o Vite servir 404 num módulo que existe
+
+Renomear um arquivo deixa o grafo de módulos do Vite apontando para o nome
+velho, e nem recarregar nem `touch` no importador resolvem — a aresta velha
+está na memória do servidor. O jeito limpo é fazer o Vite se reiniciar sozinho:
+
+```bash
+touch packages/web/vite.config.ts
+```
 
 ### Derrubar a conexão de verdade
 

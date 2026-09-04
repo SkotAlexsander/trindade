@@ -23,6 +23,18 @@ export const channelKindSchema = z.enum(['text', 'voice']);
 
 export const messageContentSchema = z.string().min(1).max(4000);
 
+/**
+ * O corpo quando a mensagem pode ser só um anexo.
+ *
+ * Uma foto sem legenda é uma mensagem completa, e `min(1)` a rejeitaria. Quem
+ * usa isto tem de exigir, por fora, que sobre alguma coisa — texto **ou**
+ * anexo; ver `clientEventSchema` em eventos.ts.
+ */
+export const messageBodySchema = z.string().max(4000);
+
+/** Anexos por mensagem. O mesmo número está em docs/04-seguranca.md. */
+export const ANEXOS_POR_MENSAGEM = 10;
+
 export const inviteCodeSchema = z.string().min(8).max(32);
 
 /** bigint serializado: só dígitos, sem sinal. */

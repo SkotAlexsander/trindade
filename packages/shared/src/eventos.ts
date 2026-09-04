@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Channel, Message, Reaction, User, UserStatus } from './types.js';
-import { messageContentSchema, userStatusSchema } from './schemas.js';
+import { ANEXOS_POR_MENSAGEM, messageBodySchema, userStatusSchema } from './schemas.js';
 
 /**
  * Eventos do WebSocket. Fonte da verdade dos dois lados — ver
@@ -14,16 +14,23 @@ import { messageContentSchema, userStatusSchema } from './schemas.js';
 export const clientEventSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('MESSAGE_CREATE'),
-    d: z.object({
-      channelId: z.string().uuid(),
-      content: messageContentSchema,
-      // UUID gerado no cliente. É o que evita duplicata quando a rede oscila:
-      // o índice único (author_id, client_nonce) é a barreira final.
-      clientNonce: z.string().uuid(),
-      replyToId: z.string().uuid().nullish(),
-      parentId: z.string().uuid().nullish(),
-      attachmentIds: z.array(z.string().uuid()).max(10).optional(),
-    }),
+    d: z
+      .object({
+        channelId: z.string().uuid(),
+        content: messageBodySchema,
+        // UUID gerado no cliente. É o que evita duplicata quando a rede oscila:
+        // o índice único (author_id, client_nonce) é a barreira final.
+        clientNonce: z.string().uuid(),
+        replyToId: z.string().uuid().nullish(),
+        parentId: z.string().uuid().nullish(),
+        attachmentIds: z.array(z.string().uuid()).max(ANEXOS_POR_MENSAGEM).optional(),
+      })
+      // Uma foto sem legenda é uma mensagem; um `Enter` num campo vazio não é.
+      // A regra é "sobrou alguma coisa", não "tem texto".
+      .refine((d) => d.content.trim().length > 0 || (d.attachmentIds?.length ?? 0) > 0, {
+        message: 'mensagem vazia',
+        path: ['content'],
+      }),
   }),
   z.object({ op: z.literal('TYPING_START'), d: z.object({ channelId: z.string().uuid() }) }),
   z.object({

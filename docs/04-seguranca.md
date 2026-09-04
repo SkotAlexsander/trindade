@@ -248,6 +248,13 @@ controlados pelo cliente.
 
 Limites: avatar 8 MB, anexo 50 MB, 10 anexos por mensagem.
 
+SVG fica **fora** da lista de imagens, de propósito. É um formato de imagem que
+também é um documento com script, e rasterizar SVG de terceiro abre uma porta
+que nada aqui precisa. Ele cai como arquivo comum: baixado, nunca renderizado.
+O teste `e2e/fase-05-upload-api.py` sobe um SVG com `<script>` dentro,
+renomeado para `.png` e declarado como `image/png` — as três mentiras juntas —
+e confere que ele sai `application/octet-stream`.
+
 ### Servir
 
 - Chave aleatória, nunca o nome enviado pelo usuário.
@@ -255,6 +262,60 @@ Limites: avatar 8 MB, anexo 50 MB, 10 anexos por mensagem.
   mesmo origin da aplicação lê o token de quem abrir.
 - `Content-Disposition: attachment` para tudo que não seja imagem re-encodada.
 - `X-Content-Type-Options: nosniff` sempre.
+
+**A rota de arquivo não tem sessão, e isso é uma decisão.** O access token vive
+só na memória do JavaScript e um `<img src>` não tem como mandá-lo; e o
+domínio de CDN acima, por construção, não enxerga a sessão de ninguém. O
+controle de acesso é a chave: 32 bytes aleatórios (256 bits), que não se
+adivinham.
+
+O que isso custa, dito por extenso: **quem já teve a URL continua tendo o
+arquivo.** Tirar alguém de um canal não invalida um link que essa pessoa
+copiou. Com elenco fixo de cinco é um risco pequeno e conhecido; num produto
+com convidados entrando e saindo, não seria — ali a resposta é um token de
+mídia curto por cookie, ou URL assinada com validade.
+
+---
+
+## Prévia de link: o servidor busca no lugar de quem lê
+
+Preview de link é buscado pelo **servidor**, nunca pelo navegador de quem lê.
+Se o cliente buscasse, abrir uma mensagem entregaria o IP de todos os leitores
+para quem mandou o link. Vale também para a **miniatura**: ela é baixada,
+re-encodada e servida do nosso domínio — deixar o `<img>` apontar para o site
+de origem devolveria o vazamento por outra porta, depois de todo o cuidado com
+o HTML.
+
+A troca é direta: o servidor passa a buscar URLs escolhidas por outra pessoa, e
+um servidor assim pode ser mandado bater na porta da própria rede — o metadado
+da nuvem em `169.254.169.254`, o Postgres, o painel do MinIO. É o SSRF, e a
+guarda tem seis partes:
+
+1. **Só `http:` e `https:`.** Lista de permitidos; `file:`, `gopher:` e
+   `data:` falham fechado.
+2. **Só as portas da web** (80, 443, ou a padrão). `:5432` e `:9000` não são
+   engano de ninguém.
+3. **Nada de credencial na URL.** `http://usuario@interno/` engana quem lê o
+   link e alguns clientes HTTP.
+4. **Resolvemos o nome nós mesmos** e recusamos todo endereço que não seja da
+   internet pública: privado, laço local, link-local, CGNAT, documentação,
+   benchmark, multicast, reservado — e o IPv4 embutido em IPv6, porque
+   `::ffff:127.0.0.1`, `2002:7f00:1::` e `64:ff9b::7f00:1` são 127.0.0.1
+   escritos de outros três jeitos.
+5. **Conectamos no endereço já conferido**, com o `Host` original no cabeçalho
+   e o `servername` no TLS. Passar o *nome* para o cliente HTTP deixaria uma
+   janela entre a nossa consulta de DNS e a dele em que a resposta pode mudar
+   para `127.0.0.1` — é o rebind, e ele derrota a checagem feita cedo demais.
+6. **Cada redirecionamento repete tudo**, no máximo três. Um host público que
+   redireciona para `169.254.169.254` é a forma mais comum de SSRF que
+   sobrevive a uma checagem só na entrada.
+
+Mais: 5 segundos de espera, 512 KB de HTML, 4 MB de imagem, e só `text/html` é
+lido como página. Na dúvida a guarda diz não — em `lib/rede-publica.ts`, texto
+que não parse devolve "não é público".
+
+A recusa é **sempre a mesma mensagem**, sem dizer para onde o nome resolveu:
+dizer "resolveu para 10.0.0.5" transformaria a prévia num scanner de rede.
 
 ---
 
@@ -282,10 +343,8 @@ acidente a aplicação peça localização.
 Markdown passa por `DOMPurify` **depois** de renderizado, com whitelist de tags.
 Nunca `dangerouslySetInnerHTML` com conteúdo de usuário sem essa passagem.
 
-Preview de link é buscado pelo **servidor**, nunca pelo navegador de quem lê.
-Se o cliente buscasse, abrir uma mensagem entregaria o IP de todos os leitores
-para quem mandou o link. Valide a URL contra ranges internos antes de buscar
-(SSRF) e limite o tamanho da resposta.
+Preview de link é buscado pelo **servidor** — ver "Prévia de link" acima, com a
+guarda de SSRF por extenso.
 
 ---
 
@@ -298,6 +357,7 @@ para quem mandou o link. Valide a URL contra ranges internos antes de buscar
 | `POST /auth/register` | 3 / hora | hash de IP |
 | `POST /auth/refresh` | 30 / hora | usuário |
 | `POST /me/avatar` | 10 / hora | usuário |
+| `GET /link-preview` | 120 / hora | usuário |
 | upload de anexo | 50 / hora | usuário |
 | `MESSAGE_CREATE` (ws) | 10 / 10s | usuário |
 
@@ -334,6 +394,7 @@ LIVEKIT_API_KEY / LIVEKIT_API_SECRET
 - [ ] Log de acesso sem IP em claro
 - [ ] Nenhuma imagem servida sem passar pelo `sharp`
 - [ ] Anexos num domínio separado
+- [ ] A prévia de link recusa endereço interno, inclusive depois de redirecionar
 - [ ] CSP ativa e testada
 - [ ] 2FA ativado nas cinco contas
 - [ ] Disco criptografado

@@ -4,6 +4,7 @@ import {
   analisarMarkdown,
   hrefSeguro,
   mencionados,
+  primeiroLink,
   type Bloco,
   type No,
 } from '../src/features/messages/markdown';
@@ -208,5 +209,38 @@ describe('mencionados', () => {
   it('encontra dentro de negrito e de item de lista', () => {
     expect([...mencionados(analisarMarkdown('**@alex**'))]).toEqual(['alex']);
     expect([...mencionados(analisarMarkdown('- pergunte a @carla'))]).toEqual(['carla']);
+  });
+});
+
+describe('primeiroLink', () => {
+  const link = (fonte: string) => primeiroLink(analisarMarkdown(fonte));
+
+  it('acha o link no meio do texto', () => {
+    expect(link('olha isto https://exemplo.com/a e me diz')).toBe('https://exemplo.com/a');
+  });
+
+  it('devolve só o primeiro', () => {
+    // Cinco links não podem virar cinco cartões de 380px.
+    expect(link('https://um.com e https://dois.com')).toBe('https://um.com/');
+  });
+
+  it('ignora o que está dentro de crase', () => {
+    // URL em bloco de código é exemplo, não link — e o servidor não deve ir
+    // buscá-la.
+    expect(link('use `https://exemplo.com/api` na chamada')).toBeNull();
+    expect(link('```\nhttps://exemplo.com\n```')).toBeNull();
+  });
+
+  it('ignora mailto e qualquer esquema que não seja web', () => {
+    expect(link('escreva para <mailto:alguem@exemplo.com>')).toBeNull();
+  });
+
+  it('devolve null quando não há link', () => {
+    expect(link('só texto, nada de link')).toBeNull();
+  });
+
+  it('acha dentro de negrito e de citação', () => {
+    expect(link('**https://exemplo.com/**')).toBe('https://exemplo.com/');
+    expect(link('> https://exemplo.com/')).toBe('https://exemplo.com/');
   });
 });

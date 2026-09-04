@@ -40,3 +40,41 @@ begin
 
   raise notice 'semeadas 120 mensagens em #geral';
 end $$;
+
+-- Uma menção pendente em #bugs para cada pessoa.
+--
+-- O roteiro da fase 4 confere que menção vira pílula com contador, e a pílula
+-- só existe se alguém tiver sido citado e ainda não tiver lido. Sem semear,
+-- essa verificação passava por acaso — pelo resto que corridas anteriores
+-- deixavam no banco — e falhava assim que o banco era limpo.
+do $$
+declare
+  canal uuid;
+  bruno uuid;
+begin
+  select id into canal from channels where slug = 'bugs';
+  select id into bruno from users where username = 'bruno';
+  if canal is null or bruno is null then
+    raise notice 'sem #bugs ou sem bruno; nada a semear';
+    return;
+  end if;
+
+  insert into messages (channel_id, author_id, content, created_at)
+  select canal, bruno, '[semente] @' || u.username || ' consegue olhar isto?',
+         now() - interval '2 hours'
+    from users u
+   where u.disabled_at is null and u.id <> bruno
+     and not exists (
+       select 1 from messages m
+        where m.channel_id = canal
+          and m.content = '[semente] @' || u.username || ' consegue olhar isto?'
+     );
+
+  insert into read_state (user_id, channel_id, mention_count)
+  select u.id, canal, 1 from users u
+   where u.disabled_at is null and u.id <> bruno
+      on conflict (user_id, channel_id)
+      do update set mention_count = greatest(read_state.mention_count, 1);
+
+  raise notice 'menções pendentes semeadas em #bugs';
+end $$;
