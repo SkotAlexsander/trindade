@@ -21,6 +21,7 @@ import { ensureContrast, sobrepor } from '../../lib/contraste';
 import { lerToken } from '../../lib/tokens';
 import { useAuth } from '../auth/store';
 import { usePresenca } from '../realtime/store';
+import { useDialogoDePerfil } from './DialogoDePerfil';
 import styles from './perfil.module.css';
 
 /**
@@ -82,6 +83,7 @@ export function CartaoDePerfil({ user, trigger, onEditar, onMensagem }: CartaoDe
   // A presença vem do gateway, não do `User` do cache: o status muda muito mais
   // vezes do que o perfil, e o cartão precisa dizer a verdade agora.
   const presenca = usePresenca((s) => s.porUsuario[user.id]);
+  const abrirPerfil = useDialogoDePerfil((s) => s.abrir);
   const status = presenca?.status ?? user.status;
 
   const { refs, floatingStyles, context } = useFloating({
@@ -174,7 +176,7 @@ export function CartaoDePerfil({ user, trigger, onEditar, onMensagem }: CartaoDe
                   className={styles.acao}
                   onClick={() => {
                     setAberto(false);
-                    if (souEu) onEditar?.();
+                    if (souEu) (onEditar ?? (() => abrirPerfil('perfil')))();
                     else onMensagem?.(user);
                   }}
                 >

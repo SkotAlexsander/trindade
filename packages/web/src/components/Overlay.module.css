@@ -10,11 +10,16 @@
 
 /* --- diálogo -------------------------------------------------------------
  *
- * O `<dialog>` nativo já vem centralizado pelo `inset: 0` + margin auto do
- * user-agent, e o véu é o `::backdrop`. Não há div de véu para estilizar. */
+ * O `<dialog>` nativo vem centralizado pelo `inset: 0` + `margin: auto` do
+ * user-agent, e o véu é o `::backdrop`. Não há div de véu para estilizar.
+ *
+ * O `margin: auto` precisa ser repetido aqui: o reset de `globals.css` zera a
+ * margem de tudo, e zerar a do `<dialog>` desliga justamente o que o centraliza
+ * — ele nascia grudado no canto superior esquerdo, e ninguém tinha olhado. */
 
 .dialog {
-  width: min(480px, calc(100vw - var(--s-8)));
+  width: min(560px, calc(100vw - var(--s-8)));
+  margin: auto;
   max-height: calc(100vh - var(--s-8));
   padding: 0;
   border: none;

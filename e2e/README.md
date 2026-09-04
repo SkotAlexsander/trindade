@@ -77,10 +77,14 @@ docker compose exec -T postgres psql -U trindade -d trindade < e2e/semear-histor
 
 O roteiro fala com `#geral` explicitamente, que é o canal semeado.
 
-O mesmo arquivo deixa uma **menção pendente em `#bugs`** para cada pessoa. É do
-que `fase-04-shell.py` precisa para conferir a pílula com contador: sem semear,
-essa verificação passava por acaso — pelo resto que corridas anteriores
-deixavam no banco — e falhava assim que o banco era limpo.
+O mesmo arquivo deixa uma **menção pendente em `#bugs`** para cada pessoa, e
+zera o `last_read_message_id` desse canal. É do que `fase-04-shell.py` precisa
+para conferir a pílula com contador — e as duas coisas juntas, porque semear só
+a mensagem não basta: quem já abriu `#bugs` numa corrida anterior continua com
+o canal lido, e a mensagem semeada é mais velha que a última lida.
+
+**Rode o seed logo antes de `fase-04-shell.py`.** Qualquer roteiro que abra
+`#bugs` consome a menção, e essa verificação passa a falhar até semear de novo.
 
 **`fase-05-upload-api.py`** — 37 verificações **sem navegador**, direto na API.
 O que está em jogo aqui não é interface: é o que o servidor faz com um arquivo
@@ -97,6 +101,14 @@ ordem em que foram escolhidas, a lightbox com setas, o arquivo comum como linha
 de download, e o cartão de link com a miniatura vinda do nosso domínio.
 
 Precisa de internet: uma verificação busca a prévia de `https://example.com/`.
+
+**`fase-06-perfil.py`** — 32 verificações do diálogo de editar perfil: 560px e
+centralizado, nome de usuário como texto e não campo desabilitado, contador de
+caracteres só a partir de 80%, Salvar desligado sem alteração, `Escape` com
+alteração pendente perguntando antes, o recortador quadrado, e a foto que sobe
+com EXIF e volta em WebP sem metadado nenhum. Mais a aba de segurança: sessões
+sem IP — o roteiro procura por qualquer coisa com cara de endereço e falha se
+achar — e os três passos de ativar o segundo fator.
 
 **`fase-06-cartao.py`** — 17 verificações do cartão de perfil: que ele **não**
 abre antes dos 400ms, que não fecha na hora em que o mouse sai (o atraso de

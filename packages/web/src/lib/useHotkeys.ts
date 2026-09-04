@@ -29,6 +29,24 @@ function editando(alvo: EventTarget | null): boolean {
   return tipo !== 'checkbox' && tipo !== 'radio' && tipo !== 'button';
 }
 
+/**
+ * Há um diálogo modal na tela?
+ *
+ * Enquanto existe um, o resto da página é inerte por definição — e os atalhos
+ * globais **são** o resto da página. Sem esta checagem, o `Escape` do shell
+ * chegava primeiro, chamava `preventDefault()`, e o diálogo nativo nunca via a
+ * tecla: nenhum diálogo do produto fechava com Escape enquanto o shell
+ * estivesse montado, e ninguém tinha testado essa combinação.
+ */
+function temModalAberto(): boolean {
+  try {
+    return document.querySelector('dialog:modal') !== null;
+  } catch {
+    // `:modal` é recente; onde ele não existe, um `<dialog open>` serve.
+    return document.querySelector('dialog[open]') !== null;
+  }
+}
+
 /** `Ctrl` no Windows e Linux, `⌘` no mac — a mesma tecla para quem usa. */
 function modAtivo(event: KeyboardEvent): boolean {
   return event.metaKey || event.ctrlKey;
@@ -42,6 +60,7 @@ export function useHotkeys(atalhos: Hotkey[]): void {
 
   useEffect(() => {
     function aoTeclar(event: KeyboardEvent): void {
+      if (temModalAberto()) return;
       const digitando = editando(event.target);
 
       for (const atalho of atual.current) {

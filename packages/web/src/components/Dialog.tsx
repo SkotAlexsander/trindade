@@ -25,6 +25,17 @@ export interface DialogProps {
  */
 export function Dialog({ open, onOpenChange, title, description, children, footer }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  /**
+   * O `open` de agora, legível de dentro de um listener.
+   *
+   * `dialog.close()` **não** dispara o `close` na hora: o evento é enfileirado
+   * e chega depois, quando `open` já é `false` há um render. Devolver esse
+   * `close` para quem abriu é ecoar de volta uma ordem que veio de lá — e
+   * fazia o diálogo reabrir a pergunta de "descartar alterações?" logo depois
+   * de salvar. Se `open` já é falso, o pai sabe; não há o que avisar.
+   */
+  const abertoAgora = useRef(open);
+  abertoAgora.current = open;
   const tituloId = useId();
   const descricaoId = useId();
 
@@ -36,14 +47,37 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  // `close` cobre tanto o Escape quanto o `close()` programático, então o
-  // estado de fora nunca fica dessincronizado do elemento.
+  // `close` cobre o fechamento programático, e o estado de fora nunca fica
+  // dessincronizado do elemento.
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const aoFechar = () => onOpenChange(false);
+    const aoFechar = () => {
+      if (!abertoAgora.current) return;
+      onOpenChange(false);
+    };
     dialog.addEventListener('close', aoFechar);
     return () => dialog.removeEventListener('close', aoFechar);
+  }, [onOpenChange]);
+
+  /**
+   * O Escape **pede** para fechar; quem decide é quem abriu.
+   *
+   * Sem o `preventDefault`, o elemento nativo fecha primeiro e avisa depois —
+   * e um diálogo que precisa perguntar "descartar as alterações?" já
+   * desapareceu da tela quando a pergunta aparece, junto com a pergunta. O
+   * `cancel` é disparado antes do fechamento, e é o único lugar onde dá para
+   * segurá-lo.
+   */
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const aoCancelar = (event: Event) => {
+      event.preventDefault();
+      onOpenChange(false);
+    };
+    dialog.addEventListener('cancel', aoCancelar);
+    return () => dialog.removeEventListener('cancel', aoCancelar);
   }, [onOpenChange]);
 
   /** O clique no véu chega como clique no próprio `<dialog>`, não num filho. */

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { User } from '@trindade/shared';
-import { useNavigate } from 'react-router-dom';
 import { Avatar, IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
 import { Headphones, Mark, Mic, MicOff, HeadphonesOff, Settings } from '../../components/icones';
 import { useAuth } from '../auth/store';
 import { CartaoDePerfil } from '../profile/CartaoDePerfil';
+import { useDialogoDePerfil } from '../profile/DialogoDePerfil';
 import styles from './cast.module.css';
 
 /**
@@ -51,7 +51,7 @@ export function CastPanel({
   onGuardadas,
 }: CastPanelProps) {
   const eu = useAuth((state) => state.user);
-  const navigate = useNavigate();
+  const abrirPerfil = useDialogoDePerfil((s) => s.abrir);
   const [microfone, setMicrofone] = useState(true);
   const [fone, setFone] = useState(true);
 
@@ -109,8 +109,8 @@ export function CastPanel({
               Guardadas
             </MenuItem>
             <MenuSeparator />
-            <MenuItem onSelect={() => navigate('/config/perfil')}>Editar perfil</MenuItem>
-            <MenuItem onSelect={() => navigate('/config/conta')}>Conta e segurança</MenuItem>
+            <MenuItem onSelect={() => abrirPerfil('perfil')}>Editar perfil</MenuItem>
+            <MenuItem onSelect={() => abrirPerfil('conta')}>Conta e segurança</MenuItem>
           </Menu>
           <div className={styles.controles}>
             <Tooltip label={microfone ? 'Desligar microfone (Ctrl ⇧ M)' : 'Ligar microfone (Ctrl ⇧ M)'}>

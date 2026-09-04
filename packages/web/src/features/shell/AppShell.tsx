@@ -8,6 +8,7 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
 import { useHotkeys } from '../../lib/useHotkeys';
 import { useAuth } from '../auth/store';
 import { CastPanel } from '../cast/CastPanel';
+import { DialogoDePerfil } from '../profile/DialogoDePerfil';
 import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
@@ -245,6 +246,10 @@ export function AppShell() {
         pessoas={pessoas}
         onAbrirPainel={alternarPainel}
       />
+
+      {/* Montado uma vez no shell: o diálogo é aberto do cartão de perfil e do
+          menu do rodapé, e uma store diz quando. */}
+      <DialogoDePerfil />
     </div>
   );
 }

@@ -70,11 +70,16 @@ begin
           and m.content = '[semente] @' || u.username || ' consegue olhar isto?'
      );
 
-  insert into read_state (user_id, channel_id, mention_count)
-  select u.id, canal, 1 from users u
+  -- `last_read_message_id = null` junto com a contagem: sem isso, quem já
+  -- abriu #bugs numa corrida anterior continua com o canal lido, e a mensagem
+  -- semeada — que é mais velha que a última lida — não volta a contar como não
+  -- lida. Semear tem de devolver o estado, não só acrescentar linhas.
+  insert into read_state (user_id, channel_id, mention_count, last_read_message_id)
+  select u.id, canal, 1, null from users u
    where u.disabled_at is null and u.id <> bruno
       on conflict (user_id, channel_id)
-      do update set mention_count = greatest(read_state.mention_count, 1);
+      do update set mention_count = greatest(read_state.mention_count, 1),
+                    last_read_message_id = null;
 
   raise notice 'menções pendentes semeadas em #bugs';
 end $$;
