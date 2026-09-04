@@ -110,6 +110,15 @@ com EXIF e volta em WebP sem metadado nenhum. Mais a aba de segurança: sessões
 sem IP — o roteiro procura por qualquer coisa com cara de endereço e falha se
 achar — e os três passos de ativar o segundo fator.
 
+**`fase-06-cargos.py`** — 21 verificações da página de cargos: a lista ordenada
+pela hierarquia, permissões em português e agrupadas por área, `ADMINISTRATOR`
+separado no fim com o aviso literal, o salvamento automático que **não** dispara
+antes dos 800ms nem ao abrir a página, e o cargo novo nascendo abaixo de quem o
+criou. Fecha checando a mesma regra pelos dois lados: a página recusa quem não
+tem `MANAGE_ROLES`, e a rota recusa a mesma pessoa direto na API.
+
+Precisa da conta `admin` (`pnpm dev:admin`).
+
 **`fase-06-cartao.py`** — 17 verificações do cartão de perfil: que ele **não**
 abre antes dos 400ms, que não fecha na hora em que o mouse sai (o atraso de
 300ms é o assunto principal — sem ele, atravessar a borda fecha o cartão na

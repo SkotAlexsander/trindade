@@ -5,6 +5,7 @@ export { Dialog, type DialogProps } from './Dialog';
 export { Popover, type PopoverProps } from './Popover';
 export { Menu, MenuItem, MenuSeparator, type MenuProps } from './Menu';
 export { Tooltip, type TooltipProps } from './Tooltip';
+export { Toggle, type ToggleProps } from './Toggle';
 export { ToastProvider, useToast, type ToastKind } from './Toast';
 export { Spinner, Skeleton, type SkeletonProps } from './Loading';
 export * as Icones from './icones';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Perm, can } from '@trindade/shared';
 import { IconButton, Skeleton, Tooltip } from '../../components';
 import { ChevronDown, Plus, Settings } from '../../components/icones';
@@ -32,6 +32,7 @@ import styles from './shell.module.css';
 export function AppShell() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
+  const { pathname } = useLocation();
   const permissoes = useAuth((state) => state.permissions);
 
   const { data: canaisCrus, isPending: carregandoCanais } = useChannels();
@@ -86,12 +87,17 @@ export function AppShell() {
     setGaveta(false);
   }, [slug, estreito]);
 
-  // Sem slug na URL, vai para o primeiro não lido — ou `geral`.
+  // Na raiz, vai para o primeiro não lido — ou `geral`.
+  //
+  // A condição é o caminho ser `/`, e não a ausência de `slug`: `/config/...`
+  // também não tem slug, e a versão anterior devolvia para a conversa qualquer
+  // pessoa que abrisse uma página de configuração. Ninguém tinha percebido
+  // porque não havia nenhuma página lá até agora.
   useEffect(() => {
-    if (slug || canais.length === 0) return;
+    if (pathname !== '/' || canais.length === 0) return;
     const destino = primeiroDestino(canais);
     if (destino) navigate(`/c/${destino.slug}`, { replace: true });
-  }, [slug, canais, navigate]);
+  }, [pathname, canais, navigate]);
 
   const irParaVizinho = useCallback(
     (passo: number) => {

@@ -1,0 +1,281 @@
+/*
+ * Cargos e permissões. Ver design/05-perfil-e-cargos.md, "Cargos".
+ */
+
+.pagina {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--s-6);
+  align-items: start;
+  max-width: 900px;
+}
+
+@media (max-width: 760px) {
+  .pagina {
+    grid-template-columns: 1fr;
+  }
+}
+
+.carregando {
+  display: grid;
+  place-items: center;
+  padding: var(--s-8);
+}
+
+/* --- lista ---------------------------------------------------------------- */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+}
+
+.dicaDaLista {
+  font: var(--weight-regular) 11px / 1.4 var(--font-ui);
+  color: var(--text-tertiary);
+  margin: -2px 0 4px;
+}
+
+.itens {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: var(--r-control);
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-secondary);
+  cursor: grab;
+}
+
+.item:hover:not([aria-disabled='true']) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.item[data-ativo='true'] {
+  background: var(--bg-selected);
+  color: var(--text-primary);
+}
+
+/* Esmaecido, não escondido: aqui a hierarquia é o assunto da tela, então ver
+   que existe algo acima do seu cargo é informação. */
+.item[data-acima='true'] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.item[data-arrastando='true'] {
+  opacity: 0.35;
+}
+
+.ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  flex: none;
+}
+
+.nomeDoCargo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.quantos {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.criar {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.avisoDaLista {
+  font: var(--weight-regular) 11px / 1.4 var(--font-ui);
+  color: var(--text-tertiary);
+  margin: 4px 0 0;
+}
+
+/* --- editor --------------------------------------------------------------- */
+
+.editor {
+  min-width: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.cabecalhoDoEditor {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.titulo {
+  font: var(--weight-semibold) 18px var(--font-ui);
+  color: var(--text-primary);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Discreto, e some sozinho: um "Salvo" permanente vira parte do layout e
+   deixa de significar que algo acabou de acontecer. */
+.salvo {
+  font: var(--weight-medium) 11px var(--font-ui);
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-out);
+}
+
+.salvo[data-visivel='true'] {
+  opacity: 1;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rotulo {
+  font: var(--weight-medium) 13px var(--font-ui);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cores {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.amostra {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-full);
+  border: 2px solid transparent;
+}
+
+.amostra[data-ativa='true'] {
+  border-color: var(--text-primary);
+}
+
+.hex {
+  width: 92px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-field);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: var(--weight-regular) 12px var(--font-mono);
+}
+
+.previaDaCor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+.chipPrevia {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 10px;
+  border-radius: var(--r-full);
+  font: var(--weight-medium) 11px var(--font-ui);
+}
+
+.notaDaCor {
+  font: var(--weight-regular) 11px var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.separador {
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.grupo {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tituloDoGrupo {
+  font: var(--weight-medium) 11px var(--font-ui);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 0 4px;
+}
+
+/* Emoldurado quando ligado: o `ADMINISTRATOR` dispensa a lista inteira, e o
+   estado ligado precisa ser visível de longe. */
+.administrador {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  padding: 2px;
+}
+
+.administrador[data-ligado='true'] {
+  border-color: var(--danger);
+  background: rgba(251, 90, 104, 0.06);
+}
+
+.pessoas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pessoa {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--r-full);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  font: var(--weight-regular) 12px var(--font-ui);
+  color: var(--text-secondary);
+}
+
+.vazio {
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-tertiary);
+  margin: 0;
+}
