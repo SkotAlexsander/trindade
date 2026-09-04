@@ -127,14 +127,31 @@ export async function listPins(channelId: string): Promise<MessageRow[]> {
   `;
 }
 
-export async function countThreadReplies(ids: readonly string[]): Promise<Map<string, number>> {
+export interface ResumoDeThread {
+  total: number;
+  ultima: Date;
+}
+
+/**
+ * Quantas respostas cada mensagem tem, e quando veio a última.
+ *
+ * Uma consulta para o lote inteiro, não uma por mensagem: o histórico traz
+ * cinquenta linhas de cada vez e cinquenta viagens ao banco para desenhar um
+ * rodapé que quase sempre não existe seria absurdo.
+ */
+export async function countThreadReplies(
+  ids: readonly string[],
+): Promise<Map<string, ResumoDeThread>> {
   if (ids.length === 0) return new Map();
-  const linhas = await sql<{ parent_id: string; total: string }[]>`
-    select parent_id, count(*)::text as total from messages
+  const linhas = await sql<{ parent_id: string; total: string; ultima: Date }[]>`
+    select parent_id, count(*)::text as total, max(created_at) as ultima
+    from messages
     where parent_id in ${sql(ids as string[])} and deleted_at is null
     group by parent_id
   `;
-  return new Map(linhas.map((l) => [l.parent_id, Number(l.total)]));
+  return new Map(
+    linhas.map((l) => [l.parent_id, { total: Number(l.total), ultima: l.ultima }]),
+  );
 }
 
 export async function listReactions(ids: readonly string[]): Promise<ReactionRow[]> {

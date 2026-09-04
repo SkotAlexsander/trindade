@@ -10,7 +10,14 @@ import styles from './shell.module.css';
  * aqueles quatro são do canal em que você está, e guardadas atravessa todos.
  * O gatilho dela mora no menu do seu próprio nome e em `Ctrl/⌘ ⇧ B`.
  */
-export type PainelAberto = 'busca' | 'fixadas' | 'guardadas' | 'notas' | 'tarefas' | null;
+export type PainelAberto =
+  | 'busca'
+  | 'fixadas'
+  | 'guardadas'
+  | 'thread'
+  | 'notas'
+  | 'tarefas'
+  | null;
 
 const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: ReactNode }> = [
   { id: 'busca', rotulo: 'Buscar no canal', icone: <Search size={18} /> },

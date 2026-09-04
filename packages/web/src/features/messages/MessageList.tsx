@@ -6,7 +6,7 @@ import { useAuth } from '../auth/store';
 import { Message, type AcoesDisponiveis } from './Message';
 import { montarSecoes, rotuloDoDia } from './linhas';
 import { useCarregarAntigas, useMessages, type MensagemLocal } from './queries';
-import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco } from './store';
+import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco, useThread } from './store';
 import { useAcoesDaMensagem } from './useAcoes';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
@@ -50,6 +50,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const destaqueId = useDestaque((s) => s.id);
   const limparDestaque = useDestaque((s) => s.limpar);
   const pular = useDestaque((s) => s.pular);
+  const abrirThread = useThread((s) => s.abrir);
 
   const rolagem = useRef<HTMLDivElement>(null);
   const coladoNoFim = useRef(true);
@@ -227,6 +228,10 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
               e.preventDefault();
               fixar(alvo, alvo.pinnedAt === null);
               return;
+            case 't':
+              e.preventDefault();
+              abrirThread(alvo.id);
+              return;
             default:
               break;
           }
@@ -259,6 +264,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       apagar,
       permissoes,
       digitarNoCompositor,
+      abrirThread,
     ],
   );
 
@@ -278,6 +284,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       onDescartar: descartar,
       onPular: pular,
       onFocar: focar,
+      onThread: (m) => abrirThread(m.id),
     }),
     [
       permissoes,
@@ -291,6 +298,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       descartar,
       pular,
       focar,
+      abrirThread,
     ],
   );
 

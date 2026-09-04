@@ -19,6 +19,8 @@ function msg(parcial: Partial<MensagemLocal> & { id: string; quando: Date }): Me
     content: 'oi',
     parentId: null,
     replyToId: null,
+    threadCount: 0,
+    threadLastReplyAt: null,
     attachments: [],
     reactions: [],
     pinnedAt: null,

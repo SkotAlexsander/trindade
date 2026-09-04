@@ -28,6 +28,7 @@ export interface AcoesDaMensagemProps {
   onFixar: () => void;
   onEditar: () => void;
   onApagar: () => void;
+  onThread: () => void;
 }
 
 export function AcoesDaMensagem({
@@ -41,6 +42,7 @@ export function AcoesDaMensagem({
   onFixar,
   onEditar,
   onApagar,
+  onThread,
 }: AcoesDaMensagemProps) {
   const guardada = mensagem.saved;
   const fixada = mensagem.pinnedAt !== null;
@@ -116,6 +118,7 @@ export function AcoesDaMensagem({
           </IconButton>
         }
       >
+        <MenuItem onSelect={onThread}>Abrir thread</MenuItem>
         {souOAutor ? <MenuItem onSelect={onEditar}>Editar mensagem</MenuItem> : null}
         <MenuItem onSelect={() => void navigator.clipboard?.writeText(mensagem.content ?? '')}>
           Copiar texto

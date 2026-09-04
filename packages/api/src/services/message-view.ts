@@ -1,6 +1,6 @@
 import type { Message, Reaction } from '@trindade/shared';
 import { agregarReacoes } from '@trindade/shared';
-import type { MessageRow, ReactionRow } from '../db/messages.js';
+import type { MessageRow, ReactionRow, ResumoDeThread } from '../db/messages.js';
 
 /**
  * Converte linhas do banco no formato do contrato.
@@ -14,7 +14,8 @@ export function toApiMessage(
   opcoes: {
     reactions?: ReactionRow[];
     meuId: string;
-    threadReplies?: number;
+    /** Resumo da thread pendurada nesta mensagem, se houver alguma. */
+    thread?: ResumoDeThread;
     /** Se quem pediu guardou esta. Sem isto, `false` — nunca `undefined`. */
     saved?: boolean;
   },
@@ -39,6 +40,8 @@ export function toApiMessage(
     content: apagada ? null : row.content,
     parentId: row.parent_id,
     replyToId: row.reply_to_id,
+    threadCount: opcoes.thread?.total ?? 0,
+    threadLastReplyAt: opcoes.thread ? opcoes.thread.ultima.toISOString() : null,
     attachments: [],
     reactions: reacoes,
     pinnedAt: row.pinned_at ? row.pinned_at.toISOString() : null,
@@ -58,6 +61,7 @@ export function toApiMessages(
   reactions: readonly ReactionRow[],
   meuId: string,
   guardadas: ReadonlySet<string> = new Set(),
+  threads: ReadonlyMap<string, ResumoDeThread> = new Map(),
 ): Message[] {
   const porMensagem = new Map<string, ReactionRow[]>();
   for (const r of reactions) {
@@ -70,6 +74,7 @@ export function toApiMessages(
       reactions: porMensagem.get(row.id) ?? [],
       meuId,
       saved: guardadas.has(row.id),
+      ...(threads.get(row.id) ? { thread: threads.get(row.id) as ResumoDeThread } : {}),
     }),
   );
 }

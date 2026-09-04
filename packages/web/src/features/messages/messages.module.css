@@ -155,6 +155,10 @@ button.citacaoTexto:hover > span:last-child {
   color: var(--text-tertiary);
 }
 
+.gutter .selo {
+  padding-top: 3px;
+}
+
 .gutter {
   display: flex;
   align-items: flex-start;
@@ -810,4 +814,181 @@ button.mencao:hover {
 
 .mostrarTudo:hover {
   background: var(--bg-hover);
+}
+
+/* --- rodapé de thread ------------------------------------------------------ */
+
+.rodapeThread {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  height: 24px;
+  margin-top: 2px;
+  color: var(--accent);
+  font: var(--weight-medium) var(--text-meta) var(--font-ui);
+}
+
+.rodapeThread:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- painel de thread ------------------------------------------------------ */
+
+.thread {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.threadRolagem {
+  overflow-y: auto;
+  padding: var(--s-3);
+}
+
+.threadPai {
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* A mãe é o assunto; as respostas são o desdobramento. A diferença de peso
+   entre as duas é o que impede o painel de virar uma lista sem começo. */
+.threadResposta {
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.threadResposta[data-local='enviando'] {
+  opacity: 0.5;
+}
+
+.threadCabeca {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: 2px;
+  font-size: var(--text-label);
+  color: var(--text-primary);
+}
+
+.threadCabeca time {
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.threadDivisor {
+  padding: var(--s-3) 0 var(--s-2);
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.compositorPainel {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  margin: 0 var(--s-3) var(--s-3);
+  padding: var(--s-1) var(--s-1) var(--s-1) var(--s-2);
+  background: var(--bg-live);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+}
+
+.compositorPainel:has(.campoPainel:focus-visible) {
+  box-shadow: var(--focus-ring);
+  border-color: var(--accent);
+}
+
+.campoPainel {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  max-height: 140px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  resize: none;
+  color: var(--text-primary);
+  font: var(--weight-normal) var(--text-label) / var(--leading-ui) var(--font-read);
+}
+
+.campoPainel:focus,
+.campoPainel:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* --- painel de busca -------------------------------------------------------- */
+
+.busca {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+}
+
+.buscaCampo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 32px;
+  padding: 0 var(--s-2);
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  color: var(--text-tertiary);
+}
+
+.buscaCampo:focus-within {
+  border-color: var(--border-strong);
+}
+
+.buscaCampo input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: var(--text-label);
+}
+
+.buscaCampo input:focus,
+.buscaCampo input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.filtros {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.filtro select {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+  font-size: var(--text-meta);
+  padding: 2px 4px;
+}
+
+.buscaTotal {
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+/* O único âmbar da interface fora dos pontos de status: é o que está aceso
+   agora, o que você procurou. Ver design/01-tokens.md. */
+.aceso {
+  background: var(--mark-wash);
+  color: inherit;
+  border-radius: 2px;
 }

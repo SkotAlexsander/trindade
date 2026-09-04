@@ -52,6 +52,14 @@ export interface Message {
   content: string | null;
   parentId: string | null;
   replyToId: string | null;
+  /**
+   * Quantas respostas esta mensagem tem numa thread, e quando veio a última.
+   * Zero na esmagadora maioria — é o que o rodapé "3 respostas · há 2 h"
+   * desenha, e por isso vem junto do histórico em vez de exigir uma consulta
+   * por mensagem.
+   */
+  threadCount: number;
+  threadLastReplyAt: string | null;
   attachments: Attachment[];
   reactions: Reaction[];
   pinnedAt: string | null;

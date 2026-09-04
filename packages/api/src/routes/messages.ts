@@ -25,6 +25,8 @@ const mensagemSchema = z.object({
   replyToId: z.string().nullable(),
   attachments: z.array(z.unknown()),
   reactions: z.array(z.object({ emoji: z.string(), count: z.number(), me: z.boolean() })),
+  threadCount: z.number(),
+  threadLastReplyAt: z.string().nullable(),
   pinnedAt: z.string().nullable(),
   saved: z.boolean(),
   editedAt: z.string().nullable(),
@@ -67,11 +69,15 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
           });
 
       const ids = messages.map((m) => m.id);
-      const [reacoes, guardadas] = await Promise.all([
+      const [reacoes, guardadas, threads] = await Promise.all([
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
+        messagesDb.countThreadReplies(ids),
       ]);
-      return { messages: toApiMessages(messages, reacoes, me.id, guardadas), hasMore };
+      return {
+        messages: toApiMessages(messages, reacoes, me.id, guardadas, threads),
+        hasMore,
+      };
     },
   );
 
@@ -148,11 +154,15 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         messagesDb.listReactions(ids),
         messagesDb.quaisGuardadas(me.id, ids),
       ]);
+      const resumo = await messagesDb.countThreadReplies([pai.id]);
+      const doPai = resumo.get(pai.id);
+
       return {
         parent: toApiMessage(pai, {
           meuId: me.id,
           reactions: reacoes.filter((r) => r.message_id === pai.id),
           saved: guardadas.has(pai.id),
+          ...(doPai ? { thread: doPai } : {}),
         }),
         replies: toApiMessages(respostas, reacoes, me.id, guardadas),
       };

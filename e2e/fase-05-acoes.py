@@ -138,7 +138,12 @@ with sync_playwright() as p:
     alvoA.locator('button[aria-label*="Fixar"]').click()
     pgA.wait_for_timeout(1200)
 
-    check('fixar marca a mensagem para quem fixou', alvoA.locator('span[class*="selo"]').count() == 1)
+    # O selo tem de aparecer mesmo quando a mensagem é continuação de bloco e
+    # não tem cabeçalho onde pendurá-lo — foi assim que este teste falhou uma
+    # vez, com a mensagem-alvo agrupada com a anterior.
+    check('fixar marca a mensagem para quem fixou',
+          alvoA.locator('span[class*="selo"]').count() == 1,
+          f"cabeça de bloco: {alvoA.get_attribute('data-cabeca')}")
     check(
         'e para todo mundo, em tempo real',
         alvoB.locator('span[class*="selo"]').count() == 1,

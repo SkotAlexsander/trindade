@@ -439,6 +439,12 @@ a conversa.
 └──────────────────────────┘
 ```
 
+O termo encontrado ganha fundo `--mark-wash`, e o destaque **compara sem
+acento**, como a busca do Postgres: quem digita "migracao" acha "migração" e
+precisa ver a palavra acesa. Isso exige guardar de onde veio cada caractere —
+"migração" tem nove e a versão dobrada tem oito, então casar índices direto
+acenderia o pedaço errado justamente nas palavras acentuadas.
+
 O termo encontrado ganha fundo `--mark-wash`. Este é o único uso de âmbar fora
 de presença ao vivo, e a justificativa é a mesma metáfora: é o que está aceso
 agora, o que você procurou.
@@ -462,6 +468,19 @@ compositor próprio.
 
 No canal, a mensagem que virou thread ganha um rodapé de 24px: "3 respostas ·
 última há 2 h", em 11px `--accent`, clicável.
+
+O contador e o instante da última vêm **junto do histórico**, em `threadCount`
+e `threadLastReplyAt` de cada mensagem, e não de uma consulta por linha: o
+histórico traz cinquenta de cada vez e quase nenhuma tem thread.
+
+**A resposta de thread não volta para o canal.** O histórico filtra
+`parent_id is null`, e o cliente respeita a mesma regra ao receber o evento
+pelo socket — deixá-la entrar criaria uma linha que some no primeiro
+recarregamento. Quem tirou a conversa da linha principal não quer vê-la lá.
+
+O tempo é grosso — "agora", "há 2 h", "há 3 d". Precisão de minuto num rodapé
+obrigaria a redesenhar a lista por relógio, e ninguém lê aquilo com essa
+atenção.
 
 Este é o único ponto do projeto onde `·` aparece como separador de meta — porque
 aqui são dois fatos da mesma coisa e não uma cadeia de rótulos.

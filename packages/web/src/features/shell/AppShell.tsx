@@ -12,6 +12,7 @@ import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
 import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
+import { useThread } from '../messages/store';
 import { primeiroDestino, withPlaceholderState } from '../channels/canais';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { CommandPalette } from './CommandPalette';
@@ -66,6 +67,8 @@ export function AppShell() {
   const podeGerenciar = can(permissoes, Perm.MANAGE_CHANNEL);
 
   const [painel, setPainel] = useState<PainelAberto>(null);
+  const threadAberta = useThread((s) => s.parentId);
+  const fecharThread = useThread((s) => s.fechar);
   const [elencoVisivel, setElencoVisivel] = useState(true);
   const [paletaAberta, setPaletaAberta] = useState(false);
   const [gaveta, setGaveta] = useState(false);
@@ -99,8 +102,19 @@ export function AppShell() {
     setPainel((atual) => (atual === qual ? null : qual));
   }, []);
 
+  // Abrir uma thread abre o painel dela; fechar o painel esquece a thread,
+  // senão a próxima abertura mostraria a conversa de antes.
+  useEffect(() => {
+    if (threadAberta) setPainel('thread');
+  }, [threadAberta]);
+
+  useEffect(() => {
+    if (painel !== 'thread') fecharThread();
+  }, [painel, fecharThread]);
+
   useHotkeys([
     { key: 'k', mod: true, emCampo: true, run: () => setPaletaAberta(true) },
+    { key: 'f', mod: true, emCampo: true, run: () => alternarPainel('busca') },
     // Do canal em que você está.
     { key: 'p', mod: true, emCampo: true, run: () => alternarPainel('fixadas') },
     { key: 'u', mod: true, emCampo: true, run: () => setElencoVisivel((v) => !v) },
@@ -214,6 +228,8 @@ export function AppShell() {
         ref={painelRef}
         aberto={painel}
         canal={canalAtual}
+        canais={canais}
+        pessoas={pessoas}
         onFechar={() => setPainel(null)}
       />
 

@@ -50,6 +50,29 @@ export const useDestaque = create<DestaqueState>((set) => ({
   limpar: () => set({ id: null }),
 }));
 
+interface ThreadState {
+  /** Mensagem-mãe da thread aberta no painel, ou `null`. */
+  parentId: string | null;
+  abrir: (parentId: string) => void;
+  fechar: () => void;
+}
+
+export const useThread = create<ThreadState>((set) => ({
+  parentId: null,
+  abrir: (parentId) => set({ parentId }),
+  fechar: () => set({ parentId: null }),
+}));
+
+interface BuscaState {
+  termo: string;
+  setTermo: (termo: string) => void;
+}
+
+export const useBusca = create<BuscaState>((set) => ({
+  termo: '',
+  setTermo: (termo) => set({ termo }),
+}));
+
 interface FocoState {
   /** Mensagem com o foco itinerante na lista. `null` = o foco está fora. */
   id: string | null;

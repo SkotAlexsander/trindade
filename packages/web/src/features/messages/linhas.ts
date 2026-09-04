@@ -81,3 +81,22 @@ export function rotuloDoDia(iso: string, agora = new Date()): string {
 export function hora(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
+
+/**
+ * "agora", "há 2 h", "há 3 d" — grosso de propósito.
+ *
+ * O rodapé de thread não precisa de precisão de minuto, e um número que muda
+ * sozinho a cada segundo obrigaria a redesenhar a lista inteira por relógio.
+ */
+export function haQuantoTempo(iso: string, agora = Date.now()): string {
+  const segundos = Math.max(0, Math.floor((agora - new Date(iso).getTime()) / 1000));
+  if (segundos < 60) return 'agora';
+  const minutos = Math.floor(segundos / 60);
+  if (minutos < 60) return `há ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  if (dias < 30) return `há ${dias} d`;
+  const meses = Math.floor(dias / 30);
+  return `há ${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+}

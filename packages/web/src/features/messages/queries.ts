@@ -38,6 +38,15 @@ export function chaveDoCanal(channelId: string): [string, string] {
   return ['messages', channelId];
 }
 
+export function chaveDaThread(parentId: string): [string, string] {
+  return ['thread', parentId];
+}
+
+export interface CacheDeThread {
+  parent: MensagemLocal;
+  replies: MensagemLocal[];
+}
+
 export function useMessages(channelId: string | undefined) {
   return useQuery({
     queryKey: chaveDoCanal(channelId ?? ''),
@@ -106,8 +115,19 @@ function mexer(
  * Se a mensagem carrega um `clientNonce` que existe na lista, ela **toma o
  * lugar** da otimista — mesmo índice, sem remover e reinserir. É o que faz a
  * confirmação não piscar: para o DOM, nada se moveu.
+ *
+ * Resposta de thread **não entra na lista do canal**: o histórico filtra
+ * `parent_id is null`, então deixá-la entrar pelo socket criaria uma linha que
+ * some no primeiro recarregamento. Ela vai para a thread e soma no rodapé da
+ * mensagem-mãe.
  */
 export function receberMensagem(qc: QueryClient, mensagem: Message): void {
+  if (mensagem.parentId) {
+    receberNaThread(qc, mensagem);
+    somarNaThread(qc, mensagem);
+    return;
+  }
+
   mexer(qc, mensagem.channelId, (cache) => {
     if (mensagem.clientNonce) {
       const i = cache.mensagens.findIndex((m) => m.clientNonce === mensagem.clientNonce);
@@ -231,4 +251,49 @@ export async function recuperarDesdeAUltima(qc: QueryClient, channelId: string):
   // Mais de uma página perdida: o buraco no meio não se fecha adicionando o
   // fim. Recomeça do zero, que é o único jeito honesto.
   if (r.hasMore) await qc.invalidateQueries({ queryKey: chaveDoCanal(channelId) });
+}
+
+// --- threads ---------------------------------------------------------------
+
+function receberNaThread(qc: QueryClient, mensagem: Message): void {
+  const parentId = mensagem.parentId;
+  if (!parentId) return;
+
+  qc.setQueryData<CacheDeThread>(chaveDaThread(parentId), (atual) => {
+    if (!atual) return atual;
+
+    if (mensagem.clientNonce) {
+      const i = atual.replies.findIndex((m) => m.clientNonce === mensagem.clientNonce);
+      if (i >= 0) {
+        const copia = [...atual.replies];
+        copia[i] = mensagem;
+        return { ...atual, replies: copia };
+      }
+    }
+    if (atual.replies.some((m) => m.id === mensagem.id)) return atual;
+    return { ...atual, replies: [...atual.replies, mensagem] };
+  });
+}
+
+/** O rodapé "3 respostas · há 2 h" da mensagem-mãe, sem ir ao servidor. */
+function somarNaThread(qc: QueryClient, resposta: Message): void {
+  const parentId = resposta.parentId;
+  if (!parentId) return;
+
+  mexer(qc, resposta.channelId, (cache) => ({
+    ...cache,
+    mensagens: cache.mensagens.map((m) =>
+      m.id === parentId
+        ? { ...m, threadCount: m.threadCount + 1, threadLastReplyAt: resposta.createdAt }
+        : m,
+    ),
+  }));
+}
+
+export function inserirOtimistaNaThread(qc: QueryClient, mensagem: MensagemLocal): void {
+  const parentId = mensagem.parentId;
+  if (!parentId) return;
+  qc.setQueryData<CacheDeThread>(chaveDaThread(parentId), (atual) =>
+    atual ? { ...atual, replies: [...atual.replies, mensagem] } : atual,
+  );
 }

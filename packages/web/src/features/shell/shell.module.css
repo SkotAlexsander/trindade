@@ -319,6 +319,13 @@
   min-height: 0;
 }
 
+/* A thread traz o próprio compositor colado no rodapé e a própria rolagem:
+   o espaçamento do painel a empurraria para dentro e criaria duas barras. */
+.painelCorpo[data-sem-espaco='true'] {
+  overflow: hidden;
+  padding: 0;
+}
+
 /* --- responsivo -----------------------------------------------------------
  *
  * A lógica é sempre remover coluna, nunca empilhar — até 900px, onde vira

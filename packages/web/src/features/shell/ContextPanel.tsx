@@ -1,8 +1,10 @@
 import { forwardRef } from 'react';
-import type { Channel } from '@trindade/shared';
+import type { Channel, User } from '@trindade/shared';
 import { IconButton } from '../../components';
 import { X } from '../../components/icones';
+import { PainelBusca } from '../messages/PainelBusca';
 import { PainelFixadas, PainelGuardadas } from '../messages/Paineis';
+import { PainelThread } from '../messages/PainelThread';
 import type { PainelAberto } from './ChannelHeader';
 import styles from './shell.module.css';
 
@@ -10,6 +12,7 @@ const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
   busca: 'Buscar',
   fixadas: 'Fixadas',
   guardadas: 'Guardadas',
+  thread: 'Thread',
   notas: 'Notas',
   tarefas: 'Tarefas',
 };
@@ -22,11 +25,14 @@ const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
 const SUBTITULOS: Partial<Record<Exclude<PainelAberto, null>, string>> = {
   guardadas: 'todas as conversas',
   fixadas: 'neste canal',
+  thread: 'fora da linha principal',
 };
 
 export interface ContextPanelProps {
   aberto: PainelAberto;
   canal: Channel | undefined;
+  canais: readonly Channel[];
+  pessoas: readonly User[];
   onFechar: () => void;
 }
 
@@ -38,7 +44,7 @@ export interface ContextPanelProps {
  * cada quadro. Ver design/02-shell-principal.md.
  */
 export const ContextPanel = forwardRef<HTMLDivElement, ContextPanelProps>(function ContextPanel(
-  { aberto, canal, onFechar },
+  { aberto, canal, canais, pessoas, onFechar },
   ref,
 ) {
   const subtitulo = aberto ? SUBTITULOS[aberto] : undefined;
@@ -52,10 +58,12 @@ export const ContextPanel = forwardRef<HTMLDivElement, ContextPanelProps>(functi
             <X size={16} />
           </IconButton>
         </div>
-        <div className={styles.painelCorpo}>
+        <div className={styles.painelCorpo} data-sem-espaco={aberto === 'thread'}>
           {aberto === 'fixadas' ? <PainelFixadas canal={canal} /> : null}
           {aberto === 'guardadas' ? <PainelGuardadas /> : null}
-          {aberto === 'busca' || aberto === 'notas' || aberto === 'tarefas'
+          {aberto === 'busca' ? <PainelBusca canal={canal} pessoas={pessoas} /> : null}
+          {aberto === 'thread' ? <PainelThread pessoas={pessoas} canais={canais} /> : null}
+          {aberto === 'notas' || aberto === 'tarefas'
             ? 'Entra na fase em que este painel é implementado.'
             : null}
         </div>

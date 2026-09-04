@@ -4,7 +4,7 @@ import { Avatar, Tooltip } from '../../components';
 import { Clock, Pin } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
 import { Conteudo } from './Conteudo';
-import { hora } from './linhas';
+import { haQuantoTempo, hora } from './linhas';
 import { analisarMarkdown, mencionados } from './markdown';
 import type { MensagemLocal } from './queries';
 import styles from './messages.module.css';
@@ -59,6 +59,7 @@ export interface AcoesDisponiveis {
   onDescartar: (mensagem: MensagemLocal) => void;
   onPular: (messageId: string) => void;
   onFocar: (messageId: string) => void;
+  onThread: (mensagem: MensagemLocal) => void;
 }
 
 export interface MessageProps {
@@ -184,6 +185,15 @@ export const Message = memo(function Message({
               <Clock size={12} />
             </span>
           </Tooltip>
+        ) : mensagem.pinnedAt ? (
+          // Fixar muda a linha para todo mundo, e continuação de bloco não tem
+          // cabeçalho onde pendurar o selo. Ele vem para o gutter e fica
+          // sempre visível: é informação, não decoração de hover.
+          <Tooltip label="Fixada neste canal">
+            <span className={styles.selo}>
+              <Pin size={12} />
+            </span>
+          </Tooltip>
         ) : (
           <time className={styles.horaGutter} dateTime={mensagem.createdAt}>
             {hora(mensagem.createdAt)}
@@ -248,6 +258,29 @@ export const Message = memo(function Message({
           </div>
         ) : null}
 
+        {/* O único ponto do projeto onde `·` separa meta, porque aqui são
+            dois fatos da mesma coisa e não uma cadeia de rótulos. */}
+        {mensagem.threadCount > 0 ? (
+          <button
+            type="button"
+            className={styles.rodapeThread}
+            onClick={() => acoes.onThread(mensagem)}
+          >
+            <span>
+              {mensagem.threadCount === 1 ? '1 resposta' : `${mensagem.threadCount} respostas`}
+            </span>
+            {mensagem.threadLastReplyAt ? (
+              <>
+                {/* Cada pedaço num elemento próprio: num container flex, o nó
+                    de texto solto vira item e os espaços dele colapsam — foi
+                    assim que o separador sumiu e saiu "1 respostaúltima". */}
+                <span aria-hidden="true">·</span>
+                <span>última {haQuantoTempo(mensagem.threadLastReplyAt)}</span>
+              </>
+            ) : null}
+          </button>
+        ) : null}
+
         {/* O erro pertence ao lugar da mensagem, nunca a um toast num canto:
             é ali que está o texto que a pessoa escreveu. */}
         {local === 'falhou' ? (
@@ -279,6 +312,7 @@ export const Message = memo(function Message({
           onFixar={() => acoes.onFixar(mensagem)}
           onEditar={() => acoes.onEditar(mensagem)}
           onApagar={() => acoes.onApagar(mensagem)}
+          onThread={() => acoes.onThread(mensagem)}
         />
       ) : null}
     </article>

@@ -6,6 +6,7 @@ import { enviar as enviarPeloSocket } from '../../lib/ws';
 import {
   descartarOtimista,
   inserirOtimista,
+  inserirOtimistaNaThread,
   marcarLocal,
   type MensagemLocal,
 } from './queries';
@@ -69,6 +70,8 @@ export function useEnviarMensagem() {
           content: rascunho.content,
           parentId: rascunho.parentId ?? null,
           replyToId: rascunho.replyToId ?? null,
+          threadCount: 0,
+          threadLastReplyAt: null,
           attachments: [],
           reactions: [],
           pinnedAt: null,
@@ -81,7 +84,10 @@ export function useEnviarMensagem() {
           local: 'enviando',
         } satisfies MensagemLocal & Message;
 
-        inserirOtimista(qc, otimista);
+        // Resposta de thread vive na thread, não na lista do canal — o
+        // histórico do canal filtra `parent_id is null`.
+        if (rascunho.parentId) inserirOtimistaNaThread(qc, otimista);
+        else inserirOtimista(qc, otimista);
       }
 
       const saiu = enviarPeloSocket({
