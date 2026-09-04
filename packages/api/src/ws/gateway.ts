@@ -6,6 +6,7 @@ import {
   type ServerEvent,
   type UserStatus,
 } from '@trindade/shared';
+import { conexoesWs } from '../lib/metricas.js';
 
 /**
  * Estado do gateway, em memória.
@@ -36,6 +37,7 @@ const jaViuReady = new Set<string>();
 
 export function register(conn: Connection): void {
   connections.set(conn.sessionId, conn);
+  conexoesWs.set(connections.size);
   const sessoes = byUser.get(conn.userId) ?? new Set<string>();
   sessoes.add(conn.sessionId);
   byUser.set(conn.userId, sessoes);
@@ -48,6 +50,7 @@ export function unregister(sessionId: string): { userId: string; ultima: boolean
 
   for (const t of conn.timers) clearInterval(t);
   connections.delete(sessionId);
+  conexoesWs.set(connections.size);
 
   const sessoes = byUser.get(conn.userId);
   sessoes?.delete(sessionId);

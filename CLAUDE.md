@@ -587,6 +587,33 @@ O apontador vai por mensagem de dados **não confiável**, em posição relativa
 0 a 1: é um gesto que some em 2s, não precisa chegar duas vezes, e tem de cair
 no mesmo lugar da imagem em qualquer tamanho de janela.
 
+### Fase 8 — em andamento
+
+**Fatia 1: faxina, saúde e métricas.**
+
+Quatro coisas crescem para sempre se ninguém as varrer: anexo que ninguém
+enviou, `client_nonce` que já cumpriu as 24h de deduplicação, token de
+atualização vencido há mais de 30 dias e auditoria com mais de 180. Cada uma é
+uma função sozinha — testável sem esperar uma hora —, e a volta isola as falhas:
+a tarefa que quebra não impede as outras.
+
+**Sem `node-cron`.** O intervalo é de uma hora e não há regra de calendário; uma
+dependência para dizer "de hora em hora" é mais uma coisa para atualizar e
+auditar. A primeira volta sai depois do primeiro intervalo, não na subida —
+reiniciar a API dez vezes não deve disparar dez faxinas.
+
+**A saúde toca banco e storage** e responde **503** quando algo falha; um health
+check que só devolve 200 mede se o Node está vivo, e o Node vive muito bem com o
+banco fora do ar. Storage não configurado é `null`, e isso **não** derruba a
+saúde: servidor sem anexos é uma escolha, servidor com anexos e MinIO caído é um
+problema.
+
+**`/metrics` é protegida por token**, comparado em tempo constante, e sem
+`METRICS_TOKEN` não serve nada — métrica aberta conta quantas pessoas estão
+conectadas e quando o servidor está ocupado. Nenhum rótulo identifica ninguém: a
+rota vira o **padrão** (`/api/channels/:id/messages`), nunca a URL com id, senão
+cada canal viraria uma série temporal e daí cada pessoa.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

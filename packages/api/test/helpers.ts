@@ -9,6 +9,9 @@ if (!process.env.JWT_PRIVATE_KEY || !process.env.JWT_PUBLIC_KEY) {
   process.env.JWT_PUBLIC_KEY = publicKey.export({ type: 'spki', format: 'pem' }).toString();
 }
 process.env.TOTP_ENCRYPTION_KEY ??= randomBytes(32).toString('base64');
+// Um token de métricas próprio da execução: o do `.env` não entra aqui, e sem
+// nenhum a rota se recusa a servir — que também é um caso a testar.
+process.env.METRICS_TOKEN ??= randomBytes(16).toString('base64url');
 
 const { buildApp } = await import('../src/app.js');
 const { sql } = await import('../src/db/index.js');

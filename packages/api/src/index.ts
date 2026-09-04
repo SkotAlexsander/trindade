@@ -2,7 +2,7 @@ import { buildApp } from './app.js';
 import { config } from './config.js';
 import { closePool } from './db/index.js';
 import { garantirBalde, storageConfigurado } from './lib/storage.js';
-import { iniciarVarredura } from './services/varredura-de-anexos.js';
+import { agendarFaxina } from './services/faxina.js';
 
 const app = await buildApp();
 
@@ -16,7 +16,9 @@ if (storageConfigurado()) {
   }
 }
 
-const pararVarredura = iniciarVarredura(app.log);
+// Anexos órfãos, nonces cumpridos, tokens vencidos e auditoria antiga: quatro
+// coisas que crescem para sempre se ninguém as varrer.
+const pararFaxina = agendarFaxina(app.log);
 
 try {
   await app.listen({ port: config.PORT, host: '127.0.0.1' });
@@ -34,7 +36,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     app.log.info({ signal }, 'desligando');
     void (async () => {
       try {
-        pararVarredura();
+        pararFaxina();
         await app.close();
         await closePool();
         process.exit(0);

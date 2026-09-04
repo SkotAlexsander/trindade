@@ -12,6 +12,8 @@ import { config, isProduction } from './config.js';
 import { errorHandler } from './plugins/error-handler.js';
 import { authPlugin } from './plugins/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { metricsRoutes } from './routes/metrics.js';
+import { medirRequisicoes } from './lib/metricas.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { inviteAdminRoutes, inviteRoutes } from './routes/invites.js';
@@ -51,6 +53,10 @@ export async function buildApp() {
 
   await app.register(errorHandler);
 
+  // Antes das rotas: o gancho de medição é `onResponse` e precisa estar de pé
+  // quando a primeira resposta sair.
+  medirRequisicoes(app);
+
   // Em dev, só a origem do Vite. Em produção o front é servido pelo mesmo
   // domínio e não há CORS a liberar.
   await app.register(cors, {
@@ -88,6 +94,7 @@ export async function buildApp() {
   await app.register(
     async (api) => {
       await api.register(healthRoutes);
+      await api.register(metricsRoutes);
       await api.register(authRoutes);
       await api.register(meRoutes);
       await api.register(inviteRoutes);

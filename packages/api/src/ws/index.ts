@@ -22,6 +22,7 @@ import { toApiAttachment } from '../services/attachment-view.js';
 import { definirMicrofone, esquecerUsuario, estadosDeVoz } from '../services/estado-de-voz.js';
 import { toApiUser } from '../services/user-view.js';
 import * as gw from './gateway.js';
+import { mensagensCriadas } from '../lib/metricas.js';
 
 const REVALIDACAO_MS = 60_000;
 
@@ -288,6 +289,8 @@ async function criarMensagem(
   if (mencionados.length > 0) {
     await messagesDb.somarMencoes(d.channelId, mencionados, conn.userId);
   }
+
+  mensagensCriadas.inc();
 
   // O broadcast inclui o autor: é assim que ele casa pelo `clientNonce` e
   // substitui a mensagem otimista pela real.

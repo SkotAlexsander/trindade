@@ -84,6 +84,12 @@ export const apiErrorSchema = z.object({
 export const healthResponseSchema = z.object({
   ok: z.boolean(),
   db: z.boolean(),
+  /**
+   * Nulo quando o storage não está configurado — que é diferente de estar fora
+   * do ar. Um servidor sem anexos é uma escolha; um com anexos e o MinIO caído
+   * é um problema.
+   */
+  storage: z.boolean().nullable(),
 });
 
 export const registerSchema = z.object({

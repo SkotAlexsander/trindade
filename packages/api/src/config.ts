@@ -42,6 +42,15 @@ const envSchema = z.object({
    * de todo mundo. Vazio libera — só em desenvolvimento.
    */
   LIVEKIT_WEBHOOK_IPS: z.string().optional(),
+
+  /**
+   * Quem pode ler `/metrics`.
+   *
+   * Sem ela a rota não serve nada: métrica aberta conta quantas pessoas estão
+   * conectadas, quantas mensagens passam por minuto e quando o servidor está
+   * ocupado — um mapa de uso para quem estiver olhando de fora.
+   */
+  METRICS_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

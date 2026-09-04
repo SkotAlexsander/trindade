@@ -102,6 +102,22 @@ function naoExiste(err: unknown): boolean {
 }
 
 /** Cria o bucket se ele ainda não existe. Só o dev precisa disto. */
+/**
+ * O storage responde?
+ *
+ * `HeadBucket` é a pergunta mais barata que existe e mesmo assim atravessa rede,
+ * credencial e permissão — que são exatamente as três coisas que quebram.
+ */
+export async function pingStorage(): Promise<boolean> {
+  if (!storageConfigurado()) return false;
+  try {
+    await s3().send(new HeadBucketCommand({ Bucket: balde() }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function garantirBalde(): Promise<void> {
   if (!storageConfigurado()) return;
   try {
