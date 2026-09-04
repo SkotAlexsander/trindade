@@ -1,0 +1,97 @@
+/* Paleta de comandos — design/03-menu-e-navegacao.md.
+   Ancorada a 15% do topo: centralizar na vertical joga o campo baixo demais. */
+
+.veu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--veil);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 15vh var(--s-4) var(--s-4);
+}
+
+.caixa {
+  width: min(560px, 100%);
+  max-height: 40vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--bg-raised);
+  border-radius: var(--r-surface);
+  box-shadow: var(--glow-edge), var(--shadow-modal);
+  overflow: hidden;
+}
+
+.campoLinha {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--text-ui);
+}
+
+.campo:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.lista {
+  overflow-y: auto;
+  padding: var(--s-2) 0;
+  min-height: 0;
+}
+
+.grupoRotulo {
+  padding: var(--s-1) var(--s-3);
+}
+
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--text-ui);
+  text-align: left;
+}
+
+.opcao[data-selecionado='true'] {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.opcaoIcone {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  color: var(--text-tertiary);
+}
+
+.opcaoRotulo {
+  flex: none;
+}
+
+.opcaoDetalhe {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

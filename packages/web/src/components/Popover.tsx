@@ -60,7 +60,14 @@ export function Popover({
 
   return (
     <>
-      {cloneElement(trigger, { ref, ...getReferenceProps() })}
+      {/* O `getReferenceProps` recebe as props do próprio gatilho: sem isso ele
+          devolve handlers que, espalhados depois, **substituem** o `onClick`
+          do elemento — o botão abre o flutuante e para de fazer o que fazia.
+          Passando as props, o Floating UI compõe os dois em vez de trocar. */}
+      {cloneElement(trigger, {
+        ref,
+        ...getReferenceProps(trigger.props as Record<string, unknown>),
+      })}
       {open ? (
         <FloatingPortal>
           <FloatingFocusManager context={context} modal={false}>

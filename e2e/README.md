@@ -43,3 +43,20 @@ anel de foco envolvendo o campo inteiro.
 Cada roteiro cria um usuário novo a cada corrida. Isso não é capricho: a chave do
 rate limit do login inclui o nome do usuário, e reaproveitar a mesma conta faz a
 segunda execução travar em 429.
+
+## Se a suíte travar em "Timeout ... waiting for navigation"
+
+Quase sempre é o rate limit do login: cinco tentativas por 15 minutos por
+usuário, e cada corrida gasta uma. Rodar a suíte várias vezes seguidas esgota.
+
+Não é bug — é o controle funcionando. O contador vive na memória do processo da
+API, então reiniciar zera:
+
+```bash
+touch packages/api/src/app.ts   # o tsx watch reinicia sozinho
+```
+
+Os roteiros da fase 4 em diante reaproveitam o cookie `rt` entre janelas em vez
+de logar de novo, justamente para gastar o mínimo. Cada retomada rotaciona o
+token, então o estado tem de ser encadeado: reapresentar o anterior é o que a
+detecção de reuso derruba.

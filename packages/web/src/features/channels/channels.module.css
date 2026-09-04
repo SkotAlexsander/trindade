@@ -1,0 +1,140 @@
+/* Lista de canais — design/03-menu-e-navegacao.md. */
+
+.categoria {
+  margin-bottom: var(--s-2);
+}
+
+/* Caixa normal, não caixa alta espaçada: aqui o rótulo é de agrupamento, e a
+   caixa alta fica reservada aos rótulos estruturais de seção. */
+.categoriaCabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  width: 100%;
+  padding: var(--s-1) var(--s-3);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+  text-align: left;
+}
+
+.categoriaCabecalho:hover {
+  color: var(--text-secondary);
+}
+
+.chevron {
+  transition: transform var(--dur-quick) var(--ease-out);
+}
+
+.categoriaCabecalho[aria-expanded='false'] .chevron {
+  transform: rotate(-90deg);
+}
+
+.item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  height: 32px;
+  padding: 0 var(--s-2);
+  margin: 1px var(--s-2);
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-normal);
+  line-height: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  width: calc(100% - var(--s-4));
+  text-decoration: none;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Não lido usa peso 600 **mais** o ponto — nunca só cor. Ativo usa fundo. São
+   sinais diferentes porque são informações diferentes, e um canal pode ser as
+   duas coisas ao mesmo tempo. */
+.item[data-unread='true'] {
+  color: var(--text-primary);
+  font-weight: var(--weight-semi);
+}
+
+.item.ativo {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.icone {
+  display: grid;
+  place-items: center;
+  color: var(--text-tertiary);
+}
+
+.nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--text-primary);
+}
+
+/* Menção é o único lugar da lista com fundo saturado: ela precisa saltar, e se
+   cada canal tiver algo colorido, nada salta. */
+.mencoes {
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-semi);
+  font-variant-numeric: tabular-nums;
+}
+
+/* À esquerda do item e fora do fluxo: dividir a célula de 20px com o ícone
+   espremia o `#` a poucos pixels. */
+.alca {
+  position: absolute;
+  left: calc(var(--s-2) * -1);
+  top: 50%;
+  translate: 0 -50%;
+  opacity: 0;
+  cursor: grab;
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+  line-height: 1;
+}
+
+.item:hover .alca,
+.item:focus-within .alca {
+  opacity: 1;
+}
+
+.item[data-arrastando='true'] {
+  opacity: 0.4;
+}
+
+/* Linha de destino do arrasto. Sem animar o rearranjo dos vizinhos: numa lista
+   pequena isso custa mais do que comunica. */
+.destino {
+  height: 2px;
+  margin: 0 var(--s-2);
+  background: var(--accent);
+  box-shadow: var(--glow-accent);
+}

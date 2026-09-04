@@ -53,7 +53,12 @@ export function Tooltip({ label, children, placement = 'top' }: TooltipProps) {
 
   return (
     <>
-      {cloneElement(children, { ref, ...getReferenceProps() })}
+      {/* As props do gatilho entram no getReferenceProps para serem compostas,
+          não substituídas. Ver a nota em Popover.tsx. */}
+      {cloneElement(children, {
+        ref,
+        ...getReferenceProps(children.props as Record<string, unknown>),
+      })}
       {open ? (
         <FloatingPortal>
           <div

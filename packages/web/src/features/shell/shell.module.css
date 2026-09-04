@@ -1,0 +1,422 @@
+/* A moldura de design/02-shell-principal.md. */
+
+.shell {
+  display: grid;
+  /* `100dvh`, não `100vh`: no iOS a barra do navegador some e volta, e `vh`
+     produz um salto de layout. `minmax(0, 1fr)` na coluna central impede que
+     uma mensagem longa force a grade a crescer. */
+  grid-template-columns: var(--rail-w) var(--sidebar-w) minmax(0, 1fr) auto;
+  height: 100dvh;
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+.pular {
+  position: absolute;
+  top: var(--s-2);
+  left: var(--s-2);
+  z-index: var(--z-modal);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-radius: var(--r-control);
+  box-shadow: var(--glow-edge);
+  transform: translateY(-200%);
+}
+
+.pular:focus {
+  transform: none;
+}
+
+/* --- coluna 1: rail ------------------------------------------------------
+   Sem borda à direita: a diferença de fundo com a coluna seguinte já separa. */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) 0;
+  background: var(--bg-app);
+}
+
+.marca {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: var(--s-2);
+  color: var(--accent);
+}
+
+.espacoBotao {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--rail-item);
+  height: var(--rail-item);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+}
+
+.espacoBotao:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.espacoBotao[data-ativo='true'] {
+  color: var(--accent);
+  border-color: var(--border-strong);
+  box-shadow: var(--glow-accent);
+}
+
+/* Marcador vertical colado na borda esquerda do rail, arredondado só do lado
+   direito. A altura é o que transiciona. */
+/* Colado na borda esquerda do rail: o deslocamento é metade da folga entre a
+   largura do rail e a do botão, para não sobrar nem faltar um pixel. */
+.marcador {
+  position: absolute;
+  left: calc((var(--rail-w) - var(--rail-item)) / -2);
+  width: 3px;
+  height: 0;
+  background: var(--accent);
+  border-radius: 0 var(--r-control) var(--r-control) 0;
+  transition: height var(--dur-quick) var(--ease-out);
+}
+
+.espacoBotao[data-ativo='true'] .marcador {
+  height: 24px;
+}
+
+.espacador {
+  flex: 1;
+}
+
+/* --- coluna 2: canais e elenco ------------------------------------------- */
+
+.sidebar {
+  display: grid;
+  grid-template-rows: var(--header-h) minmax(0, 1fr) auto;
+  min-height: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-soft);
+}
+
+.sidebarHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.servidor {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-2);
+  margin-left: calc(var(--s-2) * -1);
+  background: none;
+  border: none;
+  border-radius: var(--r-control);
+  color: var(--text-primary);
+  font-weight: var(--weight-semi);
+}
+
+.servidor:hover {
+  background: var(--bg-hover);
+}
+
+.listaCanais {
+  overflow-y: auto;
+  padding: var(--s-2) 0;
+  min-height: 0;
+}
+
+/* --- coluna 3: conversa --------------------------------------------------- */
+
+.conversa {
+  display: grid;
+  grid-template-rows: auto var(--header-h) minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-app);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  min-width: 0;
+}
+
+.hash {
+  color: var(--text-tertiary);
+}
+
+.nomeCanal {
+  font-size: var(--text-ui);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Separador é uma linha, não um ponto médio: meta juntada com `·` é um tique
+   reconhecível. */
+.separador {
+  width: 1px;
+  height: 18px;
+  margin: 0 var(--s-3);
+  background: var(--border);
+  flex: none;
+}
+
+.topico {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-left: auto;
+  flex: none;
+}
+
+.acaoAtiva {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+/* Faixa de desconexão: empurra o conteúdo, não sobrepõe — sobrepor esconderia
+   a mensagem mais recente, que é justamente a que importa. */
+.faixaOffline {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--s-3);
+  background: var(--magenta-wash);
+  color: var(--text-primary);
+  font-size: var(--text-label);
+}
+
+.historico {
+  overflow-y: auto;
+  padding: var(--s-4);
+  min-height: 0;
+}
+
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.vazioTitulo {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+}
+
+.esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.esqueletoLinha {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.esqueletoTexto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-width: 560px;
+}
+
+/* Primeira aparição da superfície viva: marca onde você age. */
+.compositor {
+  margin: 0 var(--s-4) var(--s-4);
+  padding: var(--s-3);
+  background: var(--bg-live);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+}
+
+/* --- coluna 4: painel contextual -----------------------------------------
+   Anima `transform` num contêiner de largura fixa. Animar `width` causaria
+   reflow em toda a grade. */
+
+.painelSlot {
+  width: 0;
+  overflow: hidden;
+  transition: width var(--dur-normal) var(--ease-out);
+}
+
+.painelSlot[data-open='true'] {
+  width: var(--panel-w);
+}
+
+.painel {
+  width: var(--panel-w);
+  height: 100%;
+  display: grid;
+  grid-template-rows: var(--header-h) minmax(0, 1fr);
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-soft);
+  transform: translateX(100%);
+  transition: transform var(--dur-normal) var(--ease-out);
+}
+
+.painelSlot[data-open='true'] .painel {
+  transform: translateX(0);
+}
+
+.painelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.painelCorpo {
+  overflow-y: auto;
+  padding: var(--s-4);
+  color: var(--text-secondary);
+  min-height: 0;
+}
+
+/* --- responsivo -----------------------------------------------------------
+ *
+ * A lógica é sempre remover coluna, nunca empilhar — até 900px, onde vira
+ * navegação em pilha. Ver design/02-shell-principal.md. */
+
+/* 900–1279px: sem painel fixo. Ele vira sobreposição pela direita. */
+@media (max-width: 1279px) {
+  .shell {
+    grid-template-columns: var(--rail-w) var(--sidebar-w) minmax(0, 1fr);
+  }
+
+  .painelSlot {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: auto;
+    z-index: var(--z-modal);
+    pointer-events: none;
+  }
+
+  .painelSlot[data-open='true'] {
+    width: auto;
+    pointer-events: auto;
+  }
+
+  .painelSlot::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: var(--veil);
+    opacity: 0;
+    transition: opacity var(--dur-normal) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .painelSlot[data-open='true']::before {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .painel {
+    position: relative;
+    z-index: 1;
+    box-shadow: var(--shadow-modal);
+  }
+}
+
+/* < 900px: uma coluna por vez. Rail e canais viram gaveta pela esquerda. */
+@media (max-width: 899px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail,
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: var(--z-menu);
+    transition: transform var(--dur-normal) var(--ease-out);
+    /* Fechada, a gaveta não intercepta clique: ela continua no documento e
+       cobriria o botão que a abre. */
+    pointer-events: none;
+  }
+
+  .rail {
+    left: 0;
+    width: var(--rail-w);
+    border-right: 1px solid var(--border-soft);
+    transform: translateX(-100%);
+  }
+
+  /* Desloca a largura própria **mais** a do rail: só `-100%` deixaria a borda
+     direita parada em x = 56px, em cima do botão de abrir. */
+  .sidebar {
+    left: var(--rail-w);
+    width: var(--sidebar-w);
+    transform: translateX(calc(-100% - var(--rail-w)));
+  }
+
+  .shell[data-gaveta='true'] .rail,
+  .shell[data-gaveta='true'] .sidebar {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* O elenco vira faixa horizontal fixa no **topo** da gaveta. Ele não some:
+     se o elemento identitário desaparece no celular, o produto no celular
+     vira outro produto.
+     A primeira linha é `auto` porque quem a ocupa passa a ser o elenco, que
+     tem 88px mais a faixa "você" — deixá-la em --header-h fazia o painel
+     transbordar por cima do cabeçalho. */
+  .sidebar {
+    grid-template-rows: auto var(--header-h) minmax(0, 1fr);
+  }
+
+  .sidebar > :last-child {
+    order: -1;
+  }
+
+  .veuGaveta {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-popover);
+    background: var(--veil);
+  }
+
+  /* Alvos de toque de 44px no mínimo. */
+  .cabecalho {
+    height: 56px;
+  }
+}
+
+/* O botão da gaveta é renderizado condicionalmente no React, não escondido por
+   CSS: a regra de `display` dele competiria com a do próprio botão em outro
+   módulo, e quem ganha passa a depender da ordem de injeção das folhas. */

@@ -125,7 +125,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 1 — fundação
 - [x] Fase 2 — autenticação
 - [x] Fase 3 — design system
-- [ ] Fase 4 — shell da aplicação
+- [x] Fase 4 — shell da aplicação
 - [ ] Fase 5 — mensagens em tempo real
 - [ ] Fase 6 — perfil e cargos
 - [ ] Fase 7 — voz e tela
@@ -224,3 +224,27 @@ Decidido diferente do prompt: o `Dialog` usa o `<dialog>` nativo em vez do
 `FloatingFocusManager`, porque com ele o foco vazava no terceiro Tab. Os
 ícones são desenhados à mão em `components/icones.tsx` — instalar a Lucide
 inteira para usar nove seria peso morto.
+
+### Fase 4 — concluída
+
+Rail, lista de canais com os quatro estados, painel do elenco, cabeçalho,
+painel contextual, menu de servidor, paleta de comandos, atalhos e as três
+faixas responsivas. Backend: rotas de canal com `MANAGE_CHANNEL` no servidor e
+`GET /users` sem paginação.
+
+25 verificações no navegador e 54 testes de unidade. O elenco sobrevive no
+celular como faixa no topo da gaveta.
+
+Três defeitos que só apareceram rodando:
+- `getReferenceProps()` do Floating UI **substituía** o `onClick` do gatilho.
+  Todo botão com ação própria dentro de Tooltip, Popover ou Menu estava mudo —
+  inclusive os de microfone e fone do elenco. Corrigido nos três.
+- A alça de arrasto dividia a célula de 20px com o ícone do canal e o espremia
+  a poucos pixels. Saiu para fora do fluxo.
+- Na gaveta do celular, o elenco herdava uma linha de 48px para 120px de
+  conteúdo e cobria o cabeçalho.
+
+Pendente por depender da fase 5: estado de leitura (`unread` e menções vêm de
+`withPlaceholderState`, não do banco), faixa de desconexão, presença em tempo
+real e a sequência de acender disparada pelo `READY` — hoje ela roda quando as
+pessoas carregam.

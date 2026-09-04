@@ -78,7 +78,11 @@ export function Menu({ trigger, children, placement = 'bottom-start', label }: M
 
   return (
     <MenuContexto.Provider value={{ getItemProps, activeIndex, fechar: () => setOpen(false) }}>
-      {cloneElement(trigger, { ref, ...getReferenceProps() })}
+      {/* Props do gatilho compostas, não substituídas — ver Popover.tsx. */}
+      {cloneElement(trigger, {
+        ref,
+        ...getReferenceProps(trigger.props as Record<string, unknown>),
+      })}
       {open ? (
         <FloatingPortal>
           <FloatingFocusManager context={context} modal={false}>

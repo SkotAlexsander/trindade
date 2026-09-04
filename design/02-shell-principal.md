@@ -3,6 +3,10 @@
 A moldura que existe em toda tela autenticada. Componente:
 `packages/web/src/components/AppShell.tsx`.
 
+> Revisão de 4 de setembro de 2026: as citações de `--ember` viraram `--live`
+> na troca de direção visual. A cor de presença ao vivo passou de âmbar a
+> magenta; o papel dela não mudou. Ver `00-direcao-visual.md`.
+
 ---
 
 ## Estrutura
@@ -165,7 +169,7 @@ do compositor.
 
 Faixa de 28px no topo da coluna 3, empurrando o conteúdo para baixo (não
 sobrepondo — sobrepor esconde a mensagem mais recente, que é justamente a que
-importa). Fundo `--ember-wash`, texto `--text-primary`.
+importa). Fundo `--magenta-wash`, texto `--text-primary`.
 
 > Sem conexão. Tentando reconectar…
 

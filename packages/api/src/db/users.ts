@@ -65,6 +65,34 @@ export async function findRolesOfUser(userId: string): Promise<RoleRow[]> {
   `;
 }
 
+/**
+ * Todo mundo, com os cargos de cada um, em duas consultas.
+ *
+ * Um `join` só devolveria uma linha por par pessoa-cargo e obrigaria a
+ * remontar em memória; com cinco pessoas, duas consultas simples são mais
+ * claras e igualmente rápidas.
+ */
+export async function listUsers(): Promise<Array<{ user: UserRow; roles: RoleRow[] }>> {
+  const users = await sql<UserRow[]>`
+    select ${USER_COLUMNS} from users order by display_name
+  `;
+  const vinculos = await sql<Array<RoleRow & { user_id: string }>>`
+    select ur.user_id, r.id, r.name, r.color, r.position,
+           r.permissions::text as permissions, r.is_default
+    from roles r join user_roles ur on ur.role_id = r.id
+    order by r.position desc
+  `;
+
+  const porUsuario = new Map<string, RoleRow[]>();
+  for (const vinculo of vinculos) {
+    const lista = porUsuario.get(vinculo.user_id) ?? [];
+    lista.push(vinculo);
+    porUsuario.set(vinculo.user_id, lista);
+  }
+
+  return users.map((user) => ({ user, roles: porUsuario.get(user.id) ?? [] }));
+}
+
 export async function findDefaultRole(): Promise<RoleRow | null> {
   const rows = await sql<RoleRow[]>`
     select id, name, color, position, permissions::text as permissions, is_default

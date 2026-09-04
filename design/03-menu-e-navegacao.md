@@ -2,6 +2,10 @@
 
 Cobre o rail, a lista de canais, o painel do elenco e os menus contextuais.
 
+> Revisão de 4 de setembro de 2026: as citações de `--ember` viraram `--live`
+> na troca de direção visual. A cor de presença ao vivo passou de âmbar a
+> magenta; o papel dela não mudou. Ver `00-direcao-visual.md`.
+
 O painel do elenco é o elemento mais importante deste documento. Ele é o que
 diferencia o produto e a seção sobre ele é a mais longa por isso.
 
@@ -69,12 +73,12 @@ indentados abaixo, 20px, empilhados verticalmente:
 
 ```
   🔊 sala
-     ◉ Ana          ← borda âmbar: falando agora
+     ◉ Ana          ← borda magenta: falando agora
      ◉ Bruno  🖥     ← compartilhando tela
 ```
 
-Aqui aparece o âmbar pela primeira vez na navegação, e ele significa exatamente
-uma coisa: essa pessoa está falando neste instante.
+Aqui aparece o magenta pela primeira vez na navegação, e ele significa
+exatamente uma coisa: essa pessoa está falando neste instante.
 
 ### Ordenar
 
@@ -142,13 +146,13 @@ reticências — `Cristina` vira `Crist`. Reticências em 11px são ruído.
 | online | normal | 2px `--status-online` | `--text-secondary` |
 | ausente | `opacity(0.6)` | 2px `--status-idle` | `--text-tertiary` |
 | ocupado | normal | 2px `--status-busy` | `--text-secondary` |
-| em chamada | normal | 2px `--ember` | `--text-primary` |
-| falando | normal | 2px `--ember` + halo | `--text-primary` |
+| em chamada | normal | 2px `--live` | `--text-primary` |
+| falando | normal | 2px `--live` + halo | `--text-primary` |
 
 O anel é `box-shadow: 0 0 0 2px var(--bg-live), 0 0 0 4px <cor>`. A primeira
 sombra abre um sulco entre o avatar e o anel; sem ela, encostam e ficam sujos.
 
-**Falando** acrescenta `0 0 12px var(--ember-glow)` como terceira camada. Entra
+**Falando** acrescenta `0 0 12px var(--magenta-glow)` como terceira camada. Entra
 em `--dur-quick`, sai em `--dur-slow`. A assimetria é o detalhe que faz a coisa
 parecer viva em vez de piscar: entrar rápido acompanha a voz, sair devagar
 absorve as pausas curtas.

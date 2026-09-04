@@ -14,6 +14,8 @@ import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { inviteRoutes } from './routes/invites.js';
+import { channelRoutes } from './routes/channels.js';
+import { userRoutes } from './routes/users.js';
 import { ipKey } from './lib/client-key.js';
 
 export async function buildApp() {
@@ -76,6 +78,8 @@ export async function buildApp() {
       await api.register(authRoutes);
       await api.register(meRoutes);
       await api.register(inviteRoutes);
+      await api.register(channelRoutes);
+      await api.register(userRoutes);
     },
     { prefix: '/api' },
   );

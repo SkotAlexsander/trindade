@@ -4,7 +4,9 @@ import { Verificacao } from './features/auth/Verificacao';
 import { AceitarConvite } from './features/auth/AceitarConvite';
 import { CriarConta } from './features/auth/CriarConta';
 import { RequireAuth } from './features/auth/RequireAuth';
-import { Health } from './routes/Health';
+import { AppShell } from './features/shell/AppShell';
+import { Canal } from './routes/Canal';
+import { Config } from './routes/Config';
 import { DevUi } from './routes/DevUi';
 
 export function App() {
@@ -16,14 +18,18 @@ export function App() {
       <Route path="/entrar/:codigo" element={<AceitarConvite />} />
       <Route path="/criar-conta/:codigo" element={<CriarConta />} />
 
+      {/* Tudo o que exige sessão vive dentro do shell. */}
       <Route
-        path="/"
         element={
           <RequireAuth>
-            <Health />
+            <AppShell />
           </RequireAuth>
         }
-      />
+      >
+        <Route path="/" element={<Canal />} />
+        <Route path="/c/:slug" element={<Canal />} />
+        <Route path="/config/:secao" element={<Config />} />
+      </Route>
 
       {/* Galeria dos primitivos. Só em desenvolvimento: em produção a rota
           nem entra no bundle, porque o import.meta.env.DEV vira false e o

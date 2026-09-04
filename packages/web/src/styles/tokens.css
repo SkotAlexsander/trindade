@@ -132,6 +132,7 @@
 
   /* medidas do layout */
   --rail-w: 56px;
+  --rail-item: 32px;
   --sidebar-w: 232px;
   --panel-w: 320px;
   --cast-h: 88px;

@@ -1,0 +1,157 @@
+import { useEffect, useRef, useState } from 'react';
+import type { User } from '@trindade/shared';
+import { Avatar, IconButton, Tooltip } from '../../components';
+import { Headphones, Mic, MicOff, HeadphonesOff, Settings } from '../../components/icones';
+import { useAuth } from '../auth/store';
+import styles from './cast.module.css';
+
+/**
+ * Painel do elenco.
+ *
+ * São **sempre cinco espaços**. Quem está offline aparece esmaecido, não some:
+ * o espaço vazio de alguém ausente é informação, e é isso que faz o painel
+ * funcionar como instrumento em vez de lista.
+ *
+ * Ver design/03-menu-e-navegacao.md — é a seção mais longa do documento, e por
+ * um motivo: este é o elemento que diferencia o produto.
+ */
+export const ESPACOS = 5;
+
+/** Estados de presença, mais os dois que só a chamada produz (fase 7). */
+export type EstadoElenco = User['status'] | 'call' | 'speaking';
+
+export interface CastPanelProps {
+  users: User[];
+  /** Quem está digitando agora — chega pelo WebSocket na fase 5. */
+  typing?: ReadonlySet<string>;
+  /** Verdadeiro no primeiro READY da sessão, falso em reconexão. */
+  acender?: boolean;
+  onSelect?: (user: User) => void;
+}
+
+/** Primeiro nome, truncado em 6 sem reticências: `Cristina` vira `Crist`. */
+export function nomeCurto(displayName: string): string {
+  const primeiro = displayName.trim().split(/\s+/)[0] ?? displayName;
+  return primeiro.length > 6 ? primeiro.slice(0, 5) : primeiro;
+}
+
+export function CastPanel({ users, typing, acender = false, onSelect }: CastPanelProps) {
+  const eu = useAuth((state) => state.user);
+  const [microfone, setMicrofone] = useState(true);
+  const [fone, setFone] = useState(true);
+
+  // A sequência roda uma vez por sessão. O ref é o que garante isso: um
+  // segundo `acender=true` vindo de reconexão não reanima nada.
+  const jaAcendeu = useRef(false);
+  const [animar, setAnimar] = useState(false);
+
+  useEffect(() => {
+    if (!acender || jaAcendeu.current) return;
+    jaAcendeu.current = true;
+    setAnimar(true);
+    const id = setTimeout(() => setAnimar(false), 700);
+    return () => clearTimeout(id);
+  }, [acender]);
+
+  // Cinco espaços sempre: completa com vazios se ainda faltar gente no elenco.
+  const espacos: Array<User | null> = [...users.slice(0, ESPACOS)];
+  while (espacos.length < ESPACOS) espacos.push(null);
+
+  return (
+    <div className={styles.painel}>
+      <div className={styles.espacos} data-acender={animar} aria-label="Elenco" role="group">
+        {espacos.map((pessoa, indice) =>
+          pessoa ? (
+            <EspacoPessoa
+              key={pessoa.id}
+              user={pessoa}
+              indice={indice}
+              digitando={typing?.has(pessoa.id) ?? false}
+              {...(onSelect ? { onSelect } : {})}
+            />
+          ) : (
+            <div key={`vago-${indice}`} className={styles.espaco} aria-hidden="true" />
+          ),
+        )}
+      </div>
+
+      {eu ? (
+        <div className={styles.voce}>
+          <Avatar id={eu.id} name={eu.displayName} src={eu.avatarUrl} size="sm" status={eu.status} />
+          <button type="button" className={styles.voceNome}>
+            {eu.displayName}
+          </button>
+          <div className={styles.controles}>
+            <Tooltip label={microfone ? 'Desligar microfone (Ctrl ⇧ M)' : 'Ligar microfone (Ctrl ⇧ M)'}>
+              <IconButton
+                label={microfone ? 'Desligar microfone' : 'Ligar microfone'}
+                size="sm"
+                aria-pressed={!microfone}
+                className={microfone ? undefined : styles.cortado}
+                onClick={() => setMicrofone((v) => !v)}
+              >
+                {microfone ? <Mic size={16} /> : <MicOff size={16} />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip label={fone ? 'Desligar áudio' : 'Ligar áudio'}>
+              <IconButton
+                label={fone ? 'Desligar áudio' : 'Ligar áudio'}
+                size="sm"
+                aria-pressed={!fone}
+                className={fone ? undefined : styles.cortado}
+                onClick={() => setFone((v) => !v)}
+              >
+                {fone ? <Headphones size={16} /> : <HeadphonesOff size={16} />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip label="Configurações">
+              <IconButton label="Configurações" size="sm">
+                <Settings size={16} />
+              </IconButton>
+            </Tooltip>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EspacoPessoa({
+  user,
+  indice,
+  digitando,
+  onSelect,
+}: {
+  user: User;
+  indice: number;
+  digitando: boolean;
+  onSelect?: (user: User) => void;
+}) {
+  const estado: EstadoElenco = user.status;
+  const rotulo = `${user.displayName}${digitando ? ', digitando' : `, ${estado}`}`;
+
+  return (
+    <button
+      type="button"
+      className={styles.espaco}
+      data-estado={estado}
+      // 60ms entre cada, da esquerda para a direita.
+      style={{ animationDelay: `${indice * 60}ms` }}
+      aria-label={rotulo}
+      onClick={() => onSelect?.(user)}
+    >
+      <span className={styles.avatarBox}>
+        <Avatar id={user.id} name={user.displayName} src={user.avatarUrl} size="md" />
+      </span>
+      {digitando ? (
+        <span className={styles.pontos} aria-hidden="true">
+          <span className={styles.ponto} />
+          <span className={styles.ponto} />
+          <span className={styles.ponto} />
+        </span>
+      ) : (
+        <span className={styles.nome}>{nomeCurto(user.displayName)}</span>
+      )}
+    </button>
+  );
+}
