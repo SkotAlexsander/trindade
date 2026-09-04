@@ -375,8 +375,10 @@ describe('sessão autenticada', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    // Permissões do cargo Membro: bits 0–4 e 8–10.
-    expect(res.json().permissions).toBe('1823');
+    // Permissões do cargo Membro: bits 0–4, 8–10 e 12 (MANAGE_NOTES, que a
+    // migration 017 acrescentou — numa equipe de cinco, quem participa da
+    // decisão é quem a registra na nota).
+    expect(res.json().permissions).toBe('5919');
     expect(res.payload).not.toContain('argon2');
     expect(res.payload).not.toContain('password');
   });
