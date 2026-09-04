@@ -128,7 +128,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 4 — shell da aplicação
 - [x] Fase 5 — mensagens em tempo real
 - [x] Fase 6 — perfil e cargos
-- [ ] Fase 7 — voz e tela
+- [x] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
 - [ ] Fase 9 — ferramentas de projeto e notificações
 - [ ] Fase 10 — conversas privadas e quadro
@@ -436,7 +436,7 @@ provavelmente o erro de novo.
 aplicativo tem. Eu tinha escrito `/convite/...`, que caía no redirecionamento
 de rota desconhecida — o convite chegava quebrado e nada avisava.
 
-### Fase 7 — em andamento
+### Fase 7 — concluída
 
 **Fatia 1: infraestrutura.** `livekit.yaml`, `turnserver.conf`, os dois
 serviços no compose, o token com escopo de uma sala e a credencial efêmera do
@@ -567,6 +567,25 @@ superfície de trás, e o rail não é `--bg-live`.
 **A barra de chamada estourava a coluna:** cinco ícones e o "Sair" somam mais de
 232px, e um filho de grade sem `min-width: 0` empurra a coluna em vez de
 encolher. O indicador de qualidade saía pela borda.
+
+**Fatia 7: tela cheia, zoom, janela do sistema e apontador — fecha a fase 7.**
+
+**`Escape` tem ordem de precedência**, e ela é a de desfazer o último passo:
+tela cheia, tela em primeiro plano, sala, gaveta, painel. A tela cheia chega ao
+`keydown` — o navegador entrega a tecla e só depois sai do modo —, então a
+checagem é `document.fullscreenElement` no instante da tecla. Sem isso, um único
+`Esc` saía da tela cheia e fechava a tela em foco junto.
+
+**Em tela cheia, a barra de controles não existe:** ela ficou fora do elemento
+que foi para a tela cheia. O botão de sair passou a viver dentro do palco.
+
+O zoom não exige tela cheia — o palco não rola nada, então a roda ali só pode
+querer dizer zoom —, e a imagem fica presa ao quadro: arrastar não pode deixar
+faixa preta onde havia tela.
+
+O apontador vai por mensagem de dados **não confiável**, em posição relativa de
+0 a 1: é um gesto que some em 2s, não precisa chegar duas vezes, e tem de cair
+no mesmo lugar da imagem em qualquer tamanho de janela.
 
 ### Numeração das migrations
 

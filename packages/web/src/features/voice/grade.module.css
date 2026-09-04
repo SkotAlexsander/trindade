@@ -505,3 +505,114 @@
     font-size: var(--text-meta);
   }
 }
+
+/* --- a tela em primeiro plano -------------------------------------------- */
+
+.palco {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--r-media);
+  background: var(--void, #000);
+  touch-action: none;
+}
+
+.palco[data-cheia='true'] {
+  border-radius: 0;
+}
+
+/* O ponto de quem apontou: um anel na cor de quem apontou, e não um cursor —
+   cursor é de quem está mexendo, e este é o gesto de outra pessoa. */
+.apontador {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 2px solid var(--live);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pulsoDoApontador 2s ease-out forwards;
+}
+
+@keyframes pulsoDoApontador {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  15% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apontador {
+    animation: none;
+  }
+}
+
+.zoom {
+  position: absolute;
+  left: var(--s-2);
+  bottom: var(--s-2);
+  padding: 2px var(--s-2);
+  border-radius: var(--r-control);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text-primary);
+  font-size: var(--text-meta);
+  pointer-events: none;
+}
+
+.acaoDaTela {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.acaoDaTela:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.acaoDaTela:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* A saída da tela cheia, dentro do palco: lá fora a barra não existe. */
+.sairDaCheia {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  height: 32px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-full);
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-label);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity var(--dur-quick, 120ms) ease;
+}
+
+.sairDaCheia:hover,
+.sairDaCheia:focus-visible {
+  opacity: 1;
+}

@@ -126,9 +126,11 @@ export function AppShell() {
     alternarGrade,
     escolherTela,
     pararDeTransmitir,
+    focar: focarTela,
     sair: sairDaChamada,
   } = useChamada();
   const transmitindo = useVoz((state) => state.transmitindo);
+  const telaEmFoco = useVoz((state) => state.telaEmFoco);
   const modoDaSala = useVoz((state) => (state.fase === 'fora' ? 'mensagens' : state.modo));
   const canalDaChamada = useVoz((state) => (state.fase === 'fora' ? null : state.channelId));
 
@@ -184,8 +186,18 @@ export function AppShell() {
       key: 'Escape',
       emCampo: true,
       run: () => {
-        // A grade cobre a conversa; sair dela é o primeiro significado de
-        // Escape enquanto está aberta. Fechá-la não sai da chamada.
+        /* O `Escape` tem ordem, e ela é a de "desfazer o último passo": tela
+           cheia, tela em primeiro plano, sala, gaveta, painel.
+
+           A tela cheia **chega aqui**: o navegador entrega o `keydown` e só
+           depois sai do modo, então no instante da tecla `fullscreenElement`
+           ainda está preenchido. Sem esta linha, um único `Escape` saía da tela
+           cheia e fechava a tela em primeiro plano junto. */
+        if (document.fullscreenElement) return;
+        if (telaEmFoco) {
+          focarTela(null);
+          return;
+        }
         if (modoDaSala !== 'mensagens') {
           alternarGrade();
           return;

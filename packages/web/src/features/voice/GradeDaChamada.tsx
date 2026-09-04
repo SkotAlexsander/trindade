@@ -11,7 +11,8 @@ import {
   VideoOff,
   X,
 } from '../../components/icones';
-import type { Participante, QualidadeDoEspectador } from './sala';
+import type { Participante } from './sala';
+import { TelaEmFoco } from './TelaEmFoco';
 import { useVoz, type ModoDaSala } from './store';
 import { useChamada } from './useChamada';
 import styles from './grade.module.css';
@@ -49,6 +50,7 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
   const qualidadeDoEspectador = useVoz((s) => s.qualidadeDoEspectador);
   const podeCompartilhar = useVoz((s) => s.podeCompartilhar);
   const transmitindo = useVoz((s) => s.transmitindo);
+  const apontamentos = useVoz((s) => s.apontamentos);
 
   const {
     sair,
@@ -62,6 +64,7 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
     pararDeTransmitir,
     escolherTela,
     definirQualidadeDoEspectador,
+    apontar,
   } = useChamada();
 
   if (modo === 'mensagens' || fase === 'fora') return null;
@@ -128,6 +131,8 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
             qualidade={qualidadeDoEspectador}
             onQualidade={definirQualidadeDoEspectador}
             onFechar={() => focar(null)}
+            apontamentos={emFoco.eu ? apontamentos : []}
+            onApontar={apontar}
           />
           <div className={styles.fileira}>
             {azulejos.map((a) => (
@@ -387,60 +392,5 @@ function CaixaDeTela({ p, nome, onAssistir, onFocar, compacto = false }: PropsDe
         </span>
       </footer>
     </button>
-  );
-}
-
-const QUALIDADES: { id: QualidadeDoEspectador; nome: string; nota: string }[] = [
-  { id: 'auto', nome: 'Automática', nota: 'segue o tamanho na tela' },
-  { id: 'fonte', nome: 'Fonte', nota: 'o que a outra pessoa envia' },
-  { id: '720p', nome: '720p', nota: 'economizar dados' },
-];
-
-/** A transmissão em primeiro plano, com a qualidade escolhida por quem assiste. */
-function TelaEmFoco({
-  participante,
-  nome,
-  qualidade,
-  onQualidade,
-  onFechar,
-}: {
-  participante: Participante;
-  nome: string;
-  qualidade: QualidadeDoEspectador;
-  onQualidade: (q: QualidadeDoEspectador) => void;
-  onFechar: () => void;
-}) {
-  const video = useTrilhaDeVideo(participante.tela);
-
-  return (
-    <div className={styles.foco}>
-      <video ref={video} className={styles.telaCheia} autoPlay playsInline muted />
-
-      <div className={styles.barraDaTela}>
-        <span className={styles.deQuem}>{participante.eu ? 'Sua tela' : `Tela de ${nome}`}</span>
-
-        {/* A escolha é de quem assiste, e vale só para ele: quem transmite não
-            sabe nem se importa. É o simulcast que torna isso possível. */}
-        {participante.eu ? null : (
-          <label className={styles.qualidade}>
-            <span className="visually-hidden">Qualidade</span>
-            <select
-              value={qualidade}
-              onChange={(e) => onQualidade(e.target.value as QualidadeDoEspectador)}
-            >
-              {QUALIDADES.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.nome} — {q.nota}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <button type="button" className={styles.fechar} onClick={onFechar}>
-          Voltar à grade
-        </button>
-      </div>
-    </div>
   );
 }

@@ -38,6 +38,15 @@ export interface Retornos {
   aoMudarParticipantes: (lista: Participante[]) => void;
   /** A trilha de vídeo morreu sozinha — aparelho removido, outro programa. */
   aoCairACamera: () => void;
+  /** Alguém apontou para um ponto da sua tela. */
+  aoApontar: (aviso: Apontamento) => void;
+}
+
+/** Posição relativa, de 0 a 1, para o ponto cair no mesmo lugar em qualquer tamanho. */
+export interface Apontamento {
+  de: string;
+  x: number;
+  y: number;
 }
 
 /**
@@ -147,6 +156,11 @@ export async function entrar(
       // "Estou assistindo a sua tela." O SDK não conta espectadores por trilha,
       // e transmitir para ninguém é comum o bastante para valer um aviso.
       if (aviso.alvo !== room.localParticipant.identity) return;
+
+      if (aviso.tipo === 'apontar') {
+        retornos.aoApontar({ de: participante.identity, x: aviso.x, y: aviso.y });
+        return;
+      }
       if (aviso.assistindo) espectadoresDaMinhaTela.add(participante.identity);
       else espectadoresDaMinhaTela.delete(participante.identity);
       avisarParticipantes(retornos);
@@ -310,13 +324,29 @@ interface AvisoDeEspectador {
   assistindo: boolean;
 }
 
-function lerAviso(carga: Uint8Array): AvisoDeEspectador | null {
+interface AvisoDeApontamento {
+  tipo: 'apontar';
+  alvo: string;
+  x: number;
+  y: number;
+}
+
+function lerAviso(carga: Uint8Array): AvisoDeEspectador | AvisoDeApontamento | null {
   try {
     const bruto: unknown = JSON.parse(new TextDecoder().decode(carga));
     if (typeof bruto !== 'object' || bruto === null) return null;
     const aviso = bruto as Record<string, unknown>;
-    if (aviso.tipo !== 'assistindo' || typeof aviso.alvo !== 'string') return null;
-    return { tipo: 'assistindo', alvo: aviso.alvo, assistindo: Boolean(aviso.assistindo) };
+    if (typeof aviso.alvo !== 'string') return null;
+
+    if (aviso.tipo === 'assistindo') {
+      return { tipo: 'assistindo', alvo: aviso.alvo, assistindo: Boolean(aviso.assistindo) };
+    }
+    if (aviso.tipo === 'apontar') {
+      // Vem de outra máquina: preso entre 0 e 1 antes de virar posição na tela.
+      const dentro = (v: unknown) => Math.min(1, Math.max(0, Number(v) || 0));
+      return { tipo: 'apontar', alvo: aviso.alvo, x: dentro(aviso.x), y: dentro(aviso.y) };
+    }
+    return null;
   } catch {
     // Mensagem de dados de outra versão nossa, ou lixo. Ignorar é o certo:
     // isto alimenta um contador, não uma decisão de acesso.
@@ -432,6 +462,17 @@ export async function assistir(identity: string, ligar: boolean): Promise<void> 
     JSON.stringify({ tipo: 'assistindo', alvo: identity, assistindo: ligar }),
   );
   await sala?.localParticipant.publishData(carga, { reliable: true });
+}
+
+/**
+ * "Olha ali", sem descrever coordenadas.
+ *
+ * Vai como mensagem de dados porque é efêmero e não vale uma trilha: some em
+ * dois segundos e não precisa chegar duas vezes.
+ */
+export async function apontar(alvo: string, x: number, y: number): Promise<void> {
+  const carga = new TextEncoder().encode(JSON.stringify({ tipo: 'apontar', alvo, x, y }));
+  await sala?.localParticipant.publishData(carga, { reliable: false });
 }
 
 export type QualidadeDoEspectador = 'auto' | 'fonte' | '720p';

@@ -72,6 +72,7 @@ export interface Chamada {
   /** `null` limpa a escolha e volta a mostrar quem tem imagem. */
   fixarNaMiniatura: (identity: string | null) => void;
   esconderMiniatura: (esconder: boolean) => void;
+  apontar: (alvo: string, x: number, y: number) => void;
   destravarAudio: () => void;
 }
 
@@ -109,6 +110,18 @@ function retornosDaSala(show: (mensagem: string, tipo?: ToastKind) => void): sal
     },
     aoCairACamera: () =>
       show('A câmera parou. O aparelho foi removido ou está em uso por outro programa.'),
+    aoApontar: (aviso) => {
+      const voz = useVoz.getState();
+      // Um por pessoa: apontar de novo move o ponto, não acrescenta outro.
+      voz.definir({
+        apontamentos: [...voz.apontamentos.filter((a) => a.de !== aviso.de), aviso],
+      });
+      // Dois segundos, e some sozinho. É um gesto, não um marcador.
+      setTimeout(() => {
+        const atual = useVoz.getState();
+        atual.definir({ apontamentos: atual.apontamentos.filter((a) => a !== aviso) });
+      }, 2000);
+    },
   };
 }
 
@@ -374,6 +387,10 @@ export function useChamada(): Chamada {
     useVoz.getState().definir({ miniaturaEscondida: esconder });
   }, []);
 
+  const apontar = useCallback((alvo: string, x: number, y: number) => {
+    void sala.apontar(alvo, x, y);
+  }, []);
+
   const destravarAudio = useCallback(() => {
     void sala.destravarAudio().then(() => useVoz.getState().definir({ audioBloqueado: false }));
   }, []);
@@ -395,6 +412,7 @@ export function useChamada(): Chamada {
     definirQualidadeDoEspectador,
     fixarNaMiniatura,
     esconderMiniatura,
+    apontar,
     destravarAudio,
   };
 }

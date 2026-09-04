@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import type { VoiceState } from '@trindade/shared';
-import type { EstatisticasDaTela, Participante, QualidadeDoEspectador } from './sala';
+import type {
+  Apontamento,
+  EstatisticasDaTela,
+  Participante,
+  QualidadeDoEspectador,
+} from './sala';
 
 /**
  * Quem está em qual chamada, e como está a minha.
@@ -67,6 +72,8 @@ interface VozState {
   fixadosNaMiniatura: ReadonlySet<string>;
   /** Escondida por escolha, até voltar para a sala. */
   miniaturaEscondida: boolean;
+  /** Quem apontou para a sua tela, e onde. Some sozinho em 2s. */
+  apontamentos: Apontamento[];
 
   definir: (mudanca: Partial<Omit<VozState, 'definir'>>) => void;
   esquecerChamada: () => void;
@@ -93,6 +100,7 @@ const SEM_CHAMADA = {
   bandaDeSubida: null,
   fixadosNaMiniatura: new Set<string>() as ReadonlySet<string>,
   miniaturaEscondida: false,
+  apontamentos: [] as Apontamento[],
 };
 
 export const useVoz = create<VozState>((set) => ({

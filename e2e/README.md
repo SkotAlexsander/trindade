@@ -234,6 +234,16 @@ O defeito que ela pegou de primeira: `setPointerCapture` na barra de arrasto
 rouba os eventos seguintes, e o clique nunca chega aos botões que moram nela — o
 menu de "quem aparece" simplesmente não abria. Botão dentro da alça não arrasta.
 
+**`fase-07-foco.py`** — 18 verificações do que fecha a fase: zoom até 3x
+centrado no cursor, imagem presa ao quadro ao arrastar, duplo clique voltando ao
+ajuste, tela cheia com saída própria, a janela do sistema detectada por
+capacidade, e o apontador de `Alt` + clique chegando na tela de quem transmite —
+em posição relativa, para cair no mesmo lugar em qualquer tamanho de janela.
+
+Sair da tela cheia com `Esc` é do navegador, e o headless não faz isso com tecla
+sintética; o que o roteiro verifica é o que é nosso — que a mesma tecla não
+fecha a tela em primeiro plano por baixo.
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

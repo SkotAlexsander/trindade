@@ -206,6 +206,22 @@ do elemento de vídeo, sem controles customizados. Funciona, só é mais simples
 Com a transmissão em tela cheia, rolagem do mouse dá zoom até 3x centrado no
 cursor, e arrastar movimenta. `Esc` ou duplo clique volta ao ajuste.
 
+> Ajustado em 4 de setembro de 2026, ao implementar: o zoom **não** exige tela
+> cheia. O palco não rola nada, então a roda ali só pode querer dizer zoom, e
+> exigir tela cheia primeiro esconderia o recurso de quem nunca entra nela.
+>
+> A imagem ampliada fica presa ao quadro: arrastar não pode deixar faixa preta
+> onde havia tela, senão o zoom deixa de ser leitura e vira briga com o mouse.
+>
+> E há um botão de sair **dentro** do palco em tela cheia. A barra de baixo fica
+> fora do elemento que foi para a tela cheia, então sem ele a única saída seria
+> o `Esc` — e "a única saída é uma tecla" não é saída.
+>
+> O `Esc` também precisou de ordem: o navegador entrega o `keydown` e só depois
+> sai da tela cheia, então no instante da tecla a página ainda está em tela
+> cheia. Sem checar isso, um único `Esc` saía da tela cheia **e** fechava a tela
+> em primeiro plano por baixo.
+
 É o que permite ler uma fonte pequena numa transmissão 1080p sem pedir para a
 pessoa aumentar a fonte dela.
 
