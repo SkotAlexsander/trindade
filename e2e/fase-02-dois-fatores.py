@@ -9,6 +9,7 @@ import os
 import hashlib
 import hmac
 import json
+import re
 import struct
 import sys
 import time
@@ -200,11 +201,11 @@ with sync_playwright() as p:
     else:
         modo = 'colado'
 
-    page.wait_for_url(f'{BASE}/', timeout=20000)
+    page.wait_for_url(re.compile(r'/(c/[^/]+)?$'), timeout=20000)
     page.wait_for_load_state('networkidle')
     page.screenshot(path=str(SHOTS / '22-2fa-ok.png'))
     check(f'código certo entra sozinho, sem clicar em Verificar ({modo})',
-          page.url.rstrip('/') == BASE, page.url)
+          page.url.startswith(f'{BASE}/c/') or page.url.rstrip('/') == BASE, page.url)
 
     # --- 7. código de recuperação: uma vez e só uma ---------------------
     ctx.clear_cookies()
@@ -212,8 +213,9 @@ with sync_playwright() as p:
     page.click('text=Usar um código de recuperação')
     page.fill('input[autocomplete="one-time-code"]', recuperacao[0])
     page.click('button[type="submit"]')
-    page.wait_for_url(f'{BASE}/', timeout=20000)
-    check('código de recuperação entra', page.url.rstrip('/') == BASE, page.url)
+    page.wait_for_url(re.compile(r'/(c/[^/]+)?$'), timeout=20000)
+    check('código de recuperação entra',
+          page.url.startswith(f'{BASE}/c/') or page.url.rstrip('/') == BASE, page.url)
 
     ctx.clear_cookies()
     entrar_ate_verificacao()

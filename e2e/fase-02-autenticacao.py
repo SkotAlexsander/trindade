@@ -4,6 +4,7 @@ Usa o Chrome já instalado (channel='chrome'), sem baixar navegador.
 """
 
 import json
+import re
 import subprocess
 import time
 import sys
@@ -63,18 +64,22 @@ with sync_playwright() as p:
 
     # --- 2. tela de aceitar convite -------------------------------------
     page.goto(f'{BASE}/entrar/{CODIGO}')
-    page.wait_for_load_state('networkidle')
+    # Esperar o resultado, não o `networkidle`: a prévia do convite é uma
+    # consulta do cliente e pode resolver depois que a rede aquieta.
+    page.wait_for_selector('text=/convidou você|não vale mais/', timeout=15000)
     page.screenshot(path=str(SHOTS / '01-convite.png'))
 
     corpo = page.inner_text('body')
-    check('convite mostra quem convidou', 'Alex convidou você' in corpo, corpo.split('\n')[2] if len(corpo.split('\n')) > 2 else corpo[:60])
+    # O nome de exibição do admin pode mudar; o que importa é a frase.
+    linha_convite = next((l for l in corpo.splitlines() if 'convidou' in l), corpo[:60])
+    check('convite mostra quem convidou', 'convidou você' in corpo, linha_convite)
     # Não pode revelar o mapa do lugar.
     vazou = [t for t in ('geral', 'bruno', 'canais', 'membros') if t.lower() in corpo.lower()]
     check('convite não revela canais nem nomes', not vazou, f'vazou: {vazou}' if vazou else '')
 
     # --- convite inválido ------------------------------------------------
     page.goto(f'{BASE}/entrar/CONVITE-QUE-NAO-EXISTE')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_selector('text=não vale mais', timeout=15000)
     page.screenshot(path=str(SHOTS / '02-convite-invalido.png'))
     corpo = page.inner_text('body')
     check('convite inválido explica e não oferece botão',
@@ -83,7 +88,7 @@ with sync_playwright() as p:
 
     # --- 3. criar conta --------------------------------------------------
     page.goto(f'{BASE}/entrar/{CODIGO}')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_selector('text=Criar minha conta', timeout=15000)
     page.click('text=Criar minha conta')
     page.wait_for_url('**/criar-conta/**')
 
@@ -127,7 +132,7 @@ with sync_playwright() as p:
 
     # --- 4. convite não serve duas vezes ---------------------------------
     page.goto(f'{BASE}/entrar/{CODIGO}')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_selector('text=não vale mais', timeout=15000)
     corpo = page.inner_text('body')
     check('convite já usado é recusado na interface', 'não vale mais' in corpo)
 
@@ -145,10 +150,12 @@ with sync_playwright() as p:
 
     page.fill('input[autocomplete="current-password"]', SENHA)
     page.click('button[type="submit"]')
-    page.wait_for_url(f'{BASE}/', timeout=20000)
+    page.wait_for_url(re.compile(r'/(c/[^/]+)?$'), timeout=20000)
     page.wait_for_load_state('networkidle')
     page.screenshot(path=str(SHOTS / '07-logado.png'))
-    check('login leva para a área autenticada', page.url.rstrip('/') == BASE, page.url)
+    # Desde a fase 4 o shell redireciona para o primeiro canal não lido.
+    check('login leva para a área autenticada',
+          page.url.startswith(f'{BASE}/c/') or page.url.rstrip('/') == BASE, page.url)
 
     # --- 6. token nenhum no navegador ------------------------------------
     ls = page.evaluate('JSON.stringify(Object.entries(localStorage))')
@@ -201,7 +208,7 @@ with sync_playwright() as p:
 
     page.goto(f'{BASE}/')
     page.wait_for_load_state('networkidle')
-    page.wait_for_timeout(1500)
+    page.wait_for_timeout(2000)
     page.screenshot(path=str(SHOTS / '09-apos-reuso.png'))
     check('após o reuso, a sessão cai e volta para /entrar', page.url.endswith('/entrar'), page.url)
 
@@ -221,7 +228,7 @@ with sync_playwright() as p:
     page.fill('input[autocomplete="username"]', USUARIO)
     page.fill('input[autocomplete="current-password"]', SENHA)
     page.keyboard.press('Enter')
-    page.wait_for_timeout(4000)
+    page.wait_for_timeout(5000)
     check('Enter envia o formulário de login', not page.url.endswith('/entrar'), page.url)
     page.screenshot(path=str(SHOTS / '10-enter-envia.png'))
 

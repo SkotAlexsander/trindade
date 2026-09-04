@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { Perm, can } from '@trindade/shared';
 import { IconButton, Skeleton, Tooltip } from '../../components';
-import { ChevronDown, Mark, Plus, Settings } from '../../components/icones';
+import { ChevronDown, Plus, Settings } from '../../components/icones';
+import { Marca } from '../../components/Logo';
 import { useMediaQuery } from '../../lib/useMediaQuery';
 import { useHotkeys } from '../../lib/useHotkeys';
 import { useAuth } from '../auth/store';
@@ -92,12 +93,12 @@ export function AppShell() {
       {/* --- coluna 1: rail --- */}
       <nav className={styles.rail} aria-label="Espaços">
         <span className={styles.marca} aria-hidden="true">
-          <Mark size={24} />
+          <Marca size={26} />
         </span>
         <button type="button" className={styles.espacoBotao} data-ativo="true" aria-current="page">
           <span className={styles.marcador} aria-hidden="true" />
           <span className="visually-hidden">Trindade</span>
-          <Mark size={18} />
+          <Marca size={18} />
         </button>
         <span className={styles.espacador} />
         <Tooltip label="Configurações" placement="right">

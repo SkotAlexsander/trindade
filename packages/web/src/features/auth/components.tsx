@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { MarcaCheia, Palavra } from '../../components/Logo';
 import styles from './auth.module.css';
 
 export function AuthScreen({ children }: { children: ReactNode }) {
@@ -18,11 +19,16 @@ export function AuthScreen({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * O bloco da marca. Único lugar do produto onde a arte aparece inteira, com
+ * os pontos — é a tela em que a pessoa está sozinha e há espaço para isso.
+ */
 export function Brand() {
   return (
     <div className={styles.brand}>
-      <span className={styles.mark} aria-hidden="true" />
-      <span className={styles.wordmark}>Trindade</span>
+      <MarcaCheia size={72} className={styles.mark} />
+      <Palavra width={190} className={styles.wordmark} />
+      <span className="visually-hidden">Trindade</span>
     </div>
   );
 }

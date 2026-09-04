@@ -240,3 +240,30 @@ regra de presença deixa de comunicar qualquer coisa.
 - Barra de rolagem customizada que esconde a posição
 - Animação de entrada em elemento que aparece muitas vezes por minuto
 - Baixar contraste abaixo de AA para a cor "ficar mais bonita"
+
+---
+
+## A marca
+
+A triquetra — o nó da Trindade. Arte original em `design/marca/`, fornecida
+pelo dono do projeto. `3.png` é a versão de referência: silhueta chapada em
+preto sobre transparência, com a palavra abaixo.
+
+Os caminhos em `packages/web/src/components/Logo.tsx` foram **traçados** desse
+arquivo, não redesenhados: um contorno por marching squares, simplificado por
+Douglas–Peucker e convertido em cúbicas. Por isso batem com a arte.
+
+Vetor e não raster por dois motivos que valem para o produto inteiro: a
+`currentColor` deixa a marca seguir o tema — o PNG é preto e sumiria no fundo
+escuro — e a 24px um raster fica borrado.
+
+Três formas, e cada uma tem um lugar:
+
+| Componente | Onde | Observação |
+|---|---|---|
+| `Marca` | rail, favicon, qualquer uso ≤ 40px | sem os sete pontos decorativos: abaixo de 40px eles viram sujeira |
+| `MarcaCheia` | telas de autenticação | arte completa, só a partir de 40px |
+| `Palavra` | telas de autenticação | a palavra no desenho da logo, no lugar do texto em Instrument Sans |
+
+O `fill-rule="evenodd"` é o que abre os vazios do entrelaçado. Sem ela o nó
+vira um triângulo cheio.
