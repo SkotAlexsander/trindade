@@ -161,3 +161,14 @@ Tomadas no Passo 0. Não reabrir sem me perguntar.
   que o Tauri trata diferente — notificação, bandeja e atalho global passam por
   uma camada de abstração em `packages/web/src/lib/`, nunca chamadas diretas
   espalhadas pelos componentes.
+
+### Fase 1 — pendente de verificação
+
+O código está escrito e commitado. Verificado: `pnpm typecheck` e `pnpm lint`
+limpos, `pnpm dev` sobe API e web, `/api/health` responde `{ok:true,db:false}`
+pelos dois lados, log sem IP.
+
+Falta rodar, e só depende do banco: `pnpm migrate up`/`down`, os seeds
+(`Membro`, `Admin`, `#geral`), `db:true` no health check e `pnpm bootstrap`.
+WSL2 e Docker Desktop foram instalados; a Plataforma de Máquina Virtual exige
+**reiniciar o Windows** antes do primeiro `docker compose up -d`.
