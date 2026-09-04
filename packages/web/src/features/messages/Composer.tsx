@@ -427,7 +427,9 @@ export function Composer({ canal, pessoas, canais }: ComposerProps) {
           className={styles.campo}
           rows={1}
           value={texto}
-          placeholder={`escreva em #${canal.name}`}
+          // O `#` é do canal de texto. Um canal de voz tem conversa igual,
+          // mas chamá-lo de `#sala` contradiz o ícone ao lado do nome.
+          placeholder={`escreva em ${canal.kind === 'voice' ? '' : '#'}${canal.name}`}
           aria-label={`Escrever em ${canal.name}`}
           onChange={(e) => {
             setTexto(e.target.value);

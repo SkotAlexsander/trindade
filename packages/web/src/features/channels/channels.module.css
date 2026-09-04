@@ -72,6 +72,11 @@
   font-weight: var(--weight-medium);
 }
 
+.item[data-conectado='true'] {
+  color: var(--live);
+  font-weight: var(--weight-semi);
+}
+
 .icone {
   display: grid;
   place-items: center;

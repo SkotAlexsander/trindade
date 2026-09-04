@@ -7,7 +7,13 @@ import { requireUser } from '../plugins/auth.js';
 import { userKey } from '../lib/client-key.js';
 import { config } from '../config.js';
 import * as channelsDb from '../db/channels.js';
-import { credenciaisTurn, salaDoCanal, tokenDeVoz, vozConfigurada } from '../services/voz.js';
+import {
+  credenciaisTurn,
+  garantirSala,
+  salaDoCanal,
+  tokenDeVoz,
+  vozConfigurada,
+} from '../services/voz.js';
 import { aplicarEventoDoLiveKit } from '../services/estado-de-voz.js';
 
 /**
@@ -57,6 +63,16 @@ export const voiceRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!canal || canal.archived_at) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
       if (canal.kind !== 'voice') {
         throw badRequest('CHANNEL_NOT_VOICE', 'este canal não é de voz');
+      }
+
+      // A sala nasce aqui, e não no cliente: `auto_create` está desligado no
+      // SFU justamente para que criar uma sala seja decisão do servidor,
+      // depois da permissão conferida.
+      try {
+        await garantirSala(canal.id);
+      } catch (err) {
+        req.log.error({ err }, 'não consegui criar a sala no LiveKit');
+        throw badRequest('VOICE_OFF', 'a chamada não está disponível agora');
       }
 
       return {

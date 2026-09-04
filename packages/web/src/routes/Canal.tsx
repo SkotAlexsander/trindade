@@ -8,6 +8,10 @@ import styles from '../features/messages/canal.module.css';
 /**
  * A conversa: histórico, quem está digitando, compositor.
  *
+ * **Canal de voz tem conversa igual à de texto**, pelo mesmo componente: a
+ * chamada e o que se escreve durante ela são a mesma sala. Quem está dentro
+ * cola um link sem sair; quem chegou depois lê o que ficou combinado.
+ *
  * A rolagem é da lista, não desta rota — ela precisa do próprio elemento para
  * medir alturas e compensar a posição ao carregar histórico antigo.
  */
@@ -21,16 +25,6 @@ export function Canal() {
     return (
       <div className={styles.semCanal}>
         <p>Escolha um canal para começar.</p>
-      </div>
-    );
-  }
-
-  // Canal de voz ainda não tem tela: a chamada é da fase 7.
-  if (canal.kind === 'voice') {
-    return (
-      <div className={styles.semCanal}>
-        <strong>{canal.name}</strong>
-        <p>Canais de voz entram na fase 7.</p>
       </div>
     );
   }

@@ -136,9 +136,9 @@ export const attachmentRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!canal || canal.archived_at) {
         throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
       }
-      if (canal.kind !== 'text') {
-        throw badRequest('CHANNEL_NOT_TEXT', 'canal de voz não recebe arquivo');
-      }
+      // Canal de voz também recebe arquivo: ele tem conversa como qualquer
+      // outro, e recusar ali seria uma regra sem motivo — quem está numa
+      // chamada é justamente quem mais cola uma imagem para os outros verem.
 
       if ((await attachmentsDb.contarPendentes(me.id)) >= PENDENTES_MAXIMOS) {
         throw badRequest('TOO_MANY_PENDING', 'há arquivos demais esperando envio');

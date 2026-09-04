@@ -50,7 +50,11 @@ services:
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped
-    command: --config /etc/livekit.yaml --node-ip 127.0.0.1
+    # O endereço anunciado é o da rede do compose, e **não** 127.0.0.1: com
+    # `iceTransportPolicy: 'relay'` a mídia só chega aqui pelo coturn, que roda
+    # dentro do Docker e é quem precisa alcançar este endereço. Anunciar
+    # 127.0.0.1 faria o relay tentar falar consigo mesmo.
+    command: --config /etc/livekit.yaml --node-ip 172.30.0.10
     volumes:
       - ./infra/livekit.yaml:/etc/livekit.yaml:ro
     ports:
@@ -63,6 +67,9 @@ services:
       - '127.0.0.1:40000-40019:40000-40019/udp'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    networks:
+      midia:
+        ipv4_address: 172.30.0.10
 
   # O relay. Sem ele, quem está atrás de CGNAT — metade do Brasil — não fecha
   # conexão de mídia. As linhas `denied-peer-ip` do turnserver.conf não são
@@ -70,13 +77,36 @@ services:
   coturn:
     image: coturn/coturn:latest
     restart: unless-stopped
-    command: -c /etc/coturn/turnserver.conf
+    # O endereço externo vem do `.env` porque é da máquina, não do projeto: é
+    # o que o coturn anuncia no candidato relay, e o navegador precisa
+    # alcançá-lo por uma interface de verdade. Ver o comentário no .env.example.
+    command: >-
+      -c /etc/coturn/turnserver.conf
+      --external-ip=${TURN_EXTERNAL_IP:-127.0.0.1}/172.30.0.11
     volumes:
-      - ./infra/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      # A de **desenvolvimento**: a de produção não tem como alcançar um SFU
+      # com endereço privado, que é onde ele mora nesta máquina. A diferença
+      # entre as duas é uma linha `allowed-peer-ip`, e está explicada lá.
+      - ./infra/turnserver.dev.conf:/etc/coturn/turnserver.conf:ro
     ports:
-      - '127.0.0.1:3478:3478'
-      - '127.0.0.1:3478:3478/udp'
-      - '127.0.0.1:40100-40119:40100-40119/udp'
+      # Publicado **naquela** interface, não em 0.0.0.0: em desenvolvimento o
+      # relay fica acessível na rede local, e restringir a uma interface é o
+      # mínimo. As credenciais continuam efêmeras e a lista de negados vale.
+      - '${TURN_EXTERNAL_IP:-127.0.0.1}:3478:3478'
+      - '${TURN_EXTERNAL_IP:-127.0.0.1}:3478:3478/udp'
+      - '${TURN_EXTERNAL_IP:-127.0.0.1}:40100-40119:40100-40119/udp'
+    networks:
+      midia:
+        ipv4_address: 172.30.0.11
+
+# Endereços fixos porque a configuração do relay cita o do SFU pelo número: a
+# exceção de `allowed-peer-ip` precisa apontar para um endereço que não mude a
+# cada `docker compose up`.
+networks:
+  midia:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
 
 volumes:
   postgres_data:

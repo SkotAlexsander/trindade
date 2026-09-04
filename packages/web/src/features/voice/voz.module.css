@@ -1,0 +1,230 @@
+/* A barra de chamada e os avatares no canal.
+   Ver design/07-chamada.md. */
+
+.barra {
+  /* O documento pede 56px. Ali cabem o status e os controles; com a fileira de
+     avatares e as linhas de erro a barra cresce, então 56 é o piso e não a
+     altura fixa — travar a altura esconderia o "Tentar de novo". */
+  min-height: 56px;
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-live);
+  /* A única borda saturada da interface inteira. É o que torna impossível
+     esquecer que o microfone está aberto. */
+  border-top: 2px solid var(--live);
+}
+
+.linhaStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+}
+
+.ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: var(--glow-live);
+  flex: none;
+}
+
+.barra[data-fase='conectando'] .ponto,
+.barra[data-fase='reconectando'] .ponto {
+  animation: pulso 1.6s ease-in-out infinite;
+}
+
+.barra[data-fase='falhou'] .ponto {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+@keyframes pulso {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.rotulo {
+  white-space: nowrap;
+}
+
+.canal {
+  color: var(--text-secondary);
+  font-weight: var(--weight-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qualidade {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  height: 12px;
+}
+
+.qualidade i {
+  width: 3px;
+  background: var(--line);
+  border-radius: 1px;
+}
+
+.qualidade i:nth-child(1) {
+  height: 5px;
+}
+.qualidade i:nth-child(2) {
+  height: 8px;
+}
+.qualidade i:nth-child(3) {
+  height: 11px;
+}
+
+/* Verde, âmbar, vermelho. Os tokens são os de status de presença, e não cores
+   novas: já são uma escala de três níveis com contraste medido, e inventar
+   `--ok`/`--warn` aqui seria uma segunda escala para dizer a mesma coisa. */
+.qualidade[data-nivel='boa'] i {
+  background: var(--status-online);
+}
+.qualidade[data-nivel='media'] i:nth-child(-n + 2) {
+  background: var(--status-idle);
+}
+.qualidade[data-nivel='ruim'] i:nth-child(1) {
+  background: var(--danger);
+}
+
+.linhaErro {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.tentar {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: var(--weight-semi);
+  cursor: pointer;
+}
+
+.tentar:hover {
+  text-decoration: underline;
+}
+
+.avatares {
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+}
+
+/* Sobrepostos em -6px: a fileira diz quantos são de relance, sem virar lista. */
+.avatarNaChamada {
+  margin-left: -6px;
+  border-radius: 50%;
+  outline: 2px solid var(--bg-live);
+  transition: box-shadow 400ms ease;
+}
+
+/* Entrando em 120ms e saindo em 400ms. A assimetria é essencial: com tempos
+   iguais, quatro pessoas conversando produzem um efeito estroboscópico. */
+.avatarNaChamada[data-falando='true'] {
+  box-shadow: 0 0 0 2px var(--live);
+  transition-duration: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarNaChamada {
+    transition: none;
+  }
+  .barra[data-fase='conectando'] .ponto,
+  .barra[data-fase='reconectando'] .ponto {
+    animation: none;
+  }
+}
+
+.controles {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.controle {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.controle:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.controle:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Desligado nunca é só cor: o ícone já vem cortado pela diagonal. O fundo e a
+   cor são reforço, não a informação. */
+.controle[data-desligado='true'] {
+  color: var(--danger);
+  background: var(--crimson-wash);
+}
+
+.sair {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0 var(--s-2);
+  height: 32px;
+  color: var(--danger);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  border-radius: var(--r-control);
+  cursor: pointer;
+}
+
+.sair:hover {
+  background: var(--crimson-wash);
+}
+
+/* --- os avatares no canal da lista, para quem está fora ------------------- */
+
+.noCanal {
+  display: flex;
+  align-items: center;
+  padding: 2px 0 4px 34px;
+}
+
+.noCanal > span {
+  margin-left: -6px;
+  border-radius: 50%;
+  outline: 2px solid var(--bg-panel);
+  transition: box-shadow 400ms ease;
+}
+
+.noCanal > span[data-falando='true'] {
+  box-shadow: 0 0 0 2px var(--live);
+  transition-duration: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .noCanal > span {
+    transition: none;
+  }
+}

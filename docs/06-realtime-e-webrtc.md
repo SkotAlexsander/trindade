@@ -193,6 +193,15 @@ export function voiceToken(user: User, channelId: string, perms: bigint) {
 
 O escopo é uma sala só. Um token não dá acesso a outro canal.
 
+**Com `auto_create: false`, o servidor tem de criar a sala.** É a contrapartida
+da configuração, e é fácil de esquecer porque o sintoma não fala disso: o
+cliente conecta o sinal, recebe `requested room does not exist` e cai. A criação
+é `RoomServiceClient.createRoom` na mesma rota que emite o token, depois de a
+permissão ter sido conferida — e é idempotente, então não derruba quem já está
+dentro.
+
+Descoberto em 4 de setembro de 2026, ao implementar.
+
 ### Cliente
 
 ```typescript
@@ -267,6 +276,31 @@ Acrescentamos duas faixas ao que o rascunho listava: **CGNAT**
 > permissão e não diz nada disso. `network_mode: host` também não serve ali —
 > o "host" é a máquina virtual Linux, e a porta fica inalcançável sem erro
 > nenhum. Em produção, num Linux de verdade, `network_mode: host` é melhor.
+
+### O relay não pode estar no loopback, nem em desenvolvimento
+
+Descoberto em 4 de setembro de 2026, e custa horas a quem não souber.
+
+Enquanto a página **não** tem permissão de microfone, o Chrome usa nomes mDNS e
+a alocação num TURN em `127.0.0.1` funciona. No instante em que a permissão é
+concedida, ele passa a ligar os sockets ICE às interfaces de rede reais — e um
+socket ligado a `192.168.x.x` não alcança o loopback. A alocação simplesmente
+não acontece.
+
+O que torna isso caro é o silêncio: nenhum candidato `relay`, **nenhum**
+`icecandidateerror`, e o `iceGatheringState` fica em `gathering` até o SDK
+desistir com "could not establish pc connection". Nada na mensagem aponta para
+o relay.
+
+Em desenvolvimento, o coturn fica no endereço da máquina na rede local
+(`TURN_EXTERNAL_IP` no `.env`), publicado só naquela interface. Em produção o
+endereço é público e o problema não existe.
+
+O mesmo vale para o SFU: com a mídia toda passando pelo relay, é o **relay** que
+precisa alcançar o SFU. Numa máquina de desenvolvimento o SFU tem endereço
+privado, que é exatamente o que a lista `denied-peer-ip` recusa — daí o
+`infra/turnserver.dev.conf`, que abre exceção para um endereço só, com as mesmas
+faixas negadas do arquivo de produção. Um teste compara os dois.
 
 ### Credenciais efêmeras
 

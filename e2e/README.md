@@ -159,6 +159,40 @@ níveis exige ler **mais denso que o tique interno de 33ms** — a 100ms, dois
 terços das medições passam batido e o pico vira sorteio: a mesma verificação
 passava com +5,9 dB e falhava com +4,0 dB sem nada ter mudado no código.
 
+**`fase-07-chamada.py`** — 21 verificações com **duas pessoas numa chamada de
+verdade**, contra o LiveKit e o coturn do compose. A que dá nome à fase é a dos
+candidatos: a página é aberta com um espião sobre `RTCPeerConnection`, e o teste
+lê `getStats()` de cada conexão. Nenhum candidato local pode ser `host` nem
+`srflx`, e todo endereço tem de ser do relay — é o `chrome://webrtc-internals`
+do aceite, lido por programa.
+
+`prflx` aparece e é aceito: não é um endereço local, é o endereço **como o outro
+lado o viu**, e com a política de relay o outro lado só vê o relay. Por isso a
+verificação seguinte compara endereços, não rótulos.
+
+Cobre também a borda de 2px da barra (a única saturada da interface, e o tipo de
+coisa que some num ajuste de CSS sem ninguém notar), o ícone de microfone
+ganhando um traço ao fechar — a barra diagonal, que é o que cobre daltonismo —,
+ensurdecer calando junto, a conversa do canal de voz e a saída aparecendo do
+outro lado.
+
+### O relay não pode estar em 127.0.0.1
+
+Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome
+usa nomes mDNS e um TURN em `127.0.0.1` funciona. No instante em que a permissão
+é concedida — por `context.grant_permissions` ou pela interface —, ele passa a
+ligar os sockets ICE às interfaces reais, e um socket ligado a `192.168.x.x` não
+alcança o loopback. A alocação não acontece, e **em silêncio**: nenhum candidato
+`relay`, nenhum `icecandidateerror`, o `iceGatheringState` parado em `gathering`
+até o SDK desistir com "could not establish pc connection".
+
+Por isso o `.env` tem `TURN_EXTERNAL_IP` com o endereço da máquina na rede local,
+e o compose publica o coturn nele. Ver `docs/06-realtime-e-webrtc.md`.
+
+O sintoma engana de outra forma ainda: com `auto_create: false` no SFU, o
+primeiro erro é `requested room does not exist` — a sala é criada pelo servidor
+na rota que emite o token, e não pelo cliente.
+
 ### Se o Vite servir 404 num módulo que existe
 
 Renomear um arquivo deixa o grafo de módulos do Vite apontando para o nome

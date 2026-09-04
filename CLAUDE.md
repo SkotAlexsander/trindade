@@ -474,6 +474,35 @@ O efeito colateral que interessa: campo desconhecido não entra. Se um dia algu�
 gravar um token ali por engano, ele não volta na leitura seguinte — a regra de
 que credencial nenhuma passa por `localStorage` continua inteira.
 
+**Fatia 3: entrar e sair.** `livekit-client` no navegador, com
+`iceTransportPolicy: 'relay'` — a linha inteira do requisito de privacidade. O
+que sobe é a trilha do nosso grafo de áudio, não uma captura do SDK: é o que faz
+o ganho e o portão chegarem aos outros.
+
+Três coisas que o pacote não previa e que só apareceram rodando:
+
+**Com `auto_create: false`, quem cria a sala é o servidor.** É a contrapartida
+da configuração, e o sintoma não fala disso: o sinal conecta e o cliente cai com
+`requested room does not exist`. `createRoom` entrou na rota do token, depois da
+permissão conferida.
+
+**O relay não pode estar em 127.0.0.1, nem em desenvolvimento.** Sem permissão
+de microfone o Chrome usa mDNS e o loopback funciona; com a permissão concedida
+ele liga os sockets ICE às interfaces reais, e um socket em 192.168.x.x não
+alcança o loopback. Não há erro nenhum — nem candidato, nem
+`icecandidateerror` —, só dez segundos de espera e "could not establish pc
+connection". Daí `TURN_EXTERNAL_IP` no `.env`.
+
+**E o relay precisa alcançar o SFU**, que numa máquina de desenvolvimento tem
+endereço privado — exatamente o que a lista `denied-peer-ip` recusa. Daí o
+`infra/turnserver.dev.conf`, com uma exceção de um endereço só. Dois testes
+comparam os dois arquivos: as mesmas faixas negadas, uma única linha permitida.
+
+**O canal de voz também é canal de mensagens** — pedido do dono do projeto em 4
+de setembro de 2026. Clicar conecta e abre a conversa; sair da chamada não fecha
+a conversa. A regra que proibia anexo em canal de voz caiu junto: era uma regra
+sem motivo depois disso.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

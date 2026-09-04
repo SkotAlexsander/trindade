@@ -274,6 +274,8 @@ describe('webhook do LiveKit', () => {
   });
 });
 
+const conf = readFileSync(new URL('../../../infra/turnserver.conf', import.meta.url), 'utf8');
+
 describe('a configuração do relay', () => {
   /**
    * Um arquivo de configuração perde uma linha em silêncio.
@@ -283,11 +285,6 @@ describe('a configuração do relay', () => {
    * entra numa chamada — pede ao relay que abra conexão para 10.0.0.x e lê a
    * resposta. É o mesmo assunto da guarda de SSRF, por outro caminho.
    */
-  const conf = readFileSync(
-    new URL('../../../infra/turnserver.conf', import.meta.url),
-    'utf8',
-  );
-
   it('bloqueia todas as faixas internas', () => {
     for (const faixa of [
       '0.0.0.0-0.255.255.255',
@@ -314,6 +311,44 @@ describe('a configuração do relay', () => {
 
   it('não expõe o console de administração', () => {
     expect(conf).toContain('no-cli');
+  });
+});
+
+describe('a configuração de desenvolvimento do relay', () => {
+  /**
+   * O arquivo de desenvolvimento existe porque com `iceTransportPolicy:
+   * 'relay'` a mídia toda passa pelo relay, e nesta máquina o SFU mora num
+   * container — com endereço privado, que é exatamente o que a lista de
+   * negados recusa. Sem a exceção, a chamada local nunca fecha.
+   *
+   * O risco de ter dois arquivos é um deles envelhecer sozinho. Estes testes
+   * são o que impede isso: as mesmas faixas negadas, e **uma** exceção.
+   */
+  const dev = readFileSync(
+    new URL('../../../infra/turnserver.dev.conf', import.meta.url),
+    'utf8',
+  );
+
+  /** Uma linha por vez, sem o retorno de carro: o arquivo de produção está
+      versionado e chega com fim de linha do Windows nesta máquina. */
+  const linhas = (texto: string) =>
+    texto.split(String.fromCharCode(10)).map((linha) => linha.trim());
+
+  it('nega as mesmas faixas que a de produção', () => {
+    const negadas = (texto: string) =>
+      linhas(texto).filter((linha) => linha.startsWith('denied-peer-ip=')).sort();
+    expect(negadas(dev)).toEqual(negadas(conf));
+  });
+
+  it('e abre exceção para um endereço só — o do SFU', () => {
+    const permitidas = linhas(dev).filter((l) => l.startsWith('allowed-peer-ip='));
+    expect(permitidas).toEqual(['allowed-peer-ip=172.30.0.10']);
+  });
+
+  it('continua com segredo por HMAC e sem console', () => {
+    expect(dev).toContain('use-auth-secret');
+    expect(dev).toContain('no-cli');
+    expect(dev).not.toMatch(/^user=/m);
   });
 });
 

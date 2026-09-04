@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type DragEvent } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronDown, Hash, Volume } from '../../components/icones';
+import { ChevronDown, Hash } from '../../components/icones';
+import { ItemDeVoz } from '../voice/ItemDeVoz';
 import { groupByCategory, type Category, type ChannelWithState } from './canais';
 import styles from './channels.module.css';
 
@@ -146,6 +147,33 @@ function ItemCanal({
   onDrop: () => void;
   onDragEnd: () => void;
 }) {
+  const arrasto = {
+    draggable: podeGerenciar,
+    onDragStart,
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault();
+      onDragOver();
+    },
+    onDrop: (e: DragEvent) => {
+      e.preventDefault();
+      onDrop();
+    },
+    onDragEnd,
+  };
+
+  // Canal de voz não é um link: clicar nele **conecta**, e não existe página
+  // para onde navegar. Ver design/07-chamada.md.
+  if (canal.kind === 'voice') {
+    return (
+      <ItemDeVoz
+        canal={canal}
+        className={styles.item ?? ''}
+        arrastando={arrastando}
+        arrasto={arrasto}
+      />
+    );
+  }
+
   return (
     <NavLink
       to={`/c/${canal.slug}`}
@@ -175,7 +203,7 @@ function ItemCanal({
             ⠿
           </span>
         ) : null}
-        {canal.kind === 'voice' ? <Volume size={16} /> : <Hash size={16} />}
+        <Hash size={16} />
       </span>
       <span className={styles.nome}>{canal.name}</span>
       {canal.mentions > 0 ? (

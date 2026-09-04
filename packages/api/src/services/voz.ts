@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { AccessToken, TrackSource } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, TrackSource } from 'livekit-server-sdk';
 import { Perm, can } from '@trindade/shared';
 import { config } from '../config.js';
 
@@ -56,6 +56,43 @@ export function credenciaisTurn(userId: string): IceServer[] {
   if (config.TURN_TLS_URL) urls.push(config.TURN_TLS_URL);
 
   return [{ urls, username, credential }];
+}
+
+/** Cinco minutos vazia e a sala morre — o mesmo `empty_timeout` do livekit.yaml. */
+const VAZIA_POR_SEGUNDOS = 300;
+const MAXIMO_DE_PESSOAS = 8;
+
+let servico: RoomServiceClient | null = null;
+
+function clienteDoServico(): RoomServiceClient {
+  // A URL do SDK é HTTP; a que o navegador usa é WebSocket. É a mesma máquina.
+  const http = (config.LIVEKIT_URL as string).replace(/^ws/, 'http');
+  servico ??= new RoomServiceClient(
+    http,
+    config.LIVEKIT_API_KEY as string,
+    config.LIVEKIT_API_SECRET as string,
+  );
+  return servico;
+}
+
+/**
+ * Cria a sala antes de emitir o token.
+ *
+ * É a contrapartida de `auto_create: false` no livekit.yaml: com a criação
+ * automática ligada, qualquer token válido faria nascer salas arbitrárias, e o
+ * escopo por canal — que é a garantia inteira do token — não significaria
+ * nada. Desligada, **quem decide que uma sala existe é o servidor**, aqui,
+ * depois de checar a permissão e o canal.
+ *
+ * `createRoom` é idempotente: a sala que já existe volta como está, sem
+ * derrubar quem estiver dentro.
+ */
+export async function garantirSala(channelId: string): Promise<void> {
+  await clienteDoServico().createRoom({
+    name: salaDoCanal(channelId),
+    emptyTimeout: VAZIA_POR_SEGUNDOS,
+    maxParticipants: MAXIMO_DE_PESSOAS,
+  });
 }
 
 /**

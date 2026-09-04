@@ -175,6 +175,18 @@ que aconteceu sem olhar.
 
 Sair não pede confirmação.
 
+### A sala tem conversa
+
+> Acrescentado em 4 de setembro de 2026, a pedido do dono do projeto.
+
+O canal de voz **também é um canal de mensagens**, com histórico, menção, não
+lido e anexo como qualquer outro. Clicar nele conecta e abre a conversa; sair da
+chamada não fecha a conversa, e navegar para outro canal não derruba a chamada.
+
+É a mesma sala vista de dois jeitos. Quem está na chamada cola um link sem sair
+dela — o caminho alternativo era mandar em `#geral`, onde o assunto fica sem
+contexto —, e quem chegou depois lê o que ficou combinado.
+
 ---
 
 ## Quem não está na chamada

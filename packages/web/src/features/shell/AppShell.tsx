@@ -14,6 +14,9 @@ import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
+import { BarraDeChamada } from '../voice/BarraDeChamada';
+import { useVoz } from '../voice/store';
+import { useChamada } from '../voice/useChamada';
 import { digitandoAgora, useConexao, useDigitando, usePresenca } from '../realtime/store';
 import { useThread } from '../messages/store';
 import { primeiroDestino, withReadState } from '../channels/canais';
@@ -114,6 +117,16 @@ export function AppShell() {
     [canais, slug, navigate],
   );
 
+  const { alternarMudo, alternarSurdo, sair: sairDaChamada } = useChamada();
+  const canalDaChamada = useVoz((state) => (state.fase === 'fora' ? null : state.channelId));
+
+  // `Alt ⇧ C` leva ao canal da chamada em andamento. Serve para achar de volta
+  // a conversa que estava acontecendo depois de navegar para longe dela.
+  const irParaChamada = useCallback(() => {
+    const canal = canais.find((c) => c.id === canalDaChamada);
+    if (canal) navigate(`/c/${canal.slug}`);
+  }, [canais, canalDaChamada, navigate]);
+
   const alternarPainel = useCallback((qual: Exclude<PainelAberto, null>) => {
     setPainel((atual) => (atual === qual ? null : qual));
   }, []);
@@ -136,6 +149,13 @@ export function AppShell() {
     { key: 'u', mod: true, emCampo: true, run: () => setElencoVisivel((v) => !v) },
     // Suas, de todas as conversas.
     { key: 'b', mod: true, shift: true, emCampo: true, run: () => alternarPainel('guardadas') },
+    // Voz. `Ctrl/⌘ ⇧ M` e `Ctrl/⌘ ⇧ A` valem **em campo de texto**: calar o
+    // microfone no meio de uma frase digitada é exatamente quando se precisa
+    // deles. Ver design/02-shell-principal.md.
+    { key: 'm', mod: true, shift: true, emCampo: true, run: alternarMudo },
+    { key: 'a', mod: true, shift: true, emCampo: true, run: alternarSurdo },
+    { key: 'd', mod: true, shift: true, emCampo: true, run: () => void sairDaChamada() },
+    { key: 'c', alt: true, shift: true, run: irParaChamada },
     { key: 'ArrowDown', alt: true, run: () => irParaVizinho(1) },
     { key: 'ArrowUp', alt: true, run: () => irParaVizinho(-1) },
     {
@@ -209,6 +229,8 @@ export function AppShell() {
             <ChannelList channels={canais} podeGerenciar={podeGerenciar} />
           )}
         </div>
+
+        <BarraDeChamada canais={canais} pessoas={pessoas} />
 
         {/* Escondido, não desmontado: na faixa estreita o elenco é o último
             filho e recebe `order: -1` para virar faixa no topo da gaveta.

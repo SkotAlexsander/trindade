@@ -15,6 +15,8 @@ import {
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
 import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { useVoz } from '../voice/store';
+import { tocar } from '../voice/sons';
 import { ATRASO_DA_FAIXA_MS, useConexao, useDigitando, usePresenca } from './store';
 
 /**
@@ -85,6 +87,23 @@ export function useGateway(): void {
           ),
         );
         useLeitura.getState().substituir(d.readState);
+        // Quem entra depois recebe as chamadas em andamento no READY: sem
+        // isto, abrir o aplicativo com gente numa sala mostraria a sala vazia
+        // até alguém mexer.
+        useVoz.getState().substituirEstados(d.voiceStates);
+      }),
+
+      ws.on('VOICE_STATE_UPDATE', (d) => {
+        const voz = useVoz.getState();
+        const antes = voz.estados[d.userId];
+        voz.aplicarEstado(d);
+
+        // Som só de quem chega e sai da **sua** chamada, e desligado por
+        // padrão: com cinco pessoas entrando o dia inteiro, ligado vira ruído
+        // que se aprende a ignorar. Nunca há notificação de entrada.
+        if (d.userId === meuId || voz.fase !== 'conectado' || !voz.channelId) return;
+        if (d.connected && !antes && d.channelId === voz.channelId) tocar('alguemEntrou');
+        if (!d.connected && antes?.channelId === voz.channelId) tocar('alguemSaiu');
       }),
 
       ws.on('MESSAGE_CREATE', (d) => {
