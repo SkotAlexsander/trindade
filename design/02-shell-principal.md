@@ -238,20 +238,117 @@ Navegação em pilha, como aplicativo móvel.
 
 ## Atalhos
 
+> Ampliado em 4 de setembro de 2026 a partir de uma referência do Discord. A
+> tabela original tinha nove atalhos; o que entrou está marcado com **novo**, e
+> o que foi recusado está listado no fim, com o motivo.
+
+Nada dispara enquanto o foco está num campo de texto — com uma exceção
+deliberada, a última linha da tabela de conversa.
+
+### Navegação
+
+| Tecla | Ação | |
+|---|---|---|
+| `Ctrl/⌘ K` | paleta de comandos | |
+| `Alt ↑` / `Alt ↓` | canal anterior / próximo | |
+| `Alt ⇧ ↑` / `Alt ⇧ ↓` | canal não lido anterior / próximo | |
+| `Alt ←` / `Alt →` | voltar / avançar no histórico | **novo** |
+| `Alt ⇧ C` | ir para a chamada em andamento | **novo** |
+
+`Alt ⇧ C` só existe quando há chamada. Achar de volta o canal onde a chamada
+está, depois de vagar por outros, é uma micro-frustração que se repete.
+
+### Conversa e painéis
+
+| Tecla | Ação | |
+|---|---|---|
+| `Ctrl/⌘ F` | buscar no canal | |
+| `Ctrl/⌘ P` | painel de fixadas | **novo** |
+| `Ctrl/⌘ U` | mostrar e esconder o elenco | **novo** |
+| `Ctrl/⌘ E` | seletor de emoji | **novo** |
+| `Ctrl/⌘ ⇧ U` | anexar arquivo | **novo** |
+| `⇧ PageUp` | ir à primeira mensagem não lida | **novo** |
+| `⇧ Esc` | marcar tudo como lido | |
+| `Esc` | fechar painel, cancelar edição, limpar resposta | |
+| qualquer caractere | foca o compositor e digita a tecla | **novo** |
+
+A última é a melhor da lista e a que mais dá trabalho. Começar a escrever com o
+foco em qualquer lugar da conversa leva o texto ao compositor **incluindo o
+primeiro caractere** — perder a primeira letra transforma o atalho em defeito.
+Não vale para `Ctrl`, `Alt`, `⌘`, teclas de função nem navegação.
+
+### Mensagem em foco
+
+`↑` e `↓` com o compositor vazio movem o foco pela lista. A mensagem focada
+ganha o anel de foco e responde a:
+
 | Tecla | Ação |
 |---|---|
-| `Ctrl/⌘ K` | paleta de comandos |
-| `Ctrl/⌘ F` | buscar no canal |
-| `Alt ↑` / `Alt ↓` | canal anterior / próximo |
-| `Alt ⇧ ↑` / `Alt ⇧ ↓` | canal não lido anterior / próximo |
-| `Esc` | fechar painel, cancelar edição, limpar resposta |
-| `Ctrl/⌘ ⇧ M` | ligar e desligar microfone |
-| `Ctrl/⌘ ⇧ D` | entrar e sair da chamada |
-| `⇧ Esc` | marcar tudo como lido |
+| `E` | editar — só as suas |
+| `R` | responder |
+| `T` | abrir a thread |
+| `P` | fixar e desafixar |
+| `+` | abre o seletor de reação |
+| `Delete` | apagar, com confirmação |
+| `Alt Enter` | marcar como não lida a partir dela |
+| `⇧ F10` | menu de contexto |
+| `Esc` | devolve o foco ao compositor |
+
+Este grupo inteiro depende de foco itinerante na lista (`roving tabindex`), que
+é a mesma coisa de que a navegação por teclado precisa para ser acessível. Sai
+de graça junto: implementar um é implementar o outro.
+
+`↑` com o compositor **cheio** continua sendo "editar a última mensagem". O
+compositor vazio é a condição que separa os dois comportamentos.
+
+### Voz e vídeo
+
+| Tecla | Ação | |
+|---|---|---|
+| `Ctrl/⌘ ⇧ M` | microfone | |
+| `Ctrl/⌘ ⇧ D` | entrar e sair da chamada | |
+| `Ctrl/⌘ ⇧ A` | ensurdecer — cala tudo, inclusive você | **novo** |
+| `Ctrl/⌘ ⇧ V` | câmera | **novo** |
+| `Ctrl/⌘ ⇧ E` | compartilhar tela | **novo** |
+
+A referência usa `Ctrl ⇧ D` para ensurdecer; aqui `D` já era entrar e sair da
+chamada desde a fase 4, e trocar o significado de um atalho existente custa mais
+do que ganha. Ensurdecer ficou em `A`.
+
+### Diversos
+
+| Tecla | Ação |
+|---|---|
 | `?` | lista de atalhos |
+| `⇧ F10` | menu de contexto do que estiver em foco |
 
 `Ctrl/⌘ K` é o único que precisa estar visível na interface — uma dica discreta
-no campo de busca. Os demais moram na tela de ajuda.
+no campo de busca. Os demais moram na tela de ajuda, que `?` abre.
+
+### O que o navegador não deixa
+
+Combinação que o navegador toma para si não é atalho, é armadilha. Ficaram de
+fora por isso, e a tela de ajuda não as menciona:
+
+`Ctrl ⇧ C`, `Ctrl ⇧ I`, `Ctrl ⇧ J` (ferramentas de desenvolvedor), `Ctrl ⇧ S`
+(captura no Firefox), `Ctrl ⇧ N` e `Ctrl ⇧ P` (janela anônima), `Ctrl W`,
+`Ctrl T`, `Ctrl N`.
+
+No aplicativo de mesa (fase 8) várias se libertam. **Não aproveite isso.** Um
+atalho que existe no Tauri e não no navegador é uma diferença que a pessoa
+descobre errando.
+
+### O que foi recusado da referência
+
+| Atalho | Motivo |
+|---|---|
+| navegar entre servidores, criar servidor | existe um servidor, e é este |
+| encaminhar mensagem | não há para onde encaminhar |
+| ler mensagem em voz alta | fora de escopo |
+| seletor de GIF, de figurinha | não existem |
+| `Esc` marca o canal como lido | `Esc` já fecha painel e cancela edição; empilhar uma ação destrutiva de estado numa tecla de "cancelar" é como se perde mensagem sem querer |
+| painel de som | não existe |
+| atender e recusar chamada | ninguém liga para ninguém: entra-se num canal (fase 10 reabre isto para as diretas) |
 
 ---
 

@@ -61,7 +61,7 @@ Lista de quadros no painel direito; abrir é tela cheia sobre a conversa.
 
 **Modo apresentação:**
 - estado `presenter_id` na awareness do quadro
-- borda superior `--ember` na barra enquanto ativo
+- borda superior `--live` na barra enquanto ativo
 - espectadores recebem a viewport da apresentadora e a aplicam com
   `updateScene({ appState: { scrollX, scrollY, zoom } })` a cada mudança,
   com throttle de 50ms

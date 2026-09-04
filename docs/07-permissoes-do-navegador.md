@@ -22,6 +22,21 @@ pessoa encontre o cadeado na barra de endereço sozinha.
 Câmera e microfone são pedidos separadamente. Entrar numa chamada de voz não
 deve acender a luz da câmera.
 
+## A lista de dispositivos também é permissão
+
+`enumerateDevices()` sem permissão devolve os dispositivos com `label: ''`. Não
+é falha: a lista de aparelhos identifica uma máquina, e por isso o navegador a
+esconde até haver consentimento.
+
+Consequência prática, em `design/13-dispositivos-e-audio.md`: a tela de
+configurações de voz tem um estado "permita para ver seus dispositivos" com um
+botão. O botão abre uma trilha, lê a lista e **fecha a trilha em seguida** —
+deixar a luz acesa para popular um `<select>` é exatamente o tipo de coisa que
+faz alguém revogar a permissão e não devolver.
+
+Vale para a prévia da câmera também: ela vive enquanto o painel está aberto e
+morre quando ele fecha.
+
 ## O que nunca pedimos
 
 | Permissão | Motivo |

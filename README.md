@@ -88,6 +88,7 @@ iterar dentro de cada fase.
 - `design/10-conversas-privadas.md` — mensagem direta e grupos pequenos
 - `design/11-quadro.md` — quadro colaborativo e modo apresentação
 - `design/12-compartilhamento-de-tela.md` — presets, simulcast, assistir opcional
+- `design/13-dispositivos-e-audio.md` — microfone, alto-falante, câmera, medidor, sensibilidade
 
 **Prompts** — o que colar no Claude Code.
 

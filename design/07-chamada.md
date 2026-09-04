@@ -2,6 +2,11 @@
 
 Três formas: a barra persistente, a grade de participantes e o modo tela.
 
+> Revisão de 4 de setembro de 2026: `--ember` virou `--live` na troca de
+> direção visual — a cor de presença ao vivo passou de âmbar a magenta, o
+> papel não mudou. A seção **Câmera** e o ponteiro para
+> `13-dispositivos-e-audio.md` são novos, a pedido do dono do projeto.
+
 Aqui o âmbar aparece com força, porque aqui é onde há gente ao vivo. É a
 recompensa de ter reservado a cor: quando a chamada começa, a interface esquenta
 de verdade.
@@ -11,13 +16,13 @@ de verdade.
 ## Barra de chamada
 
 Aparece acima do painel do elenco quando você está conectado. 56px, fundo
-`--bg-live`, borda superior de 2px em `--ember`.
+`--bg-live`, borda superior de 2px em `--live`.
 
 ```
 ┌──────────────────────────────────┐
 │  ◉ Conectado · sala              │
 │  ●●○                             │
-│  🎤   🎧   🖥   ↗          Sair  │
+│  🎤   🎧   📹   🖥   ↗     Sair  │
 └──────────────────────────────────┘
 ```
 
@@ -32,7 +37,8 @@ Terceira: controles de 32px.
 |---|---|---|---|
 | 🎤 | microfone | `--text-primary` | `--danger` + barra diagonal |
 | 🎧 | áudio | `--text-primary` | `--danger` + barra diagonal |
-| 🖥 | tela | `--ember` quando ativo | `--text-secondary` |
+| 📹 | câmera | `--live` quando ativa | `--text-secondary` |
+| 🖥 | tela | `--live` quando ativo | `--text-secondary` |
 | ↗ | expandir | — | — |
 
 Desligado nunca é indicado só por cor. A barra diagonal cobre daltonismo e
@@ -81,7 +87,7 @@ Sem câmera, o cartão mostra o avatar de 80px centralizado sobre `--bg-raised`.
 
 ### Quem está falando
 
-Borda de 2px em `--ember` no cartão de quem fala, entrando em 120ms e saindo em
+Borda de 2px em `--live` no cartão de quem fala, entrando em 120ms e saindo em
 400ms.
 
 A assimetria é essencial. Entrada rápida acompanha a voz; saída lenta absorve as
@@ -96,10 +102,39 @@ Silenciado: ícone de microfone cortado no canto do cartão, em `--danger`.
 ### Controles
 
 Barra inferior, 56px, botões redondos de 44px. Estado ligado com fundo
-`--bg-active`; desligado com fundo `--rust-wash` e ícone `--danger`.
+`--bg-active`; desligado com fundo `--crimson-wash` e ícone `--danger`.
 
 "Sair" é uma pílula em `--danger`, à direita, separada dos demais. Distância
 física evita clique acidental.
+
+---
+
+## Câmera
+
+Desligada ao entrar, sempre. Ao contrário do microfone, que entra aberto porque
+a borda magenta torna o estado impossível de ignorar, a câmera não tem sinal
+equivalente e o custo do engano é de outra ordem.
+
+O botão 📹 liga e desliga. Ligar pede a permissão **naquele momento** — entrar
+numa chamada de voz nunca acende a luz da câmera (`docs/07-permissoes-do-navegador.md`).
+
+O dispositivo, a resolução e o espelhamento da prévia ficam em
+`13-dispositivos-e-audio.md`. Aqui só o que aparece durante a chamada:
+
+- **A sua imagem é espelhada só para você.** A trilha publicada não é.
+- **Sem câmera, o cartão não é um retângulo preto** — é o avatar de 80px sobre
+  `--bg-raised`, exatamente como já está na grade. Vídeo desligado e vídeo
+  travado precisam ser distinguíveis de relance.
+- Quem desliga a câmera no meio some do vídeo sem sair da grade: o cartão
+  permanece, a imagem dá lugar ao avatar em 200ms.
+- A câmera cai sozinha se a trilha morrer (`track.onended` — dispositivo
+  removido, outro programa tomou o aparelho). O botão sincroniza e um toast
+  diz o que aconteceu. Ficar com o botão aceso e a imagem congelada é pior que
+  desligar.
+
+Com tela compartilhada e câmera ao mesmo tempo, a câmera vai para a fileira
+lateral de 160px junto com os outros participantes. A tela é o assunto; o rosto
+é o comentário.
 
 ---
 
@@ -112,7 +147,18 @@ zoom, apontador e áudio do sistema como trilha separada.
 
 Quando alguém transmite, o layout muda: a transmissão ocupa o espaço principal
 e os participantes viram uma fileira lateral de 160px. `object-fit: contain`
-sobre `--slate-abyss`, nunca `cover`.
+sobre `--void`, nunca `cover`.
+
+## Dispositivos e áudio
+
+Qual microfone, qual alto-falante, qual câmera, ganho de entrada, medidor,
+perfil de captura, limiar de sensibilidade, apertar para falar e os sons:
+tudo em `13-dispositivos-e-audio.md`.
+
+O caminho até lá sai do controle que falhou, não do menu: botão direito no
+ícone de microfone da barra, ou a seta ao lado dele.
+
+---
 
 ## Entrar e sair
 
@@ -147,8 +193,8 @@ dispararia o dia inteiro.
 
 | Situação | Interface |
 |---|---|
-| conectando | barra com "Conectando…" e pulso lento em `--ember-soft` |
-| reconectando | "Reconectando…" em `--ember`, controles desabilitados |
+| conectando | barra com "Conectando…" e pulso lento em `--magenta-wash` |
+| reconectando | "Reconectando…" em `--live`, controles desabilitados |
 | falhou | "Não foi possível conectar" + [ Tentar de novo ] |
 | sem permissão de mídia | explica como liberar no navegador, com o passo real |
 | sozinho | "Você está sozinho na sala" no centro, tom neutro |

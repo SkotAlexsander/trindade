@@ -74,6 +74,13 @@
   --live: var(--magenta);
   --danger: var(--crimson);
 
+  /* Destaque de termo encontrado na busca. Existe como token próprio porque
+     ciano é comando e magenta é presença ao vivo: o trecho achado não é nem um
+     nem outro, e pintá-lo com qualquer um dos dois desmancha a regra. É o
+     único âmbar da interface fora dos pontos de status. */
+  --mark-wash: rgba(245, 184, 61, 0.22);
+  --mark-line: rgba(245, 184, 61, 0.55);
+
   --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--cyan);
 
   /* Cor da marca. Ciano no escuro, preto no claro: no fundo quase preto o
@@ -228,6 +235,9 @@
   --accent: #0e708b;
   --live: #a21caf;
   --danger: #be2f3c;
+
+  --mark-wash: rgba(214, 138, 8, 0.26);
+  --mark-line: rgba(161, 98, 7, 0.6);
 
   --cyan-hover: #0891b2;
   --cyan-press: #155e75;

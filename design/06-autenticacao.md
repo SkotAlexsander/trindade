@@ -3,6 +3,8 @@
 Quatro telas: entrar, código de verificação, aceitar convite, criar conta. São as
 únicas fora do shell e as únicas com tipografia de display.
 
+> Revisão de 4 de setembro de 2026: `--rust-wash` virou `--crimson-wash`.
+
 ---
 
 ## Composição
@@ -55,7 +57,7 @@ Autofoco no campo de usuário. `autocomplete="username"` e `"current-password"` 
 sem isso o gerenciador de senhas não funciona e a pessoa cria senha fraca.
 
 Erro aparece **acima do botão**, não em toast, em uma faixa com fundo
-`--rust-wash`, borda esquerda de 2px em `--danger`:
+`--crimson-wash`, borda esquerda de 2px em `--danger`:
 
 > Usuário ou senha incorretos.
 

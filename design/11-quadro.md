@@ -7,6 +7,8 @@ resolve desenho vetorial, formas, texto e exportação.
 O que o pacote acrescenta é a integração: colaboração em tempo real pela
 infraestrutura existente, o modo apresentação, e o elo com a conversa.
 
+> Revisão de 4 de setembro de 2026: `--ember` virou `--live`.
+
 ---
 
 ## Modelo
@@ -93,7 +95,7 @@ O motivo de existir. Quem está apresentando controla o que os outros veem.
 Clicar em "Apresentar":
 
 1. A pessoa vira apresentadora. A barra ganha a borda superior de 2px em
-   `--ember`, a mesma da chamada — porque é presença ao vivo, alguém está
+   `--live`, a mesma da chamada — porque é presença ao vivo, alguém está
    conduzindo.
 2. Uma mensagem de sistema no canal: "◉ Ana está apresentando *Fluxo de
    onboarding*", clicável, e o quadro aparece na lista de canais indentado sob

@@ -30,6 +30,11 @@ superfícies, nos dois temas. Não foram escolhidos no olho.
 | `--danger`         |  6.5 ·  6.3 ·  5.6 |  5.1 ·  4.8 ·  5.7 |
 | `--status-offline` |  5.4 ·  5.2 ·  4.7 |  5.0 ·  4.7 ·  5.6 |
 
+`--mark-wash` é fundo, não texto, então entra por outra conta: o que foi medido
+é `--text-primary` **sobre o destaque composto**, que é onde o trecho achado
+pela busca é lido. Dá 11,8 · 11,1 · 9,6 no escuro e 12,7 · 12,0 · 13,9 no
+claro — o realce não custa legibilidade em nenhuma superfície.
+
 Ao mexer em qualquer cor, refaça a conta. Três valores desta tabela só passaram
 depois de serem escurecidos ou clareados de propósito.
 
@@ -116,7 +121,19 @@ Abaixo, o conteúdo real. Não edite este documento à mão: edite o CSS e regen
   --live: var(--magenta);
   --danger: var(--crimson);
 
+  /* Destaque de termo encontrado na busca. Existe como token próprio porque
+     ciano é comando e magenta é presença ao vivo: o trecho achado não é nem um
+     nem outro, e pintá-lo com qualquer um dos dois desmancha a regra. É o
+     único âmbar da interface fora dos pontos de status. */
+  --mark-wash: rgba(245, 184, 61, 0.22);
+  --mark-line: rgba(245, 184, 61, 0.55);
+
   --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--cyan);
+
+  /* Cor da marca. Ciano no escuro, preto no claro: no fundo quase preto o
+     ciano é a assinatura; sobre papel a mesma cor perde presença e a versão
+     preta lê melhor. Um token para a regra viver num lugar só. */
+  --brand-ink: var(--accent);
 
   /* --- brilho -------------------------------------------------------------
      O brilho é o que dá o caráter da interface, e por isso é medido: três
@@ -174,6 +191,7 @@ Abaixo, o conteúdo real. Não edite este documento à mão: edite o CSS e regen
 
   /* medidas do layout */
   --rail-w: 56px;
+  --rail-item: 32px;
   --sidebar-w: 232px;
   --panel-w: 320px;
   --cast-h: 88px;
@@ -265,6 +283,9 @@ Abaixo, o conteúdo real. Não edite este documento à mão: edite o CSS e regen
   --live: #a21caf;
   --danger: #be2f3c;
 
+  --mark-wash: rgba(214, 138, 8, 0.26);
+  --mark-line: rgba(161, 98, 7, 0.6);
+
   --cyan-hover: #0891b2;
   --cyan-press: #155e75;
   --cyan-wash: rgba(14, 116, 144, 0.1);
@@ -272,6 +293,8 @@ Abaixo, o conteúdo real. Não edite este documento à mão: edite o CSS e regen
   --magenta-wash: rgba(162, 28, 175, 0.09);
 
   --status-offline: #536a7e;
+
+  --brand-ink: var(--text-primary);
 
   --glow-edge: 0 0 0 1px var(--border-strong);
   --glow-accent: none;

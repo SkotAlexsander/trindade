@@ -3,6 +3,8 @@
 Cobre o cartão de perfil, o editor do próprio perfil, o gerenciamento de cargos e
 a lista de pessoas.
 
+> Revisão de 4 de setembro de 2026: `--slate-mid` virou `--mid`.
+
 ---
 
 ## Cartão de perfil
@@ -32,7 +34,7 @@ largura, `--bg-raised`, `--r-surface`, `--shadow-pop`.
 ```
 
 A faixa do topo usa `accent_color` da pessoa, ou o cargo de maior posição se ela
-não escolheu, ou `--slate-mid` se nenhum dos dois. É a única personalização
+não escolheu, ou `--mid` se nenhum dos dois. É a única personalização
 cromática que cada pessoa controla.
 
 Chip de cargo: `--r-full`, altura 20px, fundo com 12% da cor do cargo, texto na

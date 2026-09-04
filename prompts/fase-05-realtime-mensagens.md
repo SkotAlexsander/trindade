@@ -108,10 +108,39 @@ a cada movimento do mouse cintila numa lista longa.
 
 Thread no painel direito, com contador no canal.
 
+### Teclado e foco na lista
+
+Acrescentado em 4 de setembro de 2026. A tabela completa está em
+`design/02-shell-principal.md`; aqui o que a fase 5 tem de entregar.
+
+**Foco itinerante na lista** (`roving tabindex`): a lista tem um `tabindex="0"`
+só, na mensagem focada; as demais ficam em `-1`. `↑` e `↓` movem, e o item
+focado é rolado para dentro da viewport com `block: 'nearest'` — nunca
+`'center'`, que faz a lista pular a cada tecla.
+
+Com a mensagem focada: `E` editar (só as suas), `R` responder, `T` thread,
+`P` fixar, `+` seletor de reação, `Delete` apagar com confirmação,
+`Alt Enter` marcar como não lida a partir dela, `⇧ F10` menu de contexto,
+`Esc` devolve o foco ao compositor.
+
+`↑` com o compositor **vazio** entra na lista. `↑` com o compositor **cheio**
+continua editando a última mensagem, como já estava. A condição é o campo estar
+vazio, não o cursor estar na primeira linha.
+
+**Qualquer caractere imprimível foca o compositor e digita a tecla.** O primeiro
+caractere não pode se perder — se perder, o atalho vira defeito e é melhor não
+existir. Não vale com `Ctrl`, `Alt`, `⌘`, teclas de função ou navegação, nem
+quando há um diálogo aberto.
+
+Mais quatro do shell, que abrem painéis que esta fase constrói: `Ctrl/⌘ P`
+fixadas, `Ctrl/⌘ E` seletor de emoji, `Ctrl/⌘ ⇧ U` anexar arquivo,
+`⇧ PageUp` primeira mensagem não lida. `Ctrl/⌘ U` (elenco) é do shell e já
+existe desde a fase 4.
+
 ### Busca
 
 `websearch_to_tsquery('portuguese', q)` ordenado por `ts_rank_cd`. Painel direito,
-não tela cheia. Termo destacado em `--ember-wash`. Clique carrega com `?around=`
+não tela cheia. Termo destacado em `--mark-wash`. Clique carrega com `?around=`
 e pisca a mensagem por 800ms.
 
 ### Reconexão
@@ -134,3 +163,6 @@ conteúdo, **não sobrepondo**. Compositor continua aceitando texto e enfileira.
 - Digitar offline enfileira e envia ao voltar
 - Mudar o cargo de alguém reflete sem reconectar
 - Desativar alguém derruba a conexão em até 60s
+- `↑` no campo vazio entra na lista; com texto, edita a última
+- Digitar uma letra com o foco na lista leva o texto ao compositor **com a letra**
+- Toda ação da mensagem focada tem atalho e menu de contexto por `⇧ F10`

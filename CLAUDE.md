@@ -249,6 +249,62 @@ Pendente por depender da fase 5: estado de leitura (`unread` e menções vêm de
 real e a sequência de acender disparada pelo `READY` — hoje ela roda quando as
 pessoas carregam.
 
+### Escopo acrescentado em 4 de setembro de 2026
+
+O dono do projeto pediu, a partir de uma referência do Discord, o que o pacote
+original não especificava: **escolher microfone, alto-falante e câmera**, medidor
+e teste de entrada, perfil de captura, sensibilidade, apertar para falar, e a
+câmera na chamada. O pacote citava `camera` no grant do LiveKit e nunca
+desenhava a tela.
+
+| Onde entrou | O quê |
+|---|---|
+| `design/13-dispositivos-e-audio.md` (novo) | listas de dispositivo, ganho, medidor, perfil de entrada, limiar, apertar para falar, sons |
+| `design/07-chamada.md` | seção **Câmera** e o 📹 na barra de chamada |
+| `design/02-shell-principal.md` | atalhos: de 9 para 27, em cinco grupos, com o que foi recusado e por quê |
+| `prompts/fase-05` | foco itinerante na lista e os atalhos de mensagem |
+| `prompts/fase-07` | `lib/midia.ts`, `lib/preferencias.ts`, câmera, e 8 critérios de aceite |
+| `docs/07-permissoes-do-navegador.md` | por que a lista de dispositivos vem sem rótulo |
+
+**A ordem das fases não mudou.** Quase tudo é da fase 7 e depende do LiveKit; o
+que dá para fazer antes é o grupo de teclado, que é da fase 5 porque é a lista
+de mensagens que precisa do foco itinerante.
+
+Uma coisa nova de verdade: `lib/midia.ts` é a **única** porta para
+`navigator.mediaDevices`. Nenhum componente chama `getUserMedia`,
+`enumerateDevices` ou `setSinkId` direto — pela mesma razão que notificação e
+atalho global passam por uma camada: o Tauri muda o comportamento embaixo.
+
+### Tokens: nomes antigos corrigidos
+
+A troca de direção visual da fase 3 reescreveu `00-direcao-visual.md` e
+`01-tokens.md`, mas os outros documentos ficaram citando tokens que não existem
+mais. Corrigido em 4 de setembro de 2026, com nota de revisão em cada arquivo:
+
+| citado | virou | onde |
+|---|---|---|
+| `--ember` | `--live` | 07-chamada, 11-quadro, fase-07, fase-10 |
+| `--ember-soft` | `--magenta-wash` | 07-chamada |
+| `--ember-wash` | `--mark-wash` | 04-mensagens, fase-05 |
+| `--cobalt-wash` | `--cyan-wash` | 04-mensagens |
+| `--rust-wash` | `--crimson-wash` | 06-autenticacao, 07-chamada |
+| `--slate-abyss` | `--abyss` / `--void` | 04-mensagens, 07-chamada |
+| `--slate-mid` | `--mid` | 05-perfil-e-cargos |
+
+`--mark-wash` e `--mark-line` são **tokens novos**, não renomeados: o destaque
+de busca era âmbar, e traduzi-lo direto para magenta roubaria a cor reservada à
+presença ao vivo. Medido: 11,8 · 11,1 · 9,6 no escuro, 12,7 · 12,0 · 13,9 no
+claro.
+
+`design/01-tokens.md` voltou a bater byte a byte com `tokens.css` nos dois
+blocos — `--brand-ink` e `--rail-item` faltavam no documento.
+
+Confira com:
+
+```bash
+diff <(sed -n '/^:root {/,/^}/p' packages/web/src/styles/tokens.css)      <(sed -n '/^:root {/,/^}/p' design/01-tokens.md)
+```
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

@@ -3,7 +3,7 @@
 LiveKit, coturn, relay forçado, grade de participantes e modo tela.
 
 Leia antes: `docs/06-realtime-e-webrtc.md` inteiro, `docs/04-seguranca.md`
-(privacidade de IP), `design/07-chamada.md`.
+(privacidade de IP), `design/07-chamada.md` e `design/13-dispositivos-e-audio.md`.
 
 O requisito central desta fase é de privacidade, não de mídia: **nenhum
 participante pode descobrir o endereço de rede de outro.** Tudo o mais é
@@ -49,9 +49,59 @@ negociação — não adianta bloquear depois.
 `adaptiveStream` e `dynacast` ligados; juntos derrubam o consumo pela metade numa
 chamada real.
 
+### Dispositivos, áudio e câmera
+
+Acrescentado em 4 de setembro de 2026. `design/13-dispositivos-e-audio.md`
+inteiro, e não é opcional: sem escolher o microfone, metade das chamadas começa
+com "acho que ele está pegando o do notebook".
+
+`lib/midia.ts` — a camada única de dispositivo. Ninguém chama
+`navigator.mediaDevices` fora dela.
+
+- `enumerateDevices` com a lista vazia **antes** da permissão sendo um estado da
+  interface, não um erro. A trilha de sondagem fecha logo depois de abrir.
+- Escolha guardada como `{ deviceId, label, groupId }` e resolvida em cascata:
+  id, depois rótulo, depois `default` com aviso de qual assumiu.
+- `devicechange` atualiza a lista. Só troca sozinho se o dispositivo em uso
+  sumiu, e nesse caso avisa.
+- `setSinkId` por feature-detect (`'setSinkId' in HTMLMediaElement.prototype`),
+  nunca por versão de navegador. Sem ele, a lista de saída fica **desabilitada
+  com o motivo**, jamais escondida.
+- Ganho de entrada por `GainNode`, com o `AnalyserNode` **depois** dele — o
+  medidor mostra o que sai, não o que entrou.
+- Perfil de entrada nos três modos da tabela. `voiceIsolation` por
+  `getSupportedConstraints()`; a ausência não é erro.
+- Gate de sensibilidade: automático com piso de ruído móvel de 3s + 6 dB, ou
+  limiar manual desenhado **sobre** o medidor. Rampa de 40ms e espera de 250ms
+  antes de fechar — corte seco estala e engole a última sílaba.
+- Apertar para falar, com o aviso de que só funciona com a janela em foco. O
+  atalho global é da fase 8 e passa pela camada do Tauri.
+
+`lib/preferencias.ts` guarda tudo em `localStorage` sob `trindade:midia`.
+Preferência de máquina, não de conta. **Credencial nenhuma passa por aqui.**
+
+### Câmera
+
+Desligada ao entrar, sempre — a seção "Câmera" de `design/07-chamada.md`.
+
+Permissão pedida no clique, nunca ao entrar na chamada de voz. 720p30 padrão,
+`contentHint: 'motion'`. Prévia espelhada; **a trilha publicada não**.
+`track.onended` sincroniza o botão e avisa — botão aceso com imagem congelada é
+pior que desligado.
+
+A prévia das configurações desliga ao fechar o painel. Luz de câmera acesa por
+painel esquecido aberto é quebra de confiança, não descuido de código.
+
+### Atalhos
+
+`Ctrl/⌘ ⇧ M` microfone e `Ctrl/⌘ ⇧ D` chamada já existem. Acrescente
+`Ctrl/⌘ ⇧ A` ensurdecer, `Ctrl/⌘ ⇧ V` câmera, `Ctrl/⌘ ⇧ E` compartilhar tela e
+`Alt ⇧ C` ir para a chamada em andamento. Nenhum deles pode colidir com o que o
+navegador reserva — a lista está em `design/02-shell-principal.md`.
+
 ### Barra de chamada
 
-56px acima do elenco, com **borda superior de 2px em `--ember`** — a única borda
+56px acima do elenco, com **borda superior de 2px em `--live`** — a única borda
 saturada da interface, e por isso impossível esquecer que o microfone está aberto.
 
 Controles com estado desligado em `--danger` **e barra diagonal**, nunca só cor.
@@ -63,7 +113,7 @@ Indicador de qualidade em três barras, com a explicação quando a imagem piora
 Sobreposição sobre a conversa, não janela nova. Layout automático: 1 ocupa tudo,
 2 lado a lado, 3 e 4 em 2×2, 5 em 3+2.
 
-**Quem está falando**: borda `--ember` entrando em 120ms e saindo em 400ms. A
+**Quem está falando**: borda `--live` entrando em 120ms e saindo em 400ms. A
 assimetria é essencial — com tempos iguais, quatro pessoas conversando produzem
 um efeito estroboscópico. Use `ActiveSpeakersChanged`, que já tem histerese. Não
 anime a cada frame de áudio.
@@ -155,3 +205,11 @@ diz onde clicar:
 - Rede caindo reconecta sozinho
 - Sem `SHARE_SCREEN`, o botão não aparece e o token não permite
 - `turnutils_uclient` contra um IP interno é recusado
+- Trocar de microfone na lista muda o que os outros ouvem, sem derrubar a chamada
+- Tirar o fone USB no meio da chamada cai para o próximo e diz qual assumiu
+- O medidor responde ao volume de entrada, e não ao volume antes dele
+- Limiar manual corta sem estalo e sem comer o fim da frase
+- Onde não há `setSinkId`, a lista de saída aparece desabilitada com o motivo
+- Entrar numa chamada de voz **não** acende a luz da câmera
+- A prévia da câmera apaga ao fechar as configurações
+- Ninguém vê a sua imagem espelhada

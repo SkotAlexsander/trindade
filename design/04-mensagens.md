@@ -4,6 +4,11 @@ A tela onde as pessoas passam 95% do tempo. Cada decisão aqui é multiplicada p
 milhares de repetições diárias, então densidade e ritmo importam mais do que em
 qualquer outra parte.
 
+> Revisão de 4 de setembro de 2026: `--cobalt-wash` virou `--cyan-wash`,
+> `--slate-abyss` virou `--abyss` e o destaque de busca ganhou token próprio,
+> `--mark-wash` — antes era âmbar, que hoje seria magenta e roubaria a cor
+> reservada à presença ao vivo. Ver `00-direcao-visual.md`.
+
 ---
 
 ## Anatomia
@@ -102,7 +107,7 @@ Sanitize com DOMPurify **depois** de renderizar, com whitelist de tags. Nunca
 
 ### Bloco de código
 
-`--font-mono`, 13px, fundo `--slate-abyss`, `--r-control`, padding de 12px,
+`--font-mono`, 13px, fundo `--abyss`, `--r-control`, padding de 12px,
 `border: 1px solid var(--border-soft)`. Realce com Shiki, tema alinhado à paleta.
 
 Barra superior de 24px com a linguagem em 11px `--text-tertiary` à esquerda e um
@@ -116,7 +121,7 @@ Acima de 15 linhas, colapse com um degradê e "Mostrar tudo".
 ```css
 .mention {
   color: var(--accent);
-  background: var(--cobalt-wash);
+  background: var(--cyan-wash);
   padding: 0 3px;
   border-radius: 3px;
   font-family: var(--font-ui);
@@ -129,7 +134,7 @@ Menção troca de família tipográfica: no meio da serifa, ela vira interface,
 porque é isso que ela é — um objeto clicável, não texto. É uma distinção sutil
 que a leitura registra sem que ninguém a note.
 
-Mensagem que menciona **você** ganha fundo `--cobalt-wash` na linha inteira e uma
+Mensagem que menciona **você** ganha fundo `--cyan-wash` na linha inteira e uma
 borda esquerda de 2px em `--accent`.
 
 ### Link
@@ -163,7 +168,7 @@ primeiras com "+N" na última.
 
 A citação fica acima, 12px, `--text-secondary`, truncada em uma linha, com uma
 guia em L de 1px em `--border`. Clique rola até a original e pisca-a com
-`--cobalt-wash` por 800ms.
+`--cyan-wash` por 800ms.
 
 ---
 
@@ -182,7 +187,7 @@ Chips de 22px em linha, 4px de espaço, 4px abaixo do corpo.
   font-variant-numeric: tabular-nums;
 }
 .reaction[data-mine='true'] {
-  background: var(--cobalt-wash);
+  background: var(--cyan-wash);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -346,7 +351,7 @@ a conversa.
 └──────────────────────────┘
 ```
 
-O termo encontrado ganha fundo `--ember-wash`. Este é o único uso de âmbar fora
+O termo encontrado ganha fundo `--mark-wash`. Este é o único uso de âmbar fora
 de presença ao vivo, e a justificativa é a mesma metáfora: é o que está aceso
 agora, o que você procurou.
 
