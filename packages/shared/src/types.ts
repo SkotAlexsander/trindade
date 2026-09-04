@@ -18,6 +18,8 @@ export interface User {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  /** A mancha de cor no lugar do avatar enquanto ele carrega. */
+  avatarBlurhash: string | null;
   bio: string | null;
   accentColor: string | null;
   status: UserStatus;

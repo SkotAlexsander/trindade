@@ -8,6 +8,7 @@ import { reencodar, sniffImagem } from '../lib/imagem.js';
 import * as storage from '../lib/storage.js';
 import * as attachmentsDb from '../db/attachments.js';
 import * as channelsDb from '../db/channels.js';
+import * as usersDb from '../db/users.js';
 import { toApiAttachment } from '../services/attachment-view.js';
 import { previaDeLink, thumbEmCache } from '../services/link-preview.js';
 import { RecusadoNaBusca } from '../lib/busca-externa.js';
@@ -70,15 +71,23 @@ export const fileRoutes: FastifyPluginAsyncZod = async (app) => {
     { schema: { params: z.object({ '*': z.string().min(1).max(200) }) } },
     async (req, reply) => {
       const chave = req.params['*'];
+
+      // Duas coisas moram aqui: anexo de mensagem e avatar. A consulta é o que
+      // impede que a rota vire um leitor genérico do bucket — só se serve o
+      // que alguma linha do banco reconhece como arquivo nosso.
       const anexo = await attachmentsDb.findByStorageKey(chave);
-      if (!anexo) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
+      const dono = anexo ? null : await usersDb.findUserByAvatarKey(chave);
+      if (!anexo && !dono) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
 
       const objeto = await storage.buscar(chave);
       if (!objeto) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
 
-      const imagem = anexo.content_type.startsWith('image/');
+      // Avatar sempre saiu do `sharp` e é sempre WebP.
+      const contentType = anexo ? anexo.content_type : 'image/webp';
+      const nomeParaBaixar = anexo ? anexo.filename : `avatar-${dono?.username ?? 'pessoa'}.webp`;
+      const imagem = contentType.startsWith('image/');
       return reply
-        .header('content-type', anexo.content_type)
+        .header('content-type', contentType)
         // `nosniff` sempre: sem ele o navegador adivinha o tipo pelo conteúdo
         // e o `octet-stream` que serve tudo que não é imagem deixa de valer.
         .header('x-content-type-options', 'nosniff')
@@ -86,7 +95,7 @@ export const fileRoutes: FastifyPluginAsyncZod = async (app) => {
         // que impede um arquivo enviado por alguém de rodar como página nossa.
         .header(
           'content-disposition',
-          `${imagem ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(anexo.filename)}`,
+          `${imagem ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(nomeParaBaixar)}`,
         )
         .header('cache-control', 'private, max-age=31536000, immutable')
         .header('cross-origin-resource-policy', 'same-site')

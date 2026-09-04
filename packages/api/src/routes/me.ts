@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import QRCode from 'qrcode';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { passwordSchema, roleSchema, userSchema } from '@trindade/shared';
+import {
+  bioSchema,
+  displayNameSchema,
+  hexColorSchema,
+  passwordSchema,
+  roleSchema,
+  userSchema,
+  userStatusSchema,
+} from '@trindade/shared';
 import { badRequest, unauthorized } from '../lib/errors.js';
 import { hashPassword, verifyPassword } from '../lib/auth/password.js';
 import { isPasswordBreached } from '../lib/auth/breached.js';
@@ -20,6 +28,9 @@ import * as tokensDb from '../db/refresh-tokens.js';
 import * as recoveryDb from '../db/recovery-codes.js';
 import { toApiRole, toApiUser } from '../services/user-view.js';
 import { userKey } from '../lib/client-key.js';
+import { reencodarAvatar, sniffImagem } from '../lib/imagem.js';
+import * as storage from '../lib/storage.js';
+import { gateway } from '../ws/index.js';
 
 export const meRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.authenticate);
@@ -45,6 +56,114 @@ export const meRoutes: FastifyPluginAsyncZod = async (app) => {
         permissions: me.permissions.toString(),
         roles: me.roles.map(toApiRole),
       };
+    },
+  );
+
+  app.patch(
+    '/me',
+    {
+      schema: {
+        // Cada campo é opcional, e `null` é diferente de ausente: ausente
+        // significa "não mexa", `null` significa "apague". `.nullish()` aceita
+        // os dois e o `db/users.ts` sabe distinguir.
+        body: z.object({
+          displayName: displayNameSchema.optional(),
+          bio: bioSchema.nullish(),
+          accentColor: hexColorSchema.nullish(),
+          status: userStatusSchema.optional(),
+          customStatus: z.string().max(64).nullish(),
+        }),
+        response: { 200: z.object({ user: userSchema }) },
+      },
+    },
+    async (req) => {
+      const me = requireUser(req);
+      const linha = await usersDb.updateProfile(me.id, req.body);
+      if (!linha) throw badRequest('USER_NOT_FOUND', 'sua conta sumiu');
+
+      const usuario = toApiUser(linha, me.roles);
+      gateway.broadcast({ op: 'USER_UPDATE', d: usuario });
+      return { user: usuario };
+    },
+  );
+
+  // --- avatar -------------------------------------------------------------
+  //
+  // Nenhum byte original chega ao disco. Foto de celular carrega EXIF com
+  // coordenadas de GPS, e servir o arquivo original faria cada pessoa publicar
+  // onde mora sem saber. Ver docs/04-seguranca.md, "Upload de arquivo".
+
+  app.post(
+    '/me/avatar',
+    {
+      config: { rateLimit: { max: 10, timeWindow: '1 hour', keyGenerator: userKey } },
+      schema: {
+        response: {
+          200: z.object({
+            avatarUrl: z.string().nullable(),
+            avatarBlurhash: z.string().nullable(),
+            user: userSchema,
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const me = requireUser(req);
+      if (!storage.storageConfigurado()) {
+        throw badRequest('STORAGE_OFF', 'o armazenamento de arquivos não está configurado');
+      }
+
+      const parte = await req.file({ limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
+      if (!parte) throw badRequest('NO_FILE', 'nenhum arquivo veio no formulário');
+
+      const bruto = await parte.toBuffer();
+      if (parte.file.truncated) throw badRequest('FILE_TOO_LARGE', 'a foto passa de 8 MB');
+      if (bruto.length === 0) throw badRequest('EMPTY_FILE', 'arquivo vazio');
+
+      // O tipo real vem dos bytes: um `.txt` renomeado para `.png` não passa
+      // daqui, e o `Content-Type` declarado nunca entra na decisão.
+      if (!sniffImagem(bruto)) {
+        throw badRequest('UNSUPPORTED_MEDIA_TYPE', 'isso não é uma imagem');
+      }
+
+      let processada;
+      try {
+        processada = await reencodarAvatar(bruto);
+      } catch (err) {
+        req.log.warn({ err }, 'avatar recusado pelo re-encode');
+        throw badRequest('INVALID_IMAGE', 'não consegui ler essa imagem');
+      }
+
+      const chave = storage.novaChave('avatares');
+      await storage.guardar(chave, processada.buffer, processada.contentType);
+
+      const troca = await usersDb.trocarAvatar(me.id, chave, processada.blurhash);
+      if (!troca) throw badRequest('USER_NOT_FOUND', 'sua conta sumiu');
+
+      // A foto velha sai só depois que o banco já aponta para a nova. Na ordem
+      // inversa, uma falha no meio deixaria a linha apontando para um arquivo
+      // que não existe mais; assim, o pior caso é um arquivo órfão.
+      if (troca.anterior) await storage.apagar(troca.anterior);
+
+      const usuario = toApiUser(troca.user, me.roles);
+      gateway.broadcast({ op: 'USER_UPDATE', d: usuario });
+      return {
+        avatarUrl: usuario.avatarUrl,
+        avatarBlurhash: usuario.avatarBlurhash,
+        user: usuario,
+      };
+    },
+  );
+
+  app.delete(
+    '/me/avatar',
+    { schema: { response: { 204: z.null() } } },
+    async (req, reply) => {
+      const me = requireUser(req);
+      const troca = await usersDb.trocarAvatar(me.id, null, null);
+      if (troca?.anterior) await storage.apagar(troca.anterior);
+      if (troca) gateway.broadcast({ op: 'USER_UPDATE', d: toApiUser(troca.user, me.roles) });
+      return reply.code(204).send(null);
     },
   );
 

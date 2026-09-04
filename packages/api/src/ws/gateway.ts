@@ -113,6 +113,33 @@ export function broadcast(evento: ServerEvent, exceto?: string): void {
 }
 
 /**
+ * Fecha todas as conexões de alguém agora.
+ *
+ * Existe porque desativar uma conta não pode esperar a revalidação de 60s: a
+ * conexão vive muito mais que os 15 minutos do access token, e enquanto o
+ * socket está de pé a pessoa continua lendo tudo o que passa.
+ */
+export function derrubar(userId: string, codigo: number, motivo: string): void {
+  for (const conn of sessionsOf(userId)) conn.ws.close(codigo, motivo);
+}
+
+/**
+ * Avisa alguém de que a permissão mudou, sem esperar a revalidação.
+ *
+ * O `conn.permissions` é atualizado junto: ele é o que autoriza cada evento
+ * que chega pelo socket, e deixá-lo velho manteria a permissão antiga valendo
+ * de verdade — não só na interface.
+ */
+export function avisarPermissoes(userId: string, permissoes?: bigint): void {
+  for (const conn of sessionsOf(userId)) {
+    if (permissoes !== undefined) conn.permissions = permissoes;
+    // Sem o valor novo em mãos, a revalidação periódica corrige em até 60s; o
+    // aviso aqui serve para a interface se ajustar na hora.
+    send(conn, { op: 'PERMISSIONS_UPDATE', d: { permissions: conn.permissions.toString() } });
+  }
+}
+
+/**
  * Presença que os outros veem.
  *
  * `invisible` sai como `offline`. O filtro é aqui, no servidor: mandar o

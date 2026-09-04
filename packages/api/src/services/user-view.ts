@@ -20,8 +20,8 @@ export function toApiUser(row: UserRow, roles: readonly RoleRow[]): User {
     id: row.id,
     username: row.username,
     displayName: row.display_name,
-    // A rota que serve o arquivo entra na fase 6, junto com o upload.
     avatarUrl: row.avatar_key ? `/api/files/${row.avatar_key}` : null,
+    avatarBlurhash: row.avatar_blurhash,
     bio: row.bio,
     accentColor: row.accent_color,
     status: row.status,

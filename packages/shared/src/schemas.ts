@@ -53,6 +53,7 @@ export const userSchema = z.object({
   username: usernameSchema,
   displayName: displayNameSchema,
   avatarUrl: z.string().nullable(),
+  avatarBlurhash: z.string().nullable(),
   bio: bioSchema.nullable(),
   accentColor: hexColorSchema.nullable(),
   status: userStatusSchema,

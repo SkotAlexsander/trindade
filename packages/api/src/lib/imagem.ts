@@ -104,3 +104,32 @@ async function calcularBlurhash(webp: Buffer): Promise<string | null> {
     return null;
   }
 }
+
+/** O lado do avatar. 256 basta: ele nunca aparece maior que 64 na interface. */
+const LADO_DO_AVATAR = 256;
+
+/**
+ * O avatar: quadrado, 256×256, cortado pelo centro.
+ *
+ * `fit: 'cover'` e não `contain` porque o avatar é sempre um círculo na
+ * interface — sobra branca em volta apareceria como um anel.
+ *
+ * O pipeline é o mesmo de `reencodar`, e pela mesma razão: o metadado some, o
+ * formato é validado de verdade, e o `limitInputPixels` barra a bomba de
+ * descompressão. Ver docs/04-seguranca.md.
+ */
+export async function reencodarAvatar(bruto: Buffer): Promise<ImagemProcessada> {
+  const saida = await sharp(bruto, { limitInputPixels: PIXELS_MAXIMOS })
+    .rotate()
+    .resize(LADO_DO_AVATAR, LADO_DO_AVATAR, { fit: 'cover' })
+    .webp({ quality: 82 })
+    .toBuffer({ resolveWithObject: true });
+
+  return {
+    buffer: saida.data,
+    contentType: 'image/webp',
+    width: saida.info.width,
+    height: saida.info.height,
+    blurhash: await calcularBlurhash(saida.data),
+  };
+}

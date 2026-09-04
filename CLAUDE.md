@@ -415,7 +415,8 @@ e `013_boards` (fase 10). Duas migrations não previstas entraram no caminho:
 | `013_saved_messages` | favoritar mensagem não existia no pacote; pedido do dono do projeto em 4 de setembro de 2026 |
 | `014_anexos_pendentes` | a 008 declarou `attachments.message_id not null`, e o upload começa **antes** da mensagem existir; faltavam também `uploader_id` e `channel_id` |
 | `015_ordem_dos_anexos` | sem `sort_order` a grade saía na ordem em que os uploads terminaram, não na que a pessoa escolheu |
+| `016_avatar_blurhash` | a 002 guardou `avatar_key` e mais nada; a fase 6 pede a mancha de cor enquanto a foto carrega |
 
-**As migrations das fases 9 e 10 andam cinco números:** `polls` vira **016**,
-`conversations` **017** e `boards` **018**. Migration aplicada não se edita; se
+**As migrations das fases 9 e 10 andam seis números:** `polls` vira **017**,
+`conversations` **018** e `boards` **019**. Migration aplicada não se edita; se
 algo estiver errado, crie a próxima.

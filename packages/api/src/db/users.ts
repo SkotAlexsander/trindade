@@ -5,6 +5,7 @@ export interface UserRow {
   username: string;
   display_name: string;
   avatar_key: string | null;
+  avatar_blurhash: string | null;
   bio: string | null;
   accent_color: string | null;
   status: 'online' | 'idle' | 'busy' | 'invisible' | 'offline';
@@ -26,8 +27,9 @@ export interface RoleRow {
 }
 
 const USER_COLUMNS = sql`
-  id, username, display_name, avatar_key, bio, accent_color, status,
-  custom_status, disabled_at, totp_secret, totp_enabled_at, password_hash, created_at
+  id, username, display_name, avatar_key, avatar_blurhash, bio, accent_color,
+  status, custom_status, disabled_at, totp_secret, totp_enabled_at,
+  password_hash, created_at
 `;
 
 export async function anyUserExists(): Promise<boolean> {
@@ -207,4 +209,126 @@ export async function disableTotp(userId: string): Promise<void> {
     set totp_secret = null, totp_enabled_at = null, updated_at = now()
     where id = ${userId}
   `;
+}
+
+// --- perfil ----------------------------------------------------------------
+
+/**
+ * Atualiza só o que veio.
+ *
+ * `undefined` significa "não mexa", e `null` significa "apague" — os dois
+ * chegam do `PATCH`, e confundi-los faria limpar a bio de quem só queria
+ * trocar o nome. Por isso cada campo tem o seu `case`, e não um `coalesce`.
+ */
+export async function updateProfile(
+  userId: string,
+  campos: {
+    displayName?: string;
+    bio?: string | null;
+    accentColor?: string | null;
+    status?: UserRow['status'];
+    customStatus?: string | null;
+  },
+): Promise<UserRow | null> {
+  const pedacos = [];
+  if (campos.displayName !== undefined) pedacos.push(sql`display_name = ${campos.displayName}`);
+  if (campos.bio !== undefined) pedacos.push(sql`bio = ${campos.bio}`);
+  if (campos.accentColor !== undefined) pedacos.push(sql`accent_color = ${campos.accentColor}`);
+  if (campos.status !== undefined) pedacos.push(sql`status = ${campos.status}`);
+  if (campos.customStatus !== undefined) pedacos.push(sql`custom_status = ${campos.customStatus}`);
+  if (pedacos.length === 0) return findUserById(userId);
+
+  const atribuicoes = pedacos.reduce((acc, p) => sql`${acc}, ${p}`);
+  const linhas = await sql<{ id: string }[]>`
+    update users set ${atribuicoes}, updated_at = now()
+     where id = ${userId}
+    returning id
+  `;
+  return linhas[0] ? findUserById(userId) : null;
+}
+
+/**
+ * Troca o avatar e devolve a chave **anterior**, para quem chamou apagá-la do
+ * storage. A ordem importa: primeiro o banco aponta para a foto nova, depois a
+ * velha sai do disco. Se cair no meio, sobra um arquivo órfão — melhor que uma
+ * linha apontando para um arquivo que já não existe.
+ */
+export async function trocarAvatar(
+  userId: string,
+  chave: string | null,
+  blurhash: string | null,
+): Promise<{ user: UserRow; anterior: string | null } | null> {
+  return sql.begin(async (tx) => {
+    // Lê a chave velha e escreve a nova na mesma transação. Fazer isso com um
+    // subselect dentro do `returning` dependeria de qual snapshot o Postgres
+    // usa ali dentro — funciona, e ninguém que leia o código sabe dizer por
+    // quê. Duas linhas explícitas custam nada.
+    const antes = await tx<{ avatar_key: string | null }[]>`
+      select avatar_key from users where id = ${userId} for update
+    `;
+    if (!antes[0]) return null;
+
+    const linhas = await tx<UserRow[]>`
+      update users
+         set avatar_key = ${chave}, avatar_blurhash = ${blurhash}, updated_at = now()
+       where id = ${userId}
+      returning ${USER_COLUMNS}
+    `;
+    const user = linhas[0];
+    return user ? { user, anterior: antes[0].avatar_key } : null;
+  });
+}
+
+// --- cargos ----------------------------------------------------------------
+
+/**
+ * A posição do maior cargo de alguém — a régua da hierarquia.
+ *
+ * Quem não tem cargo nenhum fica em `-1`, e não em `0`: `0` é a posição real do
+ * cargo `Membro`, e confundir os dois deixaria alguém sem cargo mexer em quem
+ * tem `Membro`.
+ */
+export async function maiorPosicao(userId: string): Promise<number> {
+  const linhas = await sql<{ posicao: number | null }[]>`
+    select max(r.position) as posicao
+      from roles r join user_roles ur on ur.role_id = r.id
+     where ur.user_id = ${userId}
+  `;
+  return linhas[0]?.posicao ?? -1;
+}
+
+/** Substitui o conjunto inteiro de cargos, numa transação. */
+export async function setRolesOfUser(
+  userId: string,
+  roleIds: readonly string[],
+  grantedBy: string,
+): Promise<RoleRow[]> {
+  await sql.begin(async (tx) => {
+    await tx`delete from user_roles where user_id = ${userId}`;
+    if (roleIds.length > 0) {
+      await tx`
+        insert into user_roles (user_id, role_id, granted_by)
+        select ${userId}, id, ${grantedBy}
+          from unnest(${sql.array(roleIds as string[])}::uuid[]) as pedido(id)
+      `;
+    }
+  });
+  return findRolesOfUser(userId);
+}
+
+export async function setDisabled(userId: string, desativado: boolean): Promise<UserRow | null> {
+  const linhas = await sql<{ id: string }[]>`
+    update users set disabled_at = ${desativado ? sql`now()` : null}, updated_at = now()
+     where id = ${userId}
+    returning id
+  `;
+  return linhas[0] ? findUserById(userId) : null;
+}
+
+/** Quem é o dono desta foto. A rota de arquivo pergunta antes de servir. */
+export async function findUserByAvatarKey(chave: string): Promise<UserRow | null> {
+  const linhas = await sql<UserRow[]>`
+    select ${USER_COLUMNS} from users where avatar_key = ${chave}
+  `;
+  return linhas[0] ?? null;
 }

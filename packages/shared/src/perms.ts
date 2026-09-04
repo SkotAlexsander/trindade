@@ -45,3 +45,20 @@ export function can(perms: bigint, need: bigint): boolean {
 export function combinePermissions(roles: readonly { permissions: string }[]): bigint {
   return roles.reduce((acc, role) => acc | BigInt(role.permissions), 0n);
 }
+
+/** Todos os bits que existem hoje. O `OR` de `Perm`, calculado uma vez. */
+export const TODAS_AS_PERMISSOES = Object.values(Perm).reduce((acc, bit) => acc | bit, 0n);
+
+/**
+ * `minhas` cobre `pedidas` inteiras?
+ *
+ * Diferente de `can`, que pergunta "tem **alguma** destas" e é o que serve
+ * para checar uma permissão por vez. Aqui a pergunta é outra: "não sobra
+ * nenhum bit pedido que eu não tenha". Usar `can` neste lugar deixaria passar
+ * um conjunto inteiro por causa de um bit em comum — e este é o teste que
+ * impede alguém de criar um cargo com poderes que não são seus.
+ */
+export function abrange(minhas: bigint, pedidas: bigint): boolean {
+  if ((minhas & Perm.ADMINISTRATOR) !== 0n) return true;
+  return (pedidas & ~minhas) === 0n;
+}

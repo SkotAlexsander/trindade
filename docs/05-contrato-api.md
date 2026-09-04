@@ -86,11 +86,22 @@ Todos opcionais. → `200 { user: User }` e broadcast `USER_UPDATE`.
 
 ### `POST /me/avatar`
 
-`multipart/form-data`, campo `file`. Máx. 8 MB.
-→ `200 { avatarKey, avatarUrl }` e broadcast `USER_UPDATE`.
-Apaga o avatar anterior do storage.
+`multipart/form-data`, campo `file`. Máx. 8 MB, 10 por hora.
+→ `200 { avatarUrl, avatarBlurhash, user }` e broadcast `USER_UPDATE`.
 
-Erros: `UNSUPPORTED_MEDIA_TYPE`, `FILE_TOO_LARGE`, `INVALID_IMAGE`.
+> A resposta devolve o `User` inteiro em vez do `avatarKey` do rascunho
+> original. A chave é detalhe de armazenamento e o cliente nunca a monta em
+> URL nenhuma; o `User` é o que ele precisa para atualizar o próprio estado.
+
+Re-encodado para WebP 256×256, `fit: 'cover'`, com todo metadado descartado —
+inclusive as coordenadas de GPS de uma foto de celular. O tipo é decidido pelos
+**bytes**; SVG fica de fora, como nos anexos. Apaga o avatar anterior do
+storage, e nessa ordem: o banco aponta para a foto nova primeiro. O pior caso
+de uma falha no meio é um arquivo órfão, nunca uma linha apontando para um
+arquivo que não existe.
+
+Erros: `UNSUPPORTED_MEDIA_TYPE`, `FILE_TOO_LARGE`, `EMPTY_FILE`,
+`INVALID_IMAGE`, `NO_FILE`, `STORAGE_OFF`.
 
 ### `DELETE /me/avatar` → `204`
 
@@ -135,14 +146,49 @@ Mesma checagem de hierarquia. Fecha as conexões WebSocket da pessoa. → `204`
 
 ### `POST /users/:id/enable` → `204`
 
-### Cargos — todos exigem `MANAGE_ROLES`
+### Cargos
 
-- `GET /roles` → `200 { roles: Role[] }`
-- `POST /roles` `{ name, color, permissions, position }` → `201`
-- `PATCH /roles/:id` → `200`
-- `DELETE /roles/:id` → `204` (rejeita se `is_default`)
+- `GET /roles` → `200 { roles: Role[] }` — **qualquer pessoa autenticada**. O
+  chip de cargo no cartão de perfil precisa do nome e da cor de todo mundo;
+  nada aqui é segredo, o segredo seria poder mudar.
 
-`permissions` sempre string no JSON.
+Os demais exigem `MANAGE_ROLES`:
+
+- `POST /roles` `{ name, color?, permissions? }` → `201 { role }`
+- `PATCH /roles/:id` `{ name?, color?, permissions? }` → `200 { role }`
+- `PUT /roles/order` `{ roleIds }` → `200 { roles }`
+- `DELETE /roles/:id` → `204` (rejeita `is_default` com `DEFAULT_ROLE`)
+
+> `position` **não** entra no corpo do `POST`, ao contrário do rascunho
+> original: o cargo nasce logo abaixo de quem o criou. Deixar o cliente
+> escolher a posição daria a qualquer gestor de cargos um caminho de uma
+> chamada até o topo da hierarquia.
+
+Reordenar vai numa chamada só, com a lista **inteira** na ordem final
+(`INCOMPLETE_ORDER` se faltar alguém). Mandar uma posição por vez deixaria a
+lista passar por estados em que dois cargos empatam — e é a comparação de
+posições que autoriza quem mexe em quem.
+
+`permissions` sempre string no JSON. Bit fora dos que existem hoje é recusado
+com `INVALID_PERMISSIONS`: gravar um bit da faixa reservada faria o cargo ganhar
+sozinho a permissão que um dia ocupasse esse número.
+
+### As três regras de hierarquia
+
+Todas devolvem `403 HIERARCHY_VIOLATION`. Sem elas, `MANAGE_ROLES` **é**
+`ADMINISTRATOR` — quem atribui cargos se atribui o de administrador no primeiro
+clique.
+
+1. Ninguém mexe em cargo de `position` **maior ou igual** ao seu maior cargo.
+   "Ou igual" não é excesso: dois cargos de mesma posição poderiam se remover
+   em círculo.
+2. Ninguém mexe em pessoa com cargo maior ou igual ao seu — nem na própria
+   conta por esta porta.
+3. Ninguém dá a um cargo permissão que não tem. Sem isto, criar o cargo e
+   vesti-lo em seguida contornaria as outras duas.
+
+`ADMINISTRATOR` passa por cima da comparação de posições, e continua sendo o
+único lugar do projeto onde isso acontece.
 
 ---
 
@@ -155,8 +201,28 @@ Mesma checagem de hierarquia. Fecha as conexões WebSocket da pessoa. → `204`
 ```
 → `201 { code, url, expiresAt }`
 
-### `GET /invites` → `200 { invites: Invite[] }`
-### `DELETE /invites/:code` → `204`
+### `GET /invites` → `200 { invites: Invite[] }` — exige `CREATE_INVITE`
+
+```typescript
+interface Invite {
+  code: string;
+  url: string;
+  note: string | null;
+  createdBy: string;   // nome de exibição
+  usedBy: string | null;
+  usedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+```
+
+Lista os que ainda valem e os já usados. Convite expirado e não usado some: ele
+não é histórico de nada.
+
+### `DELETE /invites/:code` → `204` — exige `CREATE_INVITE`
+
+Convite já usado devolve `404 INVITE_NOT_FOUND`: ele virou uma conta, e apagar
+o registro só apagaria a memória de quem convidou quem.
 ### `GET /invites/:code/preview` — público
 
 → `200 { valid: true, serverName: "Trindade", invitedBy: "Ana" }`
@@ -399,6 +465,7 @@ export interface User {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  avatarBlurhash: string | null;
   bio: string | null;
   accentColor: string | null;
   status: 'online' | 'idle' | 'busy' | 'invisible' | 'offline';
