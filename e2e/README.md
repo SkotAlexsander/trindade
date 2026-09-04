@@ -286,6 +286,17 @@ Cada roteiro cria um usuário novo a cada corrida. Isso não é capricho: a chav
 rate limit do login inclui o nome do usuário, e reaproveitar a mesma conta faz a
 segunda execução travar em 429.
 
+## Não rode a suíte da API junto com os roteiros
+
+As duas usam **o mesmo banco**, e os testes da API chamam `resetDatabase()`
+entre blocos. Rodar `pnpm test` e um roteiro do Playwright ao mesmo tempo faz os
+dois falharem em lugares que não têm nada a ver com o que quebrou — e, pior, com
+falhas diferentes a cada corrida.
+
+Aconteceu aqui: seis testes da API falharam numa corrida em segundo plano
+enquanto um roteiro do navegador semeava o histórico. Repetidos sozinhos,
+passaram os 148.
+
 ## Se a suíte travar em "Timeout ... waiting for navigation"
 
 Quase sempre é o rate limit do login: cinco tentativas por 15 minutos por
