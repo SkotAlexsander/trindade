@@ -143,9 +143,20 @@ Tomadas no Passo 0. Não reabrir sem me perguntar.
 - **E-mail no cadastro:** não. Não existe "esqueci minha senha" — recuperação é
   reset manual por um admin, e `pnpm bootstrap` cobre o caso do banco vazio.
   Não crie campo de e-mail, SMTP nem fluxo de verificação.
-- **Hospedagem:** a definir. Até decidir, assuma um VPS único com coturn e
-  LiveKit no mesmo servidor, mas mantenha os endereços deles em variável de
-  ambiente para que separar depois não exija mudar código.
+- **Hospedagem:** Cloudflare na frente, VPS único atrás.
+  - HTTP e WebSocket passam pelo proxy da Cloudflare; o DNS aponta para eles e o
+    firewall só aceita 443 vindo dos ranges deles (`docs/04-seguranca.md`).
+  - Arquivos em **R2** na produção, **MinIO** no `docker compose` de
+    desenvolvimento. Mesma interface S3 nos dois; a escolha é só de variável de
+    ambiente. Nunca importe SDK específico da Cloudflare.
+  - Upload continua passando pela API (multipart, 8 MB, re-encode obrigatório).
+    Não invente URL assinada para o cliente subir direto ao R2 — isso pularia o
+    re-encode e violaria a regra de metadado de imagem.
+  - API, Postgres, coturn e LiveKit ficam num VPS único por ora. **Mídia não
+    passa pela Cloudflare** — é UDP. O IP do TURN é visível por natureza; se
+    isso incomodar depois, coturn e LiveKit saem para um segundo servidor. Por
+    isso os endereços deles são variável de ambiente desde a fase 1, nunca
+    literal no código.
 - **Desktop:** sim, Tauri na fase 8. A partir de agora, evite APIs de navegador
   que o Tauri trata diferente — notificação, bandeja e atalho global passam por
   uma camada de abstração em `packages/web/src/lib/`, nunca chamadas diretas
