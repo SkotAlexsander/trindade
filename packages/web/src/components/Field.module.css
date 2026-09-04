@@ -1,0 +1,89 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+/* Rótulo acima do campo, nunca placeholder no lugar dele: o placeholder some
+   quando a pessoa digita e ela perde a referência do que está preenchendo. */
+.label {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  transition: border-color var(--dur-instant) var(--ease-out);
+}
+
+.wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent);
+}
+
+/* O anel vai no campo inteiro, não no <input>: com adorno ao lado, o anel só
+   no input parte o campo em duas caixas. */
+.control:focus-visible {
+  box-shadow: none;
+}
+
+.wrap:has(.control:focus-visible) {
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-field);
+}
+
+.wrap[data-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.control {
+  flex: 1;
+  min-width: 0;
+  height: var(--field-h);
+  padding: 0 var(--s-3);
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.control:focus {
+  outline: none;
+}
+
+.control::placeholder {
+  color: var(--text-tertiary);
+}
+
+.control:disabled {
+  color: var(--text-tertiary);
+}
+
+.textarea {
+  height: auto;
+  min-height: calc(var(--field-h) * 2);
+  padding: var(--s-2) var(--s-3);
+  resize: vertical;
+  line-height: var(--leading-ui);
+}
+
+.adornment {
+  display: flex;
+  align-items: center;
+  padding-right: var(--s-2);
+  color: var(--text-tertiary);
+}
+
+.hint {
+  font-size: var(--text-label);
+  color: var(--text-tertiary);
+}
+
+.error {
+  font-size: var(--text-label);
+  color: var(--danger);
+}

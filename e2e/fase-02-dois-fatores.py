@@ -230,15 +230,18 @@ with sync_playwright() as p:
     # --- 8. anel de foco envolve o campo inteiro ------------------------
     page.goto(f'{BASE}/entrar')
     page.wait_for_load_state('networkidle')
-    page.keyboard.press('Tab')
+    # Um Tab só: o campo de usuário tem autofoco, então o segundo cairia no
+    # botão do olho — que é um <button> e recebe o anel dele mesmo, com razão.
+    # O que se quer medir aqui é o campo.
     page.keyboard.press('Tab')
     page.wait_for_timeout(300)
     page.screenshot(path=str(SHOTS / '24-anel-de-foco.png'))
 
     anel = page.evaluate("""() => {
         const input = document.activeElement;
-        const wrap = input.parentElement;
+        const wrap = input.closest('div');
         return {
+            foco: input.tagName + ':' + (input.getAttribute('autocomplete') || ''),
             noInput: getComputedStyle(input).boxShadow,
             noCampo: getComputedStyle(wrap).boxShadow,
         };

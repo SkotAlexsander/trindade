@@ -1,9 +1,41 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <title>Trindade</title>
+
+    <!-- A fonte que aparece acima da dobra em toda tela. O restante entra por
+         font-display: swap, sem bloquear a pintura. -->
+    <link
+      rel="preload"
+      href="/fonts/instrument-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <script>
+      /* Carimba o tema antes da primeira pintura.
+       *
+       * Sem isto a página nasce no tema padrão e troca quando o React monta —
+       * a piscada branca que design/01-tokens.md manda evitar. Lê o mesmo
+       * cookie que lib/tema.ts escreve; quando o front passar a ser servido
+       * pelo Node, quem carimba é o servidor e este bloco sai. */
+      (function () {
+        try {
+          var m = document.cookie.match(/(?:^|; )tema=(dark|light|system)/);
+          var t = m ? m[1] : 'system';
+          if (t === 'system') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

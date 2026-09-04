@@ -1,0 +1,77 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-full);
+  object-fit: cover;
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  user-select: none;
+}
+
+.xs {
+  width: var(--avatar-xs);
+  height: var(--avatar-xs);
+  font-size: var(--text-meta);
+}
+
+.sm {
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  font-size: var(--text-meta);
+}
+
+.md {
+  width: var(--avatar-md);
+  height: var(--avatar-md);
+  font-size: var(--text-label);
+}
+
+.lg {
+  width: var(--avatar-lg);
+  height: var(--avatar-lg);
+  font-size: var(--text-ui);
+}
+
+.xl {
+  width: var(--avatar-xl);
+  height: var(--avatar-xl);
+  font-size: var(--text-title);
+}
+
+/* Status como anel em volta do avatar, não como bolinha colada num canto:
+   o anel sobrevive a qualquer fundo e não some no avatar pequeno. */
+.root[data-status] .face {
+  box-shadow: 0 0 0 var(--avatar-ring) var(--bg-app), 0 0 0 calc(var(--avatar-ring) * 2) currentColor;
+}
+
+.root[data-status='online'] {
+  color: var(--status-online);
+}
+
+.root[data-status='idle'] {
+  color: var(--status-idle);
+}
+
+.root[data-status='busy'] {
+  color: var(--status-busy);
+}
+
+.root[data-status='offline'] {
+  color: var(--status-offline);
+}
+
+/* Invisível se mostra como offline: quem escolheu ficar invisível não aparece
+   diferente para os outros. */
+.root[data-status='invisible'] {
+  color: var(--status-offline);
+}

@@ -1,0 +1,188 @@
+/* Reset, fontes e regras globais.
+ *
+ * Importado depois de tokens.css e antes de qualquer componente. Nenhum valor
+ * literal de cor, espaço, raio ou duração aqui — tudo vem dos tokens. */
+
+/* --- fontes ------------------------------------------------------------
+ *
+ * Arquivos locais em /fonts/, nunca CDN. Fonte de terceiro é uma requisição
+ * para fora que entrega o IP de quem lê a cada carregamento — incoerente com
+ * um produto que força relay no WebRTC para esconder exatamente isso.
+ * Ver docs/04-seguranca.md e prompts/fase-03-design-system.md.
+ *
+ * Duas famílias: Instrument Sans para tudo, JetBrains Mono só para código e
+ * números tabulares. Só latin e latin-ext — cirílico, grego e vietnamita
+ * seriam peso morto. Ambas variáveis: um arquivo cobre toda a faixa de peso. */
+
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* --- reset -------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  /* Impede o Safari de aumentar o texto sozinho ao girar o aparelho. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  line-height: var(--leading-ui);
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Corpo de mensagem. A serifa saiu junto com a direção anterior — numa
+   interface de comando ela destoa. Ver design/00-direcao-visual.md. */
+.prose,
+[data-font='read'] {
+  font-family: var(--font-read);
+  font-size: var(--text-body);
+  line-height: var(--leading-read);
+  max-width: var(--measure);
+}
+
+code,
+pre,
+kbd,
+samp,
+[data-font='mono'] {
+  font-family: var(--font-mono);
+}
+
+/* Coluna de números alinhada: horário no gutter, contadores. */
+[data-numeric='tabular'] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- foco ---------------------------------------------------------------
+ *
+ * :focus-visible, nunca :focus — senão o anel aparece em clique de mouse.
+ * E jamais outline: none sem substituto. */
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-control);
+}
+
+/* --- movimento ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

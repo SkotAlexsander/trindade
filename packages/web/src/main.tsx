@@ -3,8 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
+import { ToastProvider } from './components';
 import './styles/tokens.css';
-import './styles/reset.css';
+import './styles/globals.css';
 
 // Sem polling. Se o WebSocket cai, o cliente reconecta e refaz o fetch inicial.
 // Ver docs/02-arquitetura.md.
@@ -21,7 +22,9 @@ createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

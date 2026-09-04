@@ -3,18 +3,29 @@
 Leia este arquivo antes de qualquer outro de design. Ele explica de onde vêm as
 decisões dos demais. Sem ele, os tokens parecem arbitrários.
 
+> **Revisão de 4 de setembro de 2026.** A direção anterior era ardósia fria com
+> cobalto e âmbar, deliberadamente quieta. Foi trocada por decisão do dono do
+> projeto a partir de uma referência visual: interface de comando, quase preta,
+> com neon e cantos chanfrados. As seções de cor e tipografia foram reescritas.
+> A estrutura, a densidade e a regra de reserva de cor sobreviveram — elas não
+> dependiam da paleta. O que foi descartado está registrado no fim do arquivo,
+> para que ninguém reabra a discussão sem saber o que já se decidiu.
+
 ---
 
 ## O que estamos desenhando
 
 Um lugar de trabalho para cinco pessoas que se conhecem, aberto o dia inteiro,
-usado para decidir coisas. Não é uma plataforma social, não é um jogo, não é uma
-ferramenta corporativa.
+usado para decidir coisas.
 
-Isso já elimina três estéticas: o roxo saturado e os cantos muito arredondados do
-Discord, que existem para parecer divertido a uma audiência adolescente; o azul
-neutro e as bordas duras do Teams, que existem para parecer inofensivo a um
-departamento de TI; e o cinza sem opinião do Slack.
+A referência é a interface de comando de ficção científica: superfície escura,
+linhas finas que brilham, cantos cortados em diagonal, informação densa e
+sempre visível. O produto não finge ser um documento nem uma sala de reunião —
+ele se parece com um painel que fica ligado.
+
+Isso continua eliminando duas estéticas: o roxo saturado e os cantos muito
+arredondados do Discord, e o cinza sem opinião do Slack. A diferença é que
+agora a alternativa não é o recuo — é o compromisso com uma linguagem forte.
 
 ## O conceito: elenco fixo
 
@@ -29,24 +40,28 @@ Aqui é o contrário. Cinco pessoas cabem numa faixa permanente, sempre visível
 mostrando de relance quem está online, quem está em chamada, quem está digitando
 e quem se ausentou. **O elenco não é uma lista: é um painel de instrumentos.**
 
-Essa faixa é o elemento memorável da interface. Tudo em volta dela é quieto.
+Essa faixa é o elemento memorável da interface, e a nova direção a favorece: é
+justamente ali que o brilho e o chanfro fazem sentido literal.
 
-## A regra de cor: frio é registro, quente é presença
+## A regra de cor: ciano é comando, magenta é presença
 
-Uma segunda ideia organiza a paleta inteira, e ela vem do assunto.
+Uma segunda ideia organiza a paleta inteira. Ela sobreviveu à troca de estética
+porque nunca dependeu de quais cores eram.
 
-O que já aconteceu — histórico, mensagens gravadas, arquivos, o registro — é
-**frio**. O que está acontecendo agora — alguém falando, alguém digitando, uma
-tela sendo compartilhada, o campo onde você está escrevendo — é **quente**.
+O que você **opera** — botão, link, foco, seleção, canal ativo — é **ciano**.
+O que está **vivo** — alguém falando, alguém digitando, uma chamada em curso,
+uma tela sendo compartilhada — é **magenta**.
 
 Não é decoração. É uma regra semântica que o usuário aprende sem ler nada: se
-tem calor na tela, tem gente ali neste instante. E ela dá à interface um
-comportamento que muda ao longo do dia, ficando fria quando ninguém está e
-acendendo quando o grupo se junta.
+tem magenta na tela, tem gente ali neste instante. E ela dá à interface um
+comportamento que muda ao longo do dia, ficando monocromática quando ninguém
+está e acendendo quando o grupo se junta.
 
-Consequência prática: âmbar é reservado para presença humana ao vivo. Nunca use
-âmbar para aviso, destaque de marca, botão primário ou qualquer outra coisa. No
-momento em que âmbar significar duas coisas, a regra morre.
+Consequência prática: magenta é reservado para presença humana ao vivo. Nunca
+use magenta para aviso, destaque de marca, botão primário ou qualquer outra
+coisa. **No momento em que magenta significar duas coisas, a regra morre** — e
+numa paleta neon, onde tudo já brilha, ela é a única coisa que impede a tela de
+virar sopa luminosa.
 
 ---
 
@@ -54,55 +69,76 @@ momento em que âmbar significar duas coisas, a regra morre.
 
 ### Cor
 
-Seis valores nomeados formam a base. O tema escuro é o padrão porque o uso é de
-muitas horas seguidas, mas o tema claro é de primeira classe, não uma
-consideração posterior.
+O fundo é `#05070E`: quase preto, mas com azul real. Ao lado de um `#000` a
+diferença é evidente, e é ela que impede o neon de parecer colado sobre o vazio.
 
 ```
---slate-abyss    #0E1419   fundo da aplicação
---slate-deep     #151F26   superfície: colunas laterais
---slate-mid      #1D2A33   superfície elevada: cartões, menus
---slate-line     #26353F   divisórias e contornos
---porcelain      #E6EDF1   texto principal
---porcelain-dim  #8497A3   texto secundário
+--void        #05070E   fundo da aplicação
+--abyss       #080D18   superfície: colunas laterais
+--mid         #101A2E   superfície elevada: cartões, menus, diálogos
+--ice         #E8F3FA   texto principal
+--ice-dim     #9DB3CA   texto secundário
 
---cobalt         #5C9CE6   interação: link, foco, botão primário
---ember          #E4A24A   presença ao vivo, e nada mais
---rust           #DE5D52   destrutivo e erro
+--cyan        #22D3EE   comando: link, foco, botão primário, canal ativo
+--magenta     #E879F9   presença ao vivo, e nada mais
+--crimson     #FB5A68   destrutivo e erro
 ```
 
-O fundo não é preto tingido. `#0E1419` tem azul e verde perceptíveis; ao lado de
-um `#111` real a diferença é evidente. Isso é deliberado — near-black com um
-acento neon é a assinatura visual mais gasta do momento.
+Contornos não são cinza: são ciano com pouca opacidade
+(`rgba(34, 211, 238, 0.14)`). É o que faz a linha parecer emitir luz em vez de
+dividir espaço.
 
-O tema claro não inverte a escala. Ele troca a base por um cinza-papel frio
-(`#EDF1F3`) e escurece os acentos para manter contraste, mantendo a mesma regra
-frio/quente.
+O tema claro é de primeira classe, não uma consideração posterior, e **não é
+inversão**. O neon vira tinta sobre papel frio (`#EEF3F7`): os acentos escurecem
+o bastante para manter contraste e o brilho quase some — brilho sobre branco lê
+como borrão, não como luz. O chanfro permanece, porque a forma é o que
+sobrevive à troca de tema.
+
+### Brilho
+
+Brilho é o caráter desta interface, e por isso é **medido**. Existem três
+intensidades, definidas em `01-tokens.md`, e nada além delas:
+
+- `--glow-edge` — contorno de painel e de elemento selecionado
+- `--glow-accent` — botão primário e foco
+- `--glow-live` — só no que tem gente ao vivo
+
+Se você precisou de uma quarta, provavelmente está brilhando algo que devia
+ficar quieto.
+
+### Chanfro
+
+Painéis têm o canto superior esquerdo e o inferior direito cortados em
+diagonal, 12px. **Um valor só.** Chanfro variando por componente vira ruído, e
+foi assim que a referência original errou.
+
+O chanfro é a assinatura da forma; o raio continua variando por função — 2px em
+campo de entrada, 4px em botão, 6px em diálogo, 50% em avatar.
 
 ### Tipografia
 
-Duas famílias, com papéis nitidamente distintos.
+Uma família para tudo o que é interface e prosa, uma para código.
 
-**Instrument Sans** para toda a interface — nomes de canal, botões, rótulos,
-menus. É levemente estreita, o que ajuda numa coluna de 232px, e não tem a
-neutralidade genérica de Inter, que hoje é sinônimo de "produto de software".
+**Instrument Sans** para a interface inteira e para o corpo das mensagens. É
+levemente estreita, o que ajuda numa coluna de 232px, e não tem a neutralidade
+genérica de Inter.
 
-**Source Serif 4** para o corpo das mensagens. Essa é a escolha arriscada do
-projeto e ela é justificada pelo assunto: aqui as pessoas discutem projetos em
-prosa, não trocam figurinhas. Serifa faz o texto ser lido como correspondência,
-não como chat de jogo, e sinaliza sem palavra nenhuma que o que se escreve aqui
-tem peso. Source Serif 4 foi desenhada para tela e aguenta 15,5px sem embaçar.
+**JetBrains Mono** apenas para código dentro de mensagem, e para o horário no
+gutter, onde números tabulares importam. Nunca como enfeite.
 
-**JetBrains Mono** apenas para código dentro de mensagem. Nunca para rótulo,
-número ou metadado — monoespaçada usada como enfeite é um tique reconhecível.
+Rótulos de seção — `SPACES`, `ELENCO`, `TAREFAS` — usam caixa alta com
+`letter-spacing` de 0.12em, 11px, peso 500. Isto é uma reversão consciente: a
+direção anterior proibia caixa alta espaçada por ser tique de interface gerada.
+Nesta linguagem ela é estrutural, não decorativa, e sua ausência é que soaria
+errada.
 
-Escala em terça menor (1,2), ancorada em 15,5px:
+Escala em terça menor (1,2), ancorada em 15px:
 
 ```
- 11px  metadado denso (horário no gutter)
+ 11px  metadado denso e rótulo de seção em caixa alta
  13px  rótulo de interface
  15px  interface padrão, nome de canal
- 15.5px corpo da mensagem       (serifa, altura de linha 1.62)
+ 15.5px corpo da mensagem                (altura de linha 1.55)
  18px  título de seção
  22px  título de tela
  30px  display, só em telas de autenticação
@@ -139,55 +175,55 @@ lista. Cinco espaços, sempre os cinco, mesmo quem está offline.
 
 ### Princípios
 
-**Um lugar para a ousadia.** A faixa do elenco é o elemento memorável. Todo o
-resto é disciplinado e quieto. Se algo mais competir por atenção, corte.
+**Um lugar para a ousadia.** A faixa do elenco é o elemento memorável. O resto
+da tela é denso mas contido. Se algo mais competir por atenção, corte.
 
 **Densidade é respeito.** Muitas horas por dia significa que espaço em branco
 excessivo cansa mais do que ajuda. Mensagens agrupadas por autor, sem avatar
 repetido, sem cartão em volta de cada bloco.
 
 **Estrutura carrega informação.** Uma divisória separa dois dias; ela não existe
-para "quebrar visualmente". Um contorno indica algo selecionável. Marcadores
-numerados só onde há sequência real — o que, neste produto, é quase lugar nenhum.
+para "quebrar visualmente". Um contorno que brilha indica algo selecionável ou
+ao vivo — nunca é enfeite.
 
 **Movimento responde a ação.** Abrir menu, confirmar envio, alguém começar a
 falar: animar. Entrada de seção, transição em hover de cada elemento, fade ao
-carregar: não. Um único momento orquestrado — o painel do elenco acendendo quando
-a conexão estabelece — vale mais que trinta transições espalhadas.
+carregar: não. Um único momento orquestrado — o painel do elenco acendendo
+quando a conexão estabelece — vale mais que trinta transições espalhadas.
 
 **Piso de qualidade sem anunciar.** Responsivo até 380px, foco de teclado
-visível, `prefers-reduced-motion` respeitado, contraste AA no texto e AAA no
-corpo das mensagens.
+visível, `prefers-reduced-motion` respeitado, contraste AA em todo texto. Este
+piso não é negociável pela estética: os valores da paleta foram **medidos** e
+ajustados até passarem, não escolhidos no olho. Ver a tabela em `01-tokens.md`.
 
 ---
 
-## Revisão do plano contra os defaults
+## O que foi descartado, e por quê
 
-O processo pede que o plano seja conferido contra o que sairia por padrão. Três
-pontos foram revisados antes de virar código.
+**A paleta ardósia com cobalto e âmbar.** Era a direção original, escolhida por
+ser quieta e por evitar o near-black com neon, que é uma assinatura visual
+comum. Foi trocada por decisão do dono do projeto. O argumento contra ela
+continua registrado aqui para honestidade: uma interface quieta cansa menos em
+uso de muitas horas. Se o grupo reclamar de fadiga visual depois de um mês de
+uso, este é o primeiro lugar a olhar.
 
-**O fundo escuro com um acento.** É o segundo default mais comum. Foi mantido
-porque uso prolongado justifica tema escuro, mas mudou em duas frentes: o fundo
-tem croma real em vez de ser preto tingido, e existem dois acentos com papéis
-semânticos separados — frio para controle, quente para presença — em vez de um
-neon solitário. A regra frio/quente é o que tira a paleta do território genérico;
-sem ela, seria mais um tema escuro qualquer.
+**Source Serif 4 no corpo das mensagens.** A ideia era que serifa faz o texto
+ser lido como correspondência e não como chat de jogo. Numa interface de
+comando a serifa destoa, então saiu. Os arquivos foram removidos de
+`public/fonts/`; voltar é baixar de novo e trocar `--font-read`.
 
-**Rótulos em caixa alta espaçada.** O primeiro rascunho tinha `ELENCO`,
-`NOTAS`, `TAREFAS` em versalete tracked-out. Foi retirado: é o tique tipográfico
-mais reconhecível de interface gerada. Os cabeçalhos de seção agora usam caixa
-normal em 13px com peso 500 e cor `--porcelain-dim`. Nos wireframes deste
-documento a caixa alta permanece só por legibilidade de ASCII.
+**Barra de XP e nível no cartão de perfil.** Estava na referência visual e não
+entrou: este não é um jogo, e gamificar presença entre cinco pessoas que se
+conhecem produz ansiedade, não engajamento.
 
-**Cartões arredondados uniformes.** O primeiro rascunho envolvia cada mensagem
-num cartão com o mesmo raio e a mesma sombra. Foi retirado inteiro. Mensagem não
-é cartão — é linha de texto num fluxo contínuo. O raio agora varia por função:
-2px em campo de entrada, 6px em menu e diálogo, 50% em avatar. Sombra existe
-apenas em elemento que flutua de verdade sobre outro; nunca sob um bloco estático.
+**Lista de membros com seções "Online" e "Offline".** Estava na referência e não
+entrou. É exatamente o que Discord e Slack fazem porque precisam escalar para
+mil pessoas. Aqui são cinco, e a faixa do elenco existe justamente para não
+haver lista.
 
-**Terracota.** Considerada e descartada para o papel de presença. `#D97757` e
-vizinhos são hoje uma assinatura reconhecível. O âmbar `#E4A24A` é mais amarelo,
-mais luminoso e lê melhor como "luz acesa" — que é exatamente a metáfora.
+**Ciano e magenta usados livremente.** Na referência os dois neons aparecem em
+qualquer lugar. Aqui cada um tem um papel e só ele. Sem essa disciplina, a
+regra de presença deixa de comunicar qualquer coisa.
 
 ---
 
@@ -195,10 +231,12 @@ mais luminoso e lê melhor como "luz acesa" — que é exatamente a metáfora.
 
 - Avatar repetido em cada mensagem do mesmo autor em sequência
 - Sombra sob elemento que não flutua
-- Gradiente como decoração de fundo
-- Caixa alta espaçada em rótulo
+- Gradiente como decoração de fundo — brilho é de borda, não de área
+- Uma quarta intensidade de brilho
+- Chanfro com valor diferente do token
 - Emoji como ícone de interface
-- Âmbar em qualquer coisa que não seja presença humana ao vivo
+- Magenta em qualquer coisa que não seja presença humana ao vivo
 - Seta `→` colada no texto de botão
 - Barra de rolagem customizada que esconde a posição
 - Animação de entrada em elemento que aparece muitas vezes por minuto
+- Baixar contraste abaixo de AA para a cor "ficar mais bonita"

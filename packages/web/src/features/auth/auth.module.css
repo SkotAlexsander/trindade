@@ -83,6 +83,7 @@
 
 .inputWrap:focus-within {
   border-color: var(--accent);
+  box-shadow: var(--glow-accent);
 }
 
 /* O anel vai no campo inteiro, não no <input>.
@@ -176,19 +177,20 @@
 /* Erro acima do botão, nunca em toast. */
 .banner {
   padding: var(--s-3);
-  background: var(--rust-wash);
+  background: var(--crimson-wash);
   border-left: 2px solid var(--danger);
   border-radius: var(--r-field);
   font-size: var(--text-ui);
 }
 
 .bannerInfo {
-  background: var(--cobalt-wash);
+  background: var(--cyan-wash);
   border-left-color: var(--accent);
 }
 
 .button {
   width: 100%;
+  box-shadow: var(--glow-accent);
   height: var(--field-h);
   background: var(--accent);
   color: var(--text-on-accent);
@@ -201,11 +203,11 @@
 }
 
 .button:hover:not(:disabled) {
-  background: var(--cobalt-hover);
+  background: var(--cyan-hover);
 }
 
 .button:active:not(:disabled) {
-  background: var(--cobalt-press);
+  background: var(--cyan-press);
 }
 
 .button:disabled {
@@ -303,6 +305,7 @@
 .codeBox:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--glow-accent);
 }
 
 .codeRow[data-shake='true'] {

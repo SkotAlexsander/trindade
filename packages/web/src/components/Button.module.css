@@ -1,0 +1,100 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  transition:
+    background var(--dur-instant) var(--ease-out),
+    border-color var(--dur-instant) var(--ease-out);
+}
+
+.base:disabled {
+  opacity: 0.55;
+}
+
+.md {
+  height: var(--control-h-md);
+  padding: 0 var(--s-3);
+  font-size: var(--text-ui);
+}
+
+.sm {
+  height: var(--control-h-sm);
+  padding: 0 var(--s-2);
+  font-size: var(--text-label);
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--glow-accent);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--cyan-hover);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--cyan-press);
+}
+
+.secondary {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--bg-active);
+  border-color: var(--border-strong);
+}
+
+.ghost {
+  background: none;
+  color: var(--text-secondary);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.danger {
+  background: var(--danger);
+  color: var(--text-on-accent);
+}
+
+/* Presença ao vivo. Não é variante de botão: é o único lugar onde o magenta
+   aparece, e existe aqui para o /dev/ui poder mostrá-lo ao lado dos outros. */
+.live {
+  background: none;
+  color: var(--live);
+  border-color: var(--live);
+  box-shadow: var(--glow-live);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--crimson-hover);
+}
+
+.full {
+  width: 100%;
+}
+
+/* Quadrado, para ícone sozinho. */
+.icon {
+  padding: 0;
+  aspect-ratio: 1;
+}
+
+.iconMd {
+  width: var(--control-h-md);
+}
+
+.iconSm {
+  width: var(--control-h-sm);
+}

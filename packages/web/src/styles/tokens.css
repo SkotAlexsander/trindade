@@ -1,80 +1,100 @@
 /* Tokens de design/01-tokens.md.
  *
  * Nenhum valor literal de cor, espaço, raio ou duração fora deste arquivo. Se
- * você escreveu #5C9CE6 ou 12px num componente, existe um token faltando ou
- * sendo ignorado.
- *
- * Este arquivo é da fase 3, adiantado porque as telas de autenticação da fase 2
- * não podem ser montadas sem ele. A fase 3 acrescenta os primitivos, a troca de
- * tema e as fontes locais — nada aqui precisa ser refeito. */
+ * você escreveu #22D3EE ou 12px num componente, existe um token faltando ou
+ * sendo ignorado. */
 
 :root {
-  /* base — frio, o registro */
-  --slate-abyss: #0e1419;
-  --slate-deep: #151f26;
-  --slate-mid: #1d2a33;
-  --slate-high: #24333d;
-  --slate-line: #26353f;
-  --slate-line-soft: #1e2c35;
+  /* base — quase preto com azul real, nunca cinza neutro */
+  --void: #05070e;
+  --abyss: #080d18;
+  --deep: #0b1120;
+  --mid: #101a2e;
+  --high: #16233c;
+
+  /* contornos: linha fina de ciano com pouca opacidade, não cinza */
+  --line: rgba(34, 211, 238, 0.14);
+  --line-soft: rgba(34, 211, 238, 0.07);
+  --line-strong: rgba(34, 211, 238, 0.34);
 
   /* texto */
-  --porcelain: #e6edf1;
-  --porcelain-dim: #8497a3;
-  --porcelain-faint: #5a6b77;
+  --ice: #e8f3fa;
+  --ice-dim: #9db3ca;
+  --ice-faint: #7189a4;
 
-  /* interação — frio */
-  --cobalt: #5c9ce6;
-  --cobalt-hover: #7bb0ec;
-  --cobalt-press: #4a87ce;
-  --cobalt-wash: rgba(92, 156, 230, 0.12);
+  /* interação — ciano */
+  --cyan: #22d3ee;
+  --cyan-hover: #67e8f9;
+  --cyan-press: #06b6d4;
+  --cyan-wash: rgba(34, 211, 238, 0.12);
+  --cyan-glow: rgba(34, 211, 238, 0.4);
 
-  /* presença ao vivo — quente. só isso. */
-  --ember: #e4a24a;
-  --ember-soft: #c98a38;
-  --ember-wash: rgba(228, 162, 74, 0.1);
-  --ember-glow: rgba(228, 162, 74, 0.22);
+  /* presença ao vivo — magenta. só isso. */
+  --magenta: #e879f9;
+  --magenta-soft: #c026d3;
+  --magenta-wash: rgba(232, 121, 249, 0.1);
+  --magenta-glow: rgba(232, 121, 249, 0.36);
 
   /* destrutivo */
-  --rust: #de5d52;
-  --rust-hover: #e8746a;
-  --rust-wash: rgba(222, 93, 82, 0.12);
+  --crimson: #fb5a68;
+  --crimson-hover: #ff7b86;
+  --crimson-wash: rgba(251, 90, 104, 0.13);
 
   /* status de presença */
-  --status-online: #4fb477;
-  --status-idle: #d8a64a;
-  --status-busy: #de5d52;
-  --status-offline: #4a5a66;
+  --status-online: #34d97f;
+  --status-idle: #f5b83d;
+  --status-busy: #fb5a68;
+  /* Claro o bastante para o texto "offline" passar em AA sobre as três
+     superfícies. O valor foi medido, não escolhido no olho. */
+  --status-offline: #6c87a4;
 
-  /* papéis semânticos — componente nunca usa a paleta bruta */
-  --bg-app: var(--slate-abyss);
-  --bg-panel: var(--slate-deep);
-  --bg-raised: var(--slate-mid);
-  --bg-hover: rgba(255, 255, 255, 0.035);
-  --bg-active: rgba(255, 255, 255, 0.06);
-  --bg-selected: var(--cobalt-wash);
+  /* --- papéis semânticos --------------------------------------------------
+     Componente nunca usa a paleta bruta. Usa isto. */
 
-  /* superfície viva: onde a pessoa age agora. desloca 3° para o quente. */
-  --bg-live: #1a2229;
+  --bg-app: var(--void);
+  --bg-panel: var(--abyss);
+  --bg-raised: var(--mid);
+  --bg-hover: rgba(34, 211, 238, 0.06);
+  --bg-active: rgba(34, 211, 238, 0.1);
+  --bg-selected: var(--cyan-wash);
 
-  --text-primary: var(--porcelain);
-  --text-secondary: var(--porcelain-dim);
-  --text-tertiary: var(--porcelain-faint);
-  --text-on-accent: #0b1116;
+  /* superfície viva: onde a pessoa age agora */
+  --bg-live: var(--deep);
 
-  --border: var(--slate-line);
-  --border-soft: var(--slate-line-soft);
-  --border-strong: #33454f;
+  --text-primary: var(--ice);
+  --text-secondary: var(--ice-dim);
+  --text-tertiary: var(--ice-faint);
+  --text-on-accent: #03080f;
 
-  --accent: var(--cobalt);
-  --live: var(--ember);
-  --danger: var(--rust);
+  --border: var(--line);
+  --border-soft: var(--line-soft);
+  --border-strong: var(--line-strong);
 
-  --focus-ring:
-    0 0 0 2px var(--bg-app), 0 0 0 4px var(--cobalt);
+  --accent: var(--cyan);
+  --live: var(--magenta);
+  --danger: var(--crimson);
 
-  /* tipografia */
+  --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--cyan);
+
+  /* --- brilho -------------------------------------------------------------
+     O brilho é o que dá o caráter da interface, e por isso é medido: três
+     intensidades e nada mais. Espalhar brilho em tudo faz a tela virar sopa. */
+
+  --glow-edge: 0 0 0 1px var(--line-strong), 0 0 12px -2px var(--cyan-glow);
+  --glow-accent: 0 0 16px -4px var(--cyan-glow);
+  --glow-live: 0 0 18px -4px var(--magenta-glow);
+
+  /* --- chanfro ------------------------------------------------------------
+     O canto cortado dos painéis. Um valor só: chanfro variando por componente
+     vira ruído. */
+
+  --chamfer: 12px;
+  --chamfer-sm: 7px;
+
+  /* --- tipografia --------------------------------------------------------- */
+
   --font-ui: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-  --font-read: 'Source Serif 4', Georgia, serif;
+  --font-read: 'Instrument Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --text-meta: 0.6875rem; /* 11px  horário no gutter */
@@ -87,15 +107,20 @@
 
   --leading-tight: 1.25;
   --leading-ui: 1.4;
-  --leading-read: 1.62;
+  --leading-read: 1.55;
 
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semi: 600;
 
+  /* Caixa alta espaçada nos rótulos de seção — parte da assinatura desta
+     direção. Vive aqui para não virar literal espalhado. */
+  --tracking-label: 0.12em;
+
   --measure: 72ch;
 
-  /* espaço — escala de 4px, sem valores intermediários */
+  /* --- espaço — escala de 4px, sem valores intermediários ------------------ */
+
   --s-1: 0.25rem;
   --s-2: 0.5rem;
   --s-3: 0.75rem;
@@ -113,18 +138,22 @@
   --header-h: 48px;
   --gutter-w: 62px;
 
-  /* raio — varia por função */
-  --r-field: 2px;
-  --r-control: 4px;
-  --r-surface: 6px;
-  --r-media: 8px;
-  --r-full: 999px;
+  /* --- raio — varia por função -------------------------------------------- */
 
-  /* elevação — só em elemento que flutua sobre outro */
-  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.36);
-  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.48);
+  --r-field: 2px; /* campo de entrada: quase reto, sinaliza "escreva aqui" */
+  --r-control: 4px; /* botão, chip, item de menu */
+  --r-surface: 6px; /* diálogo, popover, cartão de perfil */
+  --r-media: 8px; /* prévia de imagem, vídeo */
+  --r-full: 999px; /* avatar, indicador de status */
 
-  /* movimento */
+  /* --- elevação ------------------------------------------------------------
+     Sombra só em elemento que flutua sobre outro. Nunca sob bloco estático. */
+
+  --shadow-pop: 0 4px 20px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.75);
+
+  /* --- movimento ---------------------------------------------------------- */
+
   --dur-instant: 80ms;
   --dur-quick: 140ms;
   --dur-normal: 220ms;
@@ -133,35 +162,83 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* medidas próprias das telas de autenticação */
+  /* --- medidas próprias das telas de autenticação -------------------------- */
+
   --auth-col-w: 400px;
   --auth-top: 20vh;
   --field-h: 44px;
   --code-box: 48px;
+
+  /* --- primitivos ---------------------------------------------------------- */
+
+  --control-h-sm: 28px;
+  --control-h-md: 36px;
+
+  --avatar-xs: 20px;
+  --avatar-sm: 24px;
+  --avatar-md: 32px;
+  --avatar-lg: 40px;
+  --avatar-xl: 64px;
+  --avatar-ring: 2px;
+
+  --menu-w: 200px;
+  --toast-w: 320px;
+  --veil: rgba(2, 4, 10, 0.72);
+
+  /* camadas. Uma escala só, para não haver disputa de z-index entre
+     componentes que nunca se viram. */
+  --z-popover: 100;
+  --z-menu: 200;
+  --z-tooltip: 300;
+  --z-modal: 400;
+  --z-toast: 500;
 }
 
-/* A troca não é inversão: a base clara é um cinza-papel frio e --bg-live
-   continua deslocando para o quente. */
-[data-theme='light'] {
-  --bg-app: #edf1f3;
-  --bg-panel: #e3e9ec;
-  --bg-raised: #ffffff;
-  --bg-live: #f2f0ec;
-  --bg-hover: rgba(14, 20, 25, 0.04);
-  --bg-active: rgba(14, 20, 25, 0.07);
+/* --- tema claro -----------------------------------------------------------
+ *
+ * Não é inversão. O neon vira tinta sobre papel frio: os acentos escurecem o
+ * bastante para manter contraste, o brilho quase some — brilho sobre branco
+ * lê como borrão, não como luz — e o chanfro permanece, porque a forma é o
+ * que sobrevive à troca de tema. */
 
-  --text-primary: #16212a;
-  --text-secondary: #4e626f;
-  --text-tertiary: #7b8d99;
+[data-theme='light'] {
+  --bg-app: #eef3f7;
+  --bg-panel: #e4ebf1;
+  --bg-raised: #ffffff;
+  --bg-live: #f3f7fa;
+  --bg-hover: rgba(6, 24, 44, 0.05);
+  --bg-active: rgba(6, 24, 44, 0.09);
+  --bg-selected: rgba(8, 145, 178, 0.12);
+
+  --text-primary: #0a1826;
+  --text-secondary: #44607a;
+  --text-tertiary: #536b81;
   --text-on-accent: #ffffff;
 
-  --border: #c9d4da;
-  --border-soft: #dae2e6;
-  --border-strong: #afbec7;
+  --border: rgba(8, 145, 178, 0.26);
+  --border-soft: rgba(8, 145, 178, 0.14);
+  --border-strong: rgba(8, 145, 178, 0.5);
 
-  --accent: #2c6fbf;
-  --live: #a96a15;
-  --danger: #b93a30;
+  --accent: #0e708b;
+  --live: #a21caf;
+  --danger: #be2f3c;
+
+  --cyan-hover: #0891b2;
+  --cyan-press: #155e75;
+  --cyan-wash: rgba(14, 116, 144, 0.1);
+  --crimson-hover: #9f1f2b;
+  --magenta-wash: rgba(162, 28, 175, 0.09);
+
+  --status-offline: #536a7e;
+
+  --glow-edge: 0 0 0 1px var(--border-strong);
+  --glow-accent: none;
+  --glow-live: none;
+
+  --shadow-pop: 0 4px 16px rgba(10, 24, 38, 0.14);
+  --shadow-modal: 0 16px 48px rgba(10, 24, 38, 0.22);
+
+  --veil: rgba(10, 24, 38, 0.4);
 }
 
 /* :focus-visible, nunca :focus — senão o anel aparece em clique de mouse. */
@@ -169,6 +246,39 @@
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: var(--r-control);
+}
+
+/* Painel com canto cortado. Aplicado por classe, não por componente, para o
+   chanfro ser o mesmo em toda a interface. */
+.chamfer {
+  clip-path: polygon(
+    var(--chamfer) 0,
+    100% 0,
+    100% calc(100% - var(--chamfer)),
+    calc(100% - var(--chamfer)) 100%,
+    0 100%,
+    0 var(--chamfer)
+  );
+}
+
+.chamfer-sm {
+  clip-path: polygon(
+    var(--chamfer-sm) 0,
+    100% 0,
+    100% calc(100% - var(--chamfer-sm)),
+    calc(100% - var(--chamfer-sm)) 100%,
+    0 100%,
+    0 var(--chamfer-sm)
+  );
+}
+
+/* Rótulo de seção: caixa alta espaçada, 11px, peso 500. */
+.section-label {
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 .visually-hidden {

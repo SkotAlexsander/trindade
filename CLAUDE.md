@@ -124,7 +124,7 @@ Atualizar esta seção ao fim de cada fase.
 
 - [x] Fase 1 — fundação
 - [x] Fase 2 — autenticação
-- [ ] Fase 3 — design system
+- [x] Fase 3 — design system
 - [ ] Fase 4 — shell da aplicação
 - [ ] Fase 5 — mensagens em tempo real
 - [ ] Fase 6 — perfil e cargos
@@ -199,3 +199,28 @@ inócua justamente para a conta que causa mais estrago se for tomada.
 Não verificado por mim, por falta de navegador: renovação silenciosa do access
 token, sessão sobrevivendo ao recarregar a página, e o comportamento das seis
 caixas de código (colar, backspace, envio automático, balanço no erro).
+
+### Fase 3 — concluída
+
+Tokens, `globals.css` com as fontes locais, doze primitivos com CSS Module
+próprio, `useTheme` em cookie, utilitário de contraste e a galeria em
+`/dev/ui`. 18 verificações no navegador, todas passando: os dois temas, troca
+sem piscada, foco preso no diálogo, setas no menu, tooltip no foco, toast
+empilhando três, `prefers-reduced-motion`, fontes locais e nenhuma requisição
+externa.
+
+**Direção visual trocada.** O dono do projeto escolheu, a partir de uma
+referência, a estética de interface de comando: quase preto, neon ciano e
+magenta, cantos chanfrados, rótulos em caixa alta. `design/00-direcao-visual.md`
+e `design/01-tokens.md` foram reescritos para casar com o código — o segundo
+agora é gerado a partir do CSS. A regra semântica sobreviveu com outras cores:
+ciano é comando, magenta é presença ao vivo e nada mais. Source Serif 4 saiu.
+
+O piso de acessibilidade não cedeu à estética: as cores foram medidas e três
+delas ajustadas até passarem em AA sobre as três superfícies, nos dois temas.
+A tabela está em `design/01-tokens.md`.
+
+Decidido diferente do prompt: o `Dialog` usa o `<dialog>` nativo em vez do
+`FloatingFocusManager`, porque com ele o foco vazava no terceiro Tab. Os
+ícones são desenhados à mão em `components/icones.tsx` — instalar a Lucide
+inteira para usar nove seria peso morto.

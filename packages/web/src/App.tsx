@@ -5,6 +5,7 @@ import { AceitarConvite } from './features/auth/AceitarConvite';
 import { CriarConta } from './features/auth/CriarConta';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { Health } from './routes/Health';
+import { DevUi } from './routes/DevUi';
 
 export function App() {
   return (
@@ -23,6 +24,11 @@ export function App() {
           </RequireAuth>
         }
       />
+
+      {/* Galeria dos primitivos. Só em desenvolvimento: em produção a rota
+          nem entra no bundle, porque o import.meta.env.DEV vira false e o
+          Rollup remove o ramo inteiro. */}
+      {import.meta.env.DEV ? <Route path="/dev/ui" element={<DevUi />} /> : null}
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

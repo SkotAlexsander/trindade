@@ -1,0 +1,215 @@
+/* Superfícies que flutuam sobre outra coisa: diálogo, popover, menu, tooltip.
+   Só elas têm sombra — ver design/00-direcao-visual.md. */
+
+.surface {
+  background: var(--bg-raised);
+  border-radius: var(--r-surface);
+  box-shadow: var(--glow-edge), var(--shadow-pop);
+  color: var(--text-primary);
+}
+
+/* --- diálogo -------------------------------------------------------------
+ *
+ * O `<dialog>` nativo já vem centralizado pelo `inset: 0` + margin auto do
+ * user-agent, e o véu é o `::backdrop`. Não há div de véu para estilizar. */
+
+.dialog {
+  width: min(480px, calc(100vw - var(--s-8)));
+  max-height: calc(100vh - var(--s-8));
+  padding: 0;
+  border: none;
+  overflow: auto;
+  color: var(--text-primary);
+  box-shadow: var(--glow-edge), var(--shadow-modal);
+}
+
+.dialog[open] {
+  animation: aparecer var(--dur-normal) var(--ease-out);
+}
+
+.dialog::backdrop {
+  background: var(--veil);
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(var(--s-2));
+  }
+}
+
+.dialogHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-4) var(--s-2);
+}
+
+.dialogTitle {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semi);
+}
+
+.dialogBody {
+  padding: 0 var(--s-4) var(--s-4);
+  color: var(--text-secondary);
+}
+
+.dialogFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  padding: 0 var(--s-4) var(--s-4);
+}
+
+/* --- popover ------------------------------------------------------------- */
+
+.popover {
+  z-index: var(--z-popover);
+  padding: var(--s-3);
+  max-width: 320px;
+}
+
+/* --- menu ---------------------------------------------------------------- */
+
+.menu {
+  z-index: var(--z-menu);
+  min-width: var(--menu-w);
+  padding: var(--s-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2) var(--s-2);
+  background: none;
+  border: none;
+  border-radius: var(--r-control);
+  color: var(--text-primary);
+  font-size: var(--text-ui);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.item[data-active='true'] {
+  background: var(--bg-active);
+}
+
+.item:disabled {
+  color: var(--text-tertiary);
+}
+
+.item[data-danger='true'] {
+  color: var(--danger);
+}
+
+.separator {
+  height: 1px;
+  margin: var(--s-1) 0;
+  background: var(--border);
+}
+
+/* --- tooltip ------------------------------------------------------------- */
+
+.tooltip {
+  z-index: var(--z-tooltip);
+  padding: var(--s-1) var(--s-2);
+  font-size: var(--text-label);
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border-radius: var(--r-control);
+  box-shadow: var(--glow-edge), var(--shadow-pop);
+  max-width: 240px;
+}
+
+/* --- toast --------------------------------------------------------------- */
+
+.toastRegion {
+  position: fixed;
+  right: var(--s-4);
+  bottom: var(--s-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  pointer-events: none;
+}
+
+.toast {
+  width: var(--toast-w);
+  padding: var(--s-3);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  pointer-events: auto;
+  animation: entrarToast var(--dur-normal) var(--ease-out);
+}
+
+.toast[data-kind='danger'] {
+  box-shadow:
+    0 0 0 1px var(--danger),
+    var(--shadow-pop);
+}
+
+.toastText {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-ui);
+}
+
+@keyframes entrarToast {
+  from {
+    opacity: 0;
+    transform: translateX(var(--s-4));
+  }
+}
+
+/* --- spinner ------------------------------------------------------------- */
+
+/* Só para carregamento de página inteira, nunca dentro de botão: no botão o
+   rótulo em gerúndio diz qual ação está em curso, e o símbolo perde isso. */
+.spinnerBox {
+  display: grid;
+  place-items: center;
+  padding: var(--s-8);
+}
+
+.spinner {
+  width: var(--s-6);
+  height: var(--s-6);
+  border-radius: var(--r-full);
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: girar 900ms linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- skeleton ------------------------------------------------------------ */
+
+/* Opacidade pulsando, sem varredura diagonal: a varredura é decoração que
+   chama atenção para o que ainda não existe. */
+.skeleton {
+  background: var(--bg-raised);
+  border-radius: var(--r-control);
+  animation: pulsar 1400ms var(--ease-in-out) infinite;
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
