@@ -79,7 +79,7 @@ const conviteSchema = z.object({
 function paraApi(row: invitesDb.InviteComAutor) {
   return {
     code: row.code,
-    url: `${config.WEB_ORIGIN}/convite/${row.code}`,
+    url: `${config.WEB_ORIGIN}/entrar/${row.code}`,
     note: row.note,
     createdBy: row.created_by_name,
     usedBy: row.used_by_name,
@@ -120,9 +120,13 @@ export const inviteAdminRoutes: FastifyPluginAsyncZod = async (app) => {
         note: req.body.note ?? null,
       });
 
+      // `/entrar/<código>` é a rota que o aplicativo tem para aceitar convite —
+      // ver `App.tsx`. Qualquer outro caminho cai no redirecionamento de rota
+      // desconhecida, e o link chega quebrado sem ninguém notar até alguém
+      // tentar usá-lo.
       return reply.code(201).send({
         code: row.code,
-        url: `${config.WEB_ORIGIN}/convite/${row.code}`,
+        url: `${config.WEB_ORIGIN}/entrar/${row.code}`,
         expiresAt: row.expires_at.toISOString(),
       });
     },

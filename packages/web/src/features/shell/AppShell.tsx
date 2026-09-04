@@ -9,6 +9,8 @@ import { useHotkeys } from '../../lib/useHotkeys';
 import { useAuth } from '../auth/store';
 import { CastPanel } from '../cast/CastPanel';
 import { DialogoDePerfil } from '../profile/DialogoDePerfil';
+import { DialogoDeConvite } from '../people/DialogoDeConvite';
+import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 import { ChannelList } from '../channels/ChannelList';
 import { useChannels, useUsers } from '../channels/queries';
 import { useGateway } from '../realtime/useGateway';
@@ -33,6 +35,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const { pathname } = useLocation();
+  const conviteAberto = useDialogoDeConvite((s) => s.aberto);
+  const fecharConvite = useDialogoDeConvite((s) => s.fechar);
   const permissoes = useAuth((state) => state.permissions);
 
   const { data: canaisCrus, isPending: carregandoCanais } = useChannels();
@@ -256,6 +260,7 @@ export function AppShell() {
       {/* Montado uma vez no shell: o diálogo é aberto do cartão de perfil e do
           menu do rodapé, e uma store diz quando. */}
       <DialogoDePerfil />
+      <DialogoDeConvite aberto={conviteAberto} onFechar={fecharConvite} />
     </div>
   );
 }

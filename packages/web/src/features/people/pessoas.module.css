@@ -1,0 +1,249 @@
+/*
+ * Pessoas e convites. Ver design/05-perfil-e-cargos.md.
+ */
+
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 760px;
+}
+
+.carregando {
+  display: grid;
+  place-items: center;
+  padding: var(--s-8);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.contagem {
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.linha:last-child {
+  border-bottom: none;
+}
+
+.linha[data-desativada='true'] {
+  opacity: 0.55;
+}
+
+.nome {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: var(--weight-medium) 14px var(--font-ui);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.voce {
+  font: var(--weight-regular) 11px var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.usuario {
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cargos {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.espacador {
+  flex: 1;
+}
+
+.maisAcoes {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.maisAcoes:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* --- desativadas ---------------------------------------------------------- */
+
+.desativadas {
+  border-top: 1px solid var(--border-soft);
+  padding-top: var(--s-3);
+}
+
+.dobrar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--weight-medium) 12px var(--font-ui);
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.dobrar:hover {
+  color: var(--text-primary);
+}
+
+.girado {
+  transform: rotate(-90deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.giradoAberto {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* --- diálogo de cargos ---------------------------------------------------- */
+
+.listaDeCargos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* --- desativar ------------------------------------------------------------ */
+
+.consequencia {
+  font: var(--weight-regular) 13px / 1.55 var(--font-ui);
+  color: var(--text-primary);
+  margin: 0 0 var(--s-4);
+}
+
+/* --- convite -------------------------------------------------------------- */
+
+.blocoDoConvite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: var(--s-4);
+}
+
+.linkDoConvite {
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  background: var(--bg-base);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.acoesDoConvite {
+  display: flex;
+  gap: 8px;
+}
+
+.dicaDoConvite {
+  font: var(--weight-regular) 12px var(--font-ui);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.gerando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font: var(--weight-regular) 13px var(--font-ui);
+  color: var(--text-secondary);
+}
+
+.prazo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--s-3);
+}
+
+.rotuloDoPrazo {
+  font: var(--weight-medium) 13px var(--font-ui);
+  color: var(--text-primary);
+}
+
+.selectDoPrazo {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-field);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font: var(--weight-regular) 13px var(--font-ui);
+}
+
+.separador {
+  height: 1px;
+  background: var(--border-soft);
+  margin: var(--s-4) 0 var(--s-3);
+}
+
+.convites {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.convite {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font: var(--weight-regular) 12px var(--font-ui);
+  color: var(--text-secondary);
+}
+
+.codigo {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.notaDoConvite {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.prazoDoConvite {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}

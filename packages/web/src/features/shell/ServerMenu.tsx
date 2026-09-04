@@ -4,6 +4,7 @@ import { Perm, can } from '@trindade/shared';
 import { Menu, MenuItem, MenuSeparator } from '../../components';
 import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
+import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 
 export interface ServerMenuProps {
   trigger: ReactElement;
@@ -18,6 +19,7 @@ export interface ServerMenuProps {
  */
 export function ServerMenu({ trigger, podeGerenciarCanal }: ServerMenuProps) {
   const navigate = useNavigate();
+  const abrirConvite = useDialogoDeConvite((s) => s.abrir);
   const permissoes = useAuth((state) => state.permissions);
   const limpar = useAuth((state) => state.clear);
 
@@ -33,7 +35,7 @@ export function ServerMenu({ trigger, podeGerenciarCanal }: ServerMenuProps) {
 
   return (
     <Menu label="Menu do servidor" trigger={trigger}>
-      {podeConvidar ? <MenuItem onSelect={() => navigate('/config/convites')}>Convidar alguém</MenuItem> : <></>}
+      {podeConvidar ? <MenuItem onSelect={abrirConvite}>Convidar alguém</MenuItem> : <></>}
       {podeGerenciarCanal ? <MenuItem onSelect={() => undefined}>Criar canal</MenuItem> : <></>}
       {podeConvidar || podeGerenciarCanal ? <MenuSeparator /> : <></>}
 

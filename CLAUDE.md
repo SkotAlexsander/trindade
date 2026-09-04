@@ -127,7 +127,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 3 — design system
 - [x] Fase 4 — shell da aplicação
 - [x] Fase 5 — mensagens em tempo real
-- [ ] Fase 6 — perfil e cargos
+- [x] Fase 6 — perfil e cargos
 - [ ] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
 - [ ] Fase 9 — ferramentas de projeto e notificações
@@ -402,6 +402,39 @@ busca no servidor existe para evitar.
 mensagem inteira. `messageBodySchema` (sem `min(1)`) mais um `refine` de
 "sobrou alguma coisa" — não confundir com `messageContentSchema`, que continua
 exigindo texto onde texto é obrigatório.
+
+### Fase 6 — concluída
+
+Cinco fatias. O que ficou diferente do pacote, e por quê:
+
+**A hierarquia tem três regras, não duas.** O rascunho pedia "não mexer em
+cargo acima do seu" e "não desativar quem está acima". Falta a terceira, e sem
+ela as outras não valem nada: **ninguém dá a um cargo permissão que não tem**.
+Daí `POST /roles` não aceitar `position` no corpo, e reordenar ser uma chamada
+só com a lista inteira.
+
+**`can()` não serve para "cobre este conjunto".** Ela responde "tem alguma
+destas", que é o certo para uma permissão por vez. Para conjuntos existe
+`abrange()`. Trocar as duas deixaria passar um cargo com `ADMINISTRATOR`
+dentro por causa de um bit em comum.
+
+**Três defeitos antigos apareceram ao abrir a primeira tela nova:** nenhum
+diálogo fechava com `Escape` (o atalho global do shell comia a tecla), todo
+diálogo nascia no canto superior esquerdo (o reset zera o `margin: auto` que o
+`<dialog>` usa para centralizar), e `/config/...` era devolvido para a conversa
+(o shell redirecionava qualquer caminho sem `slug`). Os três vinham das fases
+3 e 4 e ninguém tinha percebido porque não havia nada em `/config` para abrir.
+
+**O StrictMode custou três correções.** Efeito que roda, é limpo e roda de novo
+gasta qualquer guarda de "primeira vez" na primeira passagem. Onde havia um ref
+assim — recortador de foto, salvamento automático de cargo, geração de convite
+— a guarda passou a comparar com o valor de verdade, ou a marcar a passagem
+antiga como descartada. Se for escrever `useRef(true)` como guarda, é
+provavelmente o erro de novo.
+
+**Link de convite aponta para `/entrar/<código>`**, que é a rota que o
+aplicativo tem. Eu tinha escrito `/convite/...`, que caía no redirecionamento
+de rota desconhecida — o convite chegava quebrado e nada avisava.
 
 ### Numeração das migrations
 

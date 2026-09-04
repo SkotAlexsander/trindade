@@ -110,6 +110,14 @@ com EXIF e volta em WebP sem metadado nenhum. Mais a aba de segurança: sessões
 sem IP — o roteiro procura por qualquer coisa com cara de endereço e falha se
 achar — e os três passos de ativar o segundo fator.
 
+**`fase-06-pessoas.py`** — 27 verificações de pessoas e convites: o menu de
+ações que some na sua própria linha (o servidor recusa mexer na própria conta),
+a confirmação de desativar que exige o nome digitado e explica a consequência
+real, a conta desativada que deixa de entrar, e o convite gerado ao abrir o
+diálogo. A verificação que mais vale: o roteiro **abre o link** numa janela
+anônima — ele apontava para uma rota que não existe e caía no redirecionamento
+de rota desconhecida.
+
 **`fase-06-cargos.py`** — 21 verificações da página de cargos: a lista ordenada
 pela hierarquia, permissões em português e agrupadas por área, `ADMINISTRATOR`
 separado no fim com o aviso literal, o salvamento automático que **não** dispara
