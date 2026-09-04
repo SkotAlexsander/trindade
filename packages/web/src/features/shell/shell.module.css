@@ -46,9 +46,7 @@
   width: 28px;
   height: 28px;
   margin-bottom: var(--s-2);
-  /* Monocromática, como nas telas de entrada. O ciano fica reservado ao botão
-     do espaço ativo, onde a cor comunica seleção e não identidade. */
-  color: var(--text-primary);
+  color: var(--brand-ink);
 }
 
 .espacoBotao {

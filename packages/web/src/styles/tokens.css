@@ -76,6 +76,11 @@
 
   --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--cyan);
 
+  /* Cor da marca. Ciano no escuro, preto no claro: no fundo quase preto o
+     ciano é a assinatura; sobre papel a mesma cor perde presença e a versão
+     preta lê melhor. Um token para a regra viver num lugar só. */
+  --brand-ink: var(--accent);
+
   /* --- brilho -------------------------------------------------------------
      O brilho é o que dá o caráter da interface, e por isso é medido: três
      intensidades e nada mais. Espalhar brilho em tudo faz a tela virar sopa. */
@@ -231,6 +236,8 @@
   --magenta-wash: rgba(162, 28, 175, 0.09);
 
   --status-offline: #536a7e;
+
+  --brand-ink: var(--text-primary);
 
   --glow-edge: 0 0 0 1px var(--border-strong);
   --glow-accent: none;

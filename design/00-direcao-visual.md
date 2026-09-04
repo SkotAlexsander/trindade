@@ -270,13 +270,14 @@ vira um triângulo cheio.
 
 ### Cor da marca
 
-**Monocromática: branca no tema escuro, preta no claro.** Ela usa
-`--text-primary`, que já é exatamente isso nos dois temas — não há condicional
-nem par de arquivos a manter em sincronia.
+**Ciano no tema escuro, preta no claro.** A regra vive num token só,
+`--brand-ink`, redefinido no bloco do tema claro.
 
-O ciano fica reservado ao botão do espaço ativo no rail, onde a cor comunica
-**seleção**, não identidade. Uma marca em cor de acento competiria com o único
-lugar onde essa cor precisa significar algo.
+O motivo de não ser a mesma cor nos dois: sobre o fundo quase preto o ciano é a
+assinatura da interface e a marca ganha com ela; sobre papel frio o mesmo ciano
+perde presença e a versão preta lê melhor. É a única exceção ao ciano significar
+sempre comando, e ela é aceitável porque a marca não é um controle — ninguém vai
+tentar clicar nela esperando uma ação.
 
 Para uso fora do produto — apresentação, documento, impressão — há arquivos
 avulsos em `design/marca/`: `marca-preta.svg`, `marca-branca.svg`, e as
