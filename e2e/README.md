@@ -244,6 +244,29 @@ Sair da tela cheia com `Esc` é do navegador, e o headless não faz isso com tec
 sintética; o que o roteiro verifica é o que é nosso — que a mesma tecla não
 fecha a tela em primeiro plano por baixo.
 
+**`fase-08-csp.py`** — 11 verificações da política de segurança, com o front
+**construído** e servido com os cabeçalhos de produção. O roteiro **lê a política
+do `infra/cabecalhos.caddy`**, o mesmo arquivo que o Caddy importa: se alguém a
+relaxar, o teste passa a testar a política relaxada e o diff mostra; se alguém
+puser um script inline no código, o teste falha.
+
+    pnpm --filter @trindade/web build
+    python e2e/fase-08-csp.py .capturas
+
+Sobe um servidor estático próprio na 4179, com os cabeçalhos, e passa `/api`
+adiante para a API de desenvolvimento — assim dá para entrar e carregar a
+aplicação inteira sob a política. O WebSocket não é encaminhado; a faixa de
+"reconectando" aparecendo é esperado e não é violação.
+
+Duas coisas que o navegador não deixa verificar por ali: **HSTS** é descartado
+em origem HTTP (fica conferido no arquivo), e `connect-src` ganha a origem do
+servidor de teste — em produção a aplicação e a API dividem o domínio e `'self'`
+basta.
+
+O primeiro defeito que ele pegou foi nosso: o `index.html` carimbava o tema com
+um `<script>` inline, que `script-src 'self'` recusa. A correção foi mover o
+bloco para `/tema.js` — corrigir o código, não relaxar a política.
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

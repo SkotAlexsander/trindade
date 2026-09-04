@@ -1,0 +1,50 @@
+# Cabeçalhos de segurança. Ver docs/04-seguranca.md, "Headers e front".
+#
+# Este arquivo é importado pelo Caddyfile **e lido pelo teste**: o roteiro de
+# CSP sobe o front construído com exatamente estes cabeçalhos e falha se
+# houver uma violação sequer. Política e verificação saem da mesma fonte, senão
+# uma envelhece sem a outra.
+#
+# `{$DOMINIO}` e `{$DOMINIO_MIDIA}` vêm do ambiente do Caddy.
+
+(seguranca) {
+	header {
+		# `script-src 'self'` sem `unsafe-inline`: nenhum script inline na
+		# aplicação, nem o que carimba o tema — ele mora em /tema.js.
+		#
+		# `style-src` precisa de `unsafe-inline` porque atributo `style` em
+		# elemento é estilo inline, e a interface usa isso para posição de
+		# janela flutuante, largura de coluna e transform de zoom. É a
+		# concessão que o documento já previa, e ela não permite executar nada.
+		#
+		# `connect-src` lista o próprio domínio, o WebSocket do gateway e o
+		# SFU. Sem o SFU aqui, a chamada não conecta e o erro no console fala
+		# de rede, não de política.
+		#
+		# `media-src blob:` é para prévia local de imagem e vídeo. Trilha de
+		# mídia entra por `srcObject`, que não passa por CSP — mas o `blob:`
+		# continua necessário para o resto.
+		#
+		# `worker-src blob:` porque o bundler e o SDK de mídia criam worker a
+		# partir de blob. Sem isto, a chamada quebra em silêncio.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' {$DOMINIO_MIDIA} data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' wss://{$DOMINIO} https://{$DOMINIO} wss://livekit.{$DOMINIO} https://livekit.{$DOMINIO}; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+
+		# Dois anos, subdomínios incluídos, e pronto para a lista de pré-carga.
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+
+		X-Content-Type-Options "nosniff"
+
+		# Nem a origem: um link clicado daqui não conta de onde veio.
+		Referrer-Policy "no-referrer"
+
+		# Câmera e microfone só para a própria origem; localização, pagamento e
+		# o resto, para ninguém. Se um dia alguém escrever `navigator.geolocation`
+		# por engano, o navegador recusa — é a diferença entre "não usamos" e
+		# "não podemos usar".
+		Permissions-Policy "geolocation=(), payment=(), usb=(), bluetooth=(), midi=(), serial=(), hid=(), idle-detection=(), camera=(self), microphone=(self), display-capture=(self)"
+
+		# O servidor não se apresenta.
+		-Server
+		-X-Powered-By
+	}
+}

@@ -1,0 +1,45 @@
+# LiveKit em produção. O de desenvolvimento é o `livekit.yaml`, e as diferenças
+# são todas de rede. Ver docs/06-realtime-e-webrtc.md.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  # A faixa do documento. Em `network_mode: host`, publicar porta a porta não é
+  # necessário — e é por isso que aqui cabem 200 e no desenvolvimento cabem 20.
+  port_range_start: 50000
+  port_range_end: 50200
+  # Aqui, sim: o SFU precisa anunciar o endereço público para o candidato
+  # fechar. No desenvolvimento isto é falso porque tudo é local.
+  use_external_ip: true
+  # Tela em alta resolução gera picos; janela larga evita descarte.
+  packet_buffer_size: 1000
+
+keys:
+  # Injetadas pelo ambiente. Nada de chave literal em arquivo versionado.
+  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+
+room:
+  # Sala nasce pela API, depois da permissão conferida. Com `true`, qualquer
+  # token válido criaria salas arbitrárias e o escopo por canal não valeria
+  # nada.
+  auto_create: false
+  empty_timeout: 300
+  max_participants: 8
+
+# O coturn é quem faz o relay. O TURN embutido fica desligado para haver **um**
+# caminho de mídia, com uma configuração de `denied-peer-ip` só.
+turn:
+  enabled: false
+
+video:
+  # Espera cinco segundos antes de pausar uma camada que ninguém assiste: com
+  # menos, alternar entre abas faz a imagem sumir e voltar.
+  dynacast_pause_delay: 5s
+
+webhook:
+  api_key: ${LIVEKIT_API_KEY}
+  urls:
+    - http://127.0.0.1:3000/api/livekit/webhook
+
+logging:
+  level: info

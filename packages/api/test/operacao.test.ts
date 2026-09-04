@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SENHA_BOA,
@@ -204,5 +205,55 @@ describe('as métricas', () => {
     });
     expect(res.body).toMatch(/rota="[^"]*:id/);
     expect(res.body).not.toContain(alvo);
+  });
+});
+
+describe('os cabeçalhos que o Caddy serve', () => {
+  /**
+   * O arquivo é lido, e não reescrito aqui.
+   *
+   * A CSP é do tipo de coisa que se relaxa às três da manhã para destravar um
+   * deploy e ninguém aperta de volta. Estes testes são o atrito que faz esse
+   * relaxamento aparecer no diff.
+   */
+  const arquivo = readFileSync(
+    new URL('../../../infra/cabecalhos.caddy', import.meta.url),
+    'utf8',
+  );
+  const csp = /Content-Security-Policy\s+"([^"]+)"/.exec(arquivo)?.[1] ?? '';
+
+  it('script-src não aceita inline nem eval', () => {
+    // `unsafe-inline` em script-src anula o benefício inteiro da política: é
+    // exatamente o que um XSS precisa para executar.
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/);
+    expect(csp).not.toMatch(/script-src[^;]*unsafe-eval/);
+  });
+
+  it('e a página não pode ser emoldurada nem enviar formulário para fora', () => {
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("base-uri 'none'");
+    expect(csp).toContain("form-action 'none'");
+    expect(csp).toContain("object-src 'none'");
+  });
+
+  it('geolocalização fechada, câmera e microfone só na própria origem', () => {
+    const permissions = /Permissions-Policy\s+"([^"]+)"/.exec(arquivo)?.[1] ?? '';
+    expect(permissions).toContain('geolocation=()');
+    expect(permissions).toContain('camera=(self)');
+    expect(permissions).toContain('microphone=(self)');
+  });
+
+  it('HSTS de dois anos, sem referrer e sem sniffing', () => {
+    expect(arquivo).toMatch(/max-age=63072000; includeSubDomains; preload/);
+    expect(arquivo).toContain('Referrer-Policy "no-referrer"');
+    expect(arquivo).toContain('X-Content-Type-Options "nosniff"');
+  });
+
+  it('e o domínio dos anexos serve bytes, não aplicação', () => {
+    // `default-src 'none'; sandbox` no domínio de mídia: um HTML servido de lá
+    // não executa nada e não alcança nada.
+    const caddyfile = readFileSync(new URL('../../../infra/Caddyfile', import.meta.url), 'utf8');
+    expect(caddyfile).toContain("default-src 'none'; sandbox");
   });
 });

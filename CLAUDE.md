@@ -614,6 +614,37 @@ conectadas e quando o servidor está ocupado. Nenhum rótulo identifica ninguém
 rota vira o **padrão** (`/api/channels/:id/messages`), nunca a URL com id, senão
 cada canal viraria uma série temporal e daí cada pessoa.
 
+**Fatia 2: cabeçalhos, implantação e backup restaurado.**
+
+**A CSP encontrou o primeiro defeito antes de subir:** o `index.html` carimbava
+o tema num `<script>` inline, e `script-src 'self'` recusa isso. A correção foi
+mover o bloco para `/tema.js` — corrigir o código, não relaxar a política, que é
+a regra do prompt e é o ponto inteiro de ter CSP.
+
+A política vive em `infra/cabecalhos.caddy`, **importada pelo Caddy e lida pelo
+teste**: o roteiro serve o `dist` com exatamente aqueles cabeçalhos e falha se
+houver uma violação sequer. Política e verificação saem da mesma fonte, senão
+uma envelhece sem a outra.
+
+`style-src` mantém `unsafe-inline` porque atributo `style` em elemento é estilo
+inline, e a interface usa isso para posição de janela flutuante, largura de
+coluna e transform de zoom. É a concessão que o documento já previa, e ela não
+executa nada.
+
+**O backup foi restaurado de verdade**, não descrito: dump de 104 KB com 8
+pessoas, 4 canais e 267 mensagens, restaurado em **1 segundo** (2,2s com o banco
+sendo derrubado e recriado). O número está em `docs/08-operacao.md`, junto com o
+que muda numa base de um ano.
+
+`scripts/enviar-backup.mjs` mora em `packages/api/scripts/` e não na raiz: num
+monorepo pnpm, um script na raiz não enxerga o `node_modules` de um pacote — e o
+erro só aparece na primeira vez que o backup roda, que é o pior momento.
+
+O `implantar.sh` faz backup, migrations com a versão antiga no ar, troca a
+imagem e **reverte sozinho** se a saúde não vier em 60s. As migrations não são
+desfeitas na reversão: elas são aditivas, e desfazer migration com dado em cima
+é como se perde dado.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

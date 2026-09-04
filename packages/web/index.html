@@ -17,26 +17,10 @@
       crossorigin
     />
 
-    <script>
-      /* Carimba o tema antes da primeira pintura.
-       *
-       * Sem isto a página nasce no tema padrão e troca quando o React monta —
-       * a piscada branca que design/01-tokens.md manda evitar. Lê o mesmo
-       * cookie que lib/tema.ts escreve; quando o front passar a ser servido
-       * pelo Node, quem carimba é o servidor e este bloco sai. */
-      (function () {
-        try {
-          var m = document.cookie.match(/(?:^|; )tema=(dark|light|system)/);
-          var t = m ? m[1] : 'system';
-          if (t === 'system') {
-            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          document.documentElement.dataset.theme = t;
-        } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
-        }
-      })();
-    </script>
+    <!-- Num arquivo, e não inline: `script-src 'self'` recusa script inline, e
+         abrir `unsafe-inline` anularia a política inteira. Sem `defer`: ele
+         precisa rodar antes da primeira pintura. -->
+    <script src="/tema.js"></script>
   </head>
   <body>
     <div id="root"></div>

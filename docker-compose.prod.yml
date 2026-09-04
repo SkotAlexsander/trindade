@@ -1,0 +1,96 @@
+# Produção. O de desenvolvimento é o `docker-compose.yml`, e os dois são
+# diferentes de propósito: aqui nada é publicado em 0.0.0.0 além do que o Caddy
+# atende, e nenhum segredo tem valor padrão.
+#
+# Sobe com:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Ver docs/08-operacao.md para o procedimento completo.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # As duas únicas portas abertas ao mundo — e o firewall ainda as limita aos
+    # endereços da Cloudflare. Ver docs/08-operacao.md.
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/cabecalhos.caddy:/etc/caddy/cabecalhos.caddy:ro
+      - ./packages/web/dist:/srv/web:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMINIO: ${DOMINIO}
+      DOMINIO_MIDIA: ${DOMINIO_MIDIA}
+      EMAIL_ACME: ${EMAIL_ACME}
+    depends_on:
+      - api
+
+  api:
+    image: ${IMAGEM_API:-trindade/api:latest}
+    restart: unless-stopped
+    # Sem `ports`: só o Caddy fala com ela, pela rede interna do compose. Uma
+    # porta publicada aqui seria um caminho que ignora todos os cabeçalhos.
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # A saúde de verdade: toca banco e storage. Ver routes/health.ts.
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # Sem porta publicada. O acesso para manutenção é por `docker compose exec`,
+    # e o caminho até o servidor é Tailscale.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # O disco inteiro é LUKS; isto aqui é onde o backup pousa antes de subir.
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./infra/livekit.prod.yaml:/etc/livekit.yaml:ro
+    # `host` aqui, e não no desenvolvimento: a mídia usa uma faixa larga de
+    # portas UDP, e publicar 200 portas uma a uma no Docker custa caro em
+    # tabelas de NAT. No Docker Desktop isto não funcionaria — o "host" é a
+    # máquina virtual —, mas em Linux é o servidor mesmo.
+    network_mode: host
+
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    command: -c /etc/coturn/turnserver.conf
+    volumes:
+      # O arquivo de **produção**, com a lista de negados inteira e sem a
+      # exceção que o de desenvolvimento tem.
+      - ./infra/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ./infra/certs:/etc/coturn/certs:ro
+    network_mode: host
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

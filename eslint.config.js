@@ -5,6 +5,20 @@ export default tseslint.config(
   { ignores: ['**/dist/**', '**/node_modules/**', 'packages/api/migrations/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  // Dois ambientes que o TypeScript não cobre: o script de operação, que roda em
+  // Node solto, e o carimbo de tema, que roda no navegador antes de tudo.
+  {
+    files: ['packages/api/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
+    },
+  },
+  {
+    files: ['packages/web/public/**/*.js'],
+    languageOptions: {
+      globals: { document: 'readonly', window: 'readonly' },
+    },
+  },
   {
     rules: {
       // "Nada de any. Se o tipo é difícil, o desenho está errado." — CLAUDE.md
