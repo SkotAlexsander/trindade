@@ -13,6 +13,7 @@ import { errorHandler } from './plugins/error-handler.js';
 import { authPlugin } from './plugins/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { metricsRoutes } from './routes/metrics.js';
+import { taskRoutes } from './routes/tasks.js';
 import { medirRequisicoes } from './lib/metricas.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
@@ -105,6 +106,7 @@ export async function buildApp() {
       await api.register(channelRoutes);
       await api.register(userRoutes);
       await api.register(messageRoutes);
+      await api.register(taskRoutes);
       await api.register(attachmentRoutes);
       await api.register(fileRoutes);
     },

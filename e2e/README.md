@@ -281,6 +281,29 @@ sintoma parecia defeito do Yjs.
 O rótulo do cursor entra no `innerText` do editor. Para comparar os dois lados,
 o roteiro clona o nó e remove os cursores antes de ler o texto.
 
+**`fase-09-tarefas.py`** — 14 verificações do quadro, também com dois
+navegadores: a tarefa criada aparece no quadro do outro sem recarregar nada,
+"criar tarefa" leva **a primeira linha** da mensagem (e não o resto), a mensagem
+passa a dizer "Virou tarefa · coluna" e esse rodapé abre o quadro, arrastar muda
+a coluna dos dois lados, concluir deixa uma linha de sistema no canal sem avatar
+nem barra de ações, e o cartão volta para a mensagem que o originou.
+
+**Arrastar precisa de passos de mouse.** O `dnd-kit` só ativa depois de 6px e só
+com eventos de ponteiro reais; um `drag_to` direto não move nada. O roteiro
+interpola dez posições entre a origem e o destino.
+
+**Não compare texto de interface sem normalizar a caixa.** O cabeçalho da coluna
+é caixa alta por CSS, então `innerText` devolve `"FAZENDO"` — foi isso que fez a
+primeira corrida acusar um arrasto que tinha funcionado. E o clique que expande
+"Feito" passou a ser feito por `aria-expanded`: depois que a mensagem ganhou o
+rodapé "Virou tarefa · Feito", `button` com texto "Feito" passou a acertar a
+mensagem em vez da coluna.
+
+**O login tem limite de 5 por 15 minutos por IP.** Rodar os roteiros em sequência
+esgota a cota e o próximo falha em `wait_for_url` — o que parece defeito da
+aplicação é a proteção funcionando. Espere a janela ou reinicie a API, que
+guarda a contagem em memória.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

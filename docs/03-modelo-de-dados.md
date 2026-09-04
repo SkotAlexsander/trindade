@@ -199,6 +199,11 @@ create table messages (
   parent_id     uuid references messages(id) on delete set null,
   reply_to_id   uuid references messages(id) on delete set null,
   content       text not null check (char_length(content) <= 4000),
+  -- Acrescentada na migration 018. `system` é o canal registrando um fato
+  -- ("Bruno concluiu X"), não a fala de ninguém: a interface a desenha sem
+  -- avatar e sem barra de ações, e ela não agrupa com as vizinhas.
+  kind          text not null default 'text'
+                check (kind in ('text','system','poll')),
   client_nonce  uuid,
   pinned_at     timestamptz,
   edited_at     timestamptz,
@@ -332,6 +337,10 @@ create table tasks (
 );
 
 create index tasks_board on tasks (channel_id, column_key, position);
+
+-- O lembrete das 9h pergunta "o que vence hoje, e de quem". Criado na
+-- migration 018, parcial porque tarefa concluída não interessa a ele.
+create index tasks_prazo on tasks (assignee_id, due_at) where completed_at is null;
 ```
 
 `position` é `double precision` de propósito. Arrastar uma tarefa entre duas
@@ -386,6 +395,12 @@ Retenção de 180 dias, apagado por tarefa periódica.
 011_recovery_codes          -- não previsto; ver CLAUDE.md
 012_busca_sem_acento        -- não previsto; ver CLAUDE.md
 013_saved_messages          -- não previsto; ver CLAUDE.md
+014_anexos_pendentes        -- não previsto; ver CLAUDE.md
+015_ordem_dos_anexos        -- não previsto; ver CLAUDE.md
+016_avatar_blurhash         -- não previsto; ver CLAUDE.md
+017_membro_edita_notas      -- não previsto; ver CLAUDE.md
+018_mensagem_de_sistema     -- não previsto; ver CLAUDE.md
+019_membro_mexe_no_quadro   -- não previsto; ver CLAUDE.md
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

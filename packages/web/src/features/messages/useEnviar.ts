@@ -67,6 +67,7 @@ export function useEnviarMensagem() {
           // cada render, a linha remontaria sozinha.
           id: `local:${clientNonce}`,
           channelId: rascunho.channelId,
+          kind: 'text',
           author: {
             id: eu.id,
             username: eu.username,

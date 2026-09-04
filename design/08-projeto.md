@@ -118,19 +118,30 @@ prioridade, estimativa e o resto ficam de fora — cada campo a mais é uma
 decisão que alguém precisa tomar ao criar, e a fricção mata o uso.
 
 Prazo em linguagem relativa: "hoje", "amanhã", "até sex", "há 2 dias" em
-`--danger` quando passou.
+`--danger` quando passou. O campo de data fica por baixo desse texto e aparece
+sozinho no hover quando não há prazo — um "dd/mm/aaaa" vazio em cada cartão
+pesaria mais que o título.
 
 Cartão sem dono mostra um círculo vazio e "sem dono" em `--text-tertiary`. É
-um convite visível para alguém assumir.
+um convite visível para alguém assumir, e o mesmo lugar que mostra quem assumiu
+é onde se assume: clicar abre a lista das cinco pessoas. Convite que não dá
+para aceitar é decoração.
 
 ### Da mensagem para a tarefa
 
-No menu de ações: "Criar tarefa". Abre um popover ancorado na mensagem, com o
-título já preenchido pela primeira linha do texto e o campo de dono focado.
+No menu de ações: "Criar tarefa". **Um clique, sem formulário** — a primeira
+linha da mensagem vira o título e o cartão nasce em "A fazer". O popover com o
+campo de dono focado estava previsto aqui e foi descartado ao rodar: dono e
+prazo se definem no próprio cartão, que é onde a informação já está, e cada
+campo a mais na criação é uma decisão a tomar. A fricção é o que mata o uso de
+um quadro.
+
+O resto do texto continua na mensagem, a um clique de distância pelo elo de
+volta — o título é um recorte, não um resumo.
 
 A tarefa guarda `source_message_id`. No cartão, um ícone de balão de 14px leva
 de volta à mensagem de origem, e a mensagem ganha um rodapé de 24px:
-"Virou tarefa · Fazendo", clicável.
+"Virou tarefa · Fazendo", clicável — abre o quadro.
 
 Esse elo bidirecional é a funcionalidade. Sem ele, o quadro é um Trello pior.
 
@@ -143,8 +154,20 @@ Feedback ao arrastar: o cartão original fica em `opacity: 0.4`, uma linha de
 2px em `--accent` marca o destino. Sem rearranjo animado dos vizinhos.
 
 Mover para "Feito" grava `completed_at` e manda uma mensagem curta no canal
-como sistema: "◉ Bruno concluiu *Revisar a migração*". Uma linha, sem avatar
-grande, em `--text-secondary`. É como o grupo fica sabendo sem abrir o quadro.
+como sistema: "Bruno concluiu **Revisar a migração**". Uma linha alinhada ao
+gutter das mensagens, sem avatar, sem barra de ações, em `--text-tertiary`. É
+como o grupo fica sabendo sem abrir o quadro — e, sendo mensagem, entra na
+busca e no histórico como qualquer outra coisa que aconteceu ali.
+
+A linha sai **só na transição** para concluída. Sem essa checagem, arrastar um
+cartão dentro de "Feito" anunciaria a mesma conclusão de novo, e o canal viraria
+eco do quadro. Ela também não entra em bloco com nenhuma mensagem vizinha: é o
+canal falando, e herdar o avatar de alguém a faria parecer uma frase escrita
+por essa pessoa.
+
+A coluna e o estado de concluída são a mesma informação vista de dois lados —
+tirar o cartão de "Feito" desfaz a conclusão. Sem isso, ele sairia de lá
+continuando marcado como concluído, e a lista do que o grupo fez mentiria.
 
 ### Coluna Feito
 

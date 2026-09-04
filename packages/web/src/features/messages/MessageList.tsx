@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Perm, can, type Channel, type User } from '@trindade/shared';
+import { Perm, can, type Channel, type Task, type User } from '@trindade/shared';
 import { Skeleton, Spinner } from '../../components';
 import { ArrowDown } from '../../components/icones';
 import { useAuth } from '../auth/store';
@@ -9,6 +9,7 @@ import { useCarregarAntigas, useMessages, type MensagemLocal } from './queries';
 import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco, useThread } from './store';
 import { useAcoesDaMensagem } from './useAcoes';
 import { useMarcarLido } from './leitura';
+import { useTarefas } from '../tasks/queries';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
 
@@ -42,7 +43,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const { data, isPending } = useMessages(channelId);
   const { carregar, carregando } = useCarregarAntigas(channelId);
   const { tentarDeNovo, descartar } = useEnviarMensagem();
-  const { reagir, guardar, fixar, apagar, paraNotas } = useAcoesDaMensagem();
+  const { reagir, guardar, fixar, apagar, paraNotas, virarTarefa } = useAcoesDaMensagem();
 
   const responder = useComposer((s) => s.responder);
   const editar = useComposer((s) => s.editar);
@@ -66,6 +67,16 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const secoes = useMemo(() => montarSecoes(mensagens), [mensagens]);
   const porId = useMemo(() => new Map(pessoas.map((p) => [p.id, p])), [pessoas]);
   const mensagensPorId = useMemo(() => new Map(mensagens.map((m) => [m.id, m])), [mensagens]);
+
+  // O quadro já está no cache por causa do painel; aqui ele serve só para a
+  // mensagem saber que virou tarefa — e para a linha mudar sozinha quando
+  // alguém arrasta o cartão.
+  const { data: tarefas } = useTarefas(channelId);
+  const tarefaPorMensagem = useMemo(() => {
+    const mapa = new Map<string, Task>();
+    for (const t of tarefas ?? []) if (t.sourceMessageId) mapa.set(t.sourceMessageId, t);
+    return mapa;
+  }, [tarefas]);
 
   // Canal aberto e janela à vista: o que chegou está lido.
   useMarcarLido(channelId, mensagens[mensagens.length - 1]?.id ?? null);
@@ -277,6 +288,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       podeFixar: can(permissoes, Perm.PIN_MESSAGE),
       podeApagarDosOutros: can(permissoes, Perm.DELETE_ANY_MESSAGE),
       podeAnotar: can(permissoes, Perm.MANAGE_NOTES),
+      podeTarefa: can(permissoes, Perm.MANAGE_TASKS),
       onReagir: reagir,
       onResponder: responder,
       onGuardar: (m) => guardar(m, !m.saved),
@@ -291,6 +303,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       onFocar: focar,
       onThread: (m) => abrirThread(m.id),
       onParaNotas: paraNotas,
+      onCriarTarefa: virarTarefa,
     }),
     [
       permissoes,
@@ -301,6 +314,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
       editar,
       apagar,
       paraNotas,
+      virarTarefa,
       tentarDeNovo,
       descartar,
       pular,
@@ -360,6 +374,7 @@ export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
                 focada={linha.mensagem.id === focoAtual}
                 assumirFoco={linha.mensagem.id === focoId}
                 destacada={linha.mensagem.id === destaqueId}
+                tarefa={tarefaPorMensagem.get(linha.mensagem.id)}
                 acoes={acoes}
               />
             ))}

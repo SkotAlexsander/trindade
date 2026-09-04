@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Channel, Message, Reaction, User, UserStatus } from './types.js';
+import type { Channel, Message, Reaction, Task, User, UserStatus } from './types.js';
 import { ANEXOS_POR_MENSAGEM, messageBodySchema, userStatusSchema } from './schemas.js';
 
 /**
@@ -156,6 +156,14 @@ export type ServerEvent =
   | { op: 'NOTE_AWARENESS'; d: { channelId: string; estado: string; de: string } }
   /** Quem está com a nota aberta. A faixa "fulano e beltrano editando". */
   | { op: 'NOTE_PRESENCE'; d: { channelId: string; userIds: string[] } }
+  /**
+   * Uma tarefa nasceu, mudou de coluna, de dono ou de prazo.
+   *
+   * Um evento só para as três coisas: o cartão é pequeno e o quadro é do canal
+   * inteiro, então redesenhar a tarefa toda custa menos que manter três eventos
+   * em dia. `removida` cobre o apagar sem um segundo op.
+   */
+  | { op: 'TASK_UPDATE'; d: { task: Task; removida?: boolean } }
   | { op: 'ERROR'; d: { code: string; message: string; retryAfter?: number } };
 
 export type ServerEventName = ServerEvent['op'];
@@ -186,6 +194,8 @@ export interface AgrupavelBase {
   createdAt: string;
   replyToId: string | null;
   parentId: string | null;
+  /** Ausente conta como `'text'`: quem não sabe do campo agrupa como antes. */
+  kind?: string;
 }
 
 /**
@@ -199,6 +209,10 @@ export function mesmaSequencia(
   atual: AgrupavelBase,
 ): boolean {
   if (!anterior) return false;
+  // A linha de sistema não entra em bloco de nenhum dos dois lados: ela é do
+  // canal, não de quem a disparou, e herdar o avatar de alguém a faria parecer
+  // uma frase que a pessoa escreveu.
+  if ((anterior.kind ?? 'text') !== 'text' || (atual.kind ?? 'text') !== 'text') return false;
   if (anterior.author.id !== atual.author.id) return false;
   if (anterior.replyToId || atual.replyToId) return false;
   if (anterior.parentId || atual.parentId) return false;

@@ -17,6 +17,7 @@ function msg(parcial: Partial<MensagemLocal> & { id: string; quando: Date }): Me
     channelId: 'c1',
     author: { id: 'a', username: 'ana', displayName: 'Ana', avatarUrl: null },
     content: 'oi',
+    kind: 'text',
     parentId: null,
     replyToId: null,
     threadCount: 0,
@@ -53,6 +54,17 @@ describe('montarSecoes', () => {
       msg({ id: '2', quando: dia(4, 14, 35) }),
     ]);
     expect(chefes(linhas)).toEqual([true, true]);
+  });
+
+  /* A linha de sistema é do canal, não de quem a disparou: herdar o avatar de
+     alguém a faria parecer uma frase que a pessoa escreveu. */
+  it('a linha de sistema não entra em bloco de nenhum dos dois lados', () => {
+    const linhas = montarSecoes([
+      msg({ id: '1', quando: dia(4, 14, 30) }),
+      msg({ id: '2', quando: dia(4, 14, 31), kind: 'system' }),
+      msg({ id: '3', quando: dia(4, 14, 32) }),
+    ]);
+    expect(chefes(linhas)).toEqual([true, true, true]);
   });
 
   it('quebra o bloco quando muda o autor', () => {

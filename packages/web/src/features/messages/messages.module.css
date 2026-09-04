@@ -833,6 +833,66 @@ button.mencao:hover {
   text-underline-offset: 2px;
 }
 
+.rodapeTarefa {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  height: 24px;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-tertiary);
+  font: var(--weight-medium) var(--text-meta) var(--font-ui);
+  cursor: pointer;
+}
+
+.rodapeTarefa:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- linha de sistema ------------------------------------------------------ */
+
+/*
+ * "Bruno concluiu Revisar a migração".
+ *
+ * Alinhada à coluna do texto — o mesmo gutter das mensagens — para a conversa
+ * continuar com uma margem esquerda só. Cinza, sem avatar e sem fundo: é o
+ * canal registrando um fato, e qualquer peso a mais a faria competir com o que
+ * as pessoas escreveram. Ver design/08-projeto.md.
+ */
+.sistema {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: 12px;
+  padding: 2px var(--s-5) 2px var(--gutter-w);
+  color: var(--text-tertiary);
+  font: var(--text-meta) var(--font-ui);
+}
+
+.sistema p {
+  margin: 0;
+  font: inherit;
+}
+
+.sistema strong {
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.sistema svg {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+.sistema time {
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
 /* --- painel de thread ------------------------------------------------------ */
 
 .thread {

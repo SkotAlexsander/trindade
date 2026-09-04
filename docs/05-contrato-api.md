@@ -375,10 +375,14 @@ antes do cartão — a interface esconde a imagem e mantém o cartão.
 
 - `GET /channels/:id/notes` → `200 { content, updatedBy, updatedAt }`
 - `PUT /channels/:id/notes` `{ content }` — `MANAGE_NOTES`
-- `GET /channels/:id/tasks` → `200 { tasks: Task[] }`
-- `POST /channels/:id/tasks` `{ title, body, columnKey, assigneeId, dueAt, sourceMessageId }`
-- `PATCH /tasks/:id` — mover é `{ columnKey, position }`
-- `DELETE /tasks/:id`
+- `GET /channels/:id/tasks` → `200 { tasks: Task[] }` — ver não exige permissão: o quadro é do canal, e quem lê o canal lê o quadro
+- `POST /channels/:id/tasks` `{ title, body, columnKey, assigneeId, dueAt, sourceMessageId }` — `MANAGE_TASKS`
+- `PATCH /tasks/:id` — `MANAGE_TASKS`. Mover é `{ columnKey, position }`; concluir é `{ concluida }`. A coluna e `completed_at` andam juntos nos dois sentidos, e a transição para concluída posta uma mensagem `kind: 'system'` no canal
+- `DELETE /tasks/:id` — `MANAGE_TASKS`. `400 TASK_DONE` se já estiver concluída: tarefa feita é o registro do que o grupo fez
+
+`Message.kind` é `'text' | 'system' | 'poll'` e vem em toda mensagem. **Está no
+schema de resposta de propósito** — o schema é filtro, e campo ausente dele some
+da resposta sem erro nenhum.
 
 ---
 
@@ -436,7 +440,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `USER_UPDATE` | perfil ou cargo | `User` |
 | `VOICE_STATE_UPDATE` | entrou/saiu/mutou | `{ userId, channelId, muted, deafened, screenSharing, connected }` |
 | `CHANNEL_CREATE` / `UPDATE` / `DELETE` | canal | `Channel` |
-| `TASK_UPDATE` | tarefa | `Task` |
+| `TASK_UPDATE` | tarefa nasceu, mudou ou saiu | `{ task: Task, removida?: true }` |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |
 | `ERROR` | operação falhou | `{ code, message }` |
 

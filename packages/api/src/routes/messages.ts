@@ -27,6 +27,10 @@ const mensagemSchema = z.object({
     avatarUrl: z.string().nullable(),
   }),
   content: z.string().nullable(),
+  /* Precisa estar aqui: o schema de resposta é filtro, e um campo ausente dele
+     some da resposta sem erro nenhum. Foi o que fez a linha de sistema chegar
+     pelo socket e sumir ao recarregar a página. */
+  kind: z.enum(['text', 'system', 'poll']),
   parentId: z.string().nullable(),
   replyToId: z.string().nullable(),
   attachments: z.array(

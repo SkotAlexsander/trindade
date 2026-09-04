@@ -697,6 +697,37 @@ deixado `MANAGE_NOTES` de fora, e rodando ficou claro que não é permissão de
 administração: numa equipe de cinco, quem participa da decisão é quem a
 registra. Uma nota que só o administrador edita seria um mural.
 
+**Fatia 2: tarefas.** Um quadro por canal, três colunas fixas, e o elo com a
+conversa nos dois sentidos: o cartão guarda `source_message_id` e volta para a
+mensagem; a mensagem ganha um rodapé "Virou tarefa · coluna" que abre o quadro.
+Esse elo é a funcionalidade — sem ele o quadro é um Trello pior.
+
+`position` é `double precision`: soltar entre duas tarefas grava a média das
+vizinhas, uma linha atualizada. Com índices inteiros, mover o primeiro cartão
+reescreveria todos, e duas pessoas arrastando ao mesmo tempo viraria corrida.
+
+**"Criar tarefa" não abre formulário.** O pacote previa um popover com o título
+preenchido e o campo de dono focado; rodando, a fricção não se justifica — a
+primeira linha da mensagem vira o título e o cartão nasce em "A fazer". Dono e
+prazo se definem no próprio cartão, que é onde a informação já está. Cada campo
+a mais na criação é uma decisão a tomar, e é isso que mata o uso de um quadro.
+
+**A linha de sistema no canal sai só na transição para concluída.** Sem essa
+checagem, arrastar um cartão dentro de "Feito" anunciaria a mesma conclusão de
+novo e o canal viraria eco do quadro. Ela nasce com `kind = 'system'`
+(migration 018) e é desenhada como uma linha cinza alinhada ao gutter, sem
+avatar e sem barra de ações: é o canal registrando um fato, não alguém falando.
+
+**O schema de resposta do Zod é um filtro, e foi por isso que a linha sumia.**
+`kind` chegava pelo socket e aparecia; ao recarregar a página, a mesma mensagem
+voltava como fala comum. O campo não estava em `mensagemSchema`, e o que não
+está no schema é removido da resposta **sem erro nenhum**. Só a captura de tela
+depois de um F5 mostrou isso — nenhum teste teria pegado.
+
+**O cargo `Membro` também mexe no quadro** (migration 019), pelo mesmo motivo da
+017: o gesto que justifica o quadro é "isso virou tarefa", dito por quem estava
+na conversa.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -711,6 +742,14 @@ e `013_boards` (fase 10). Duas migrations não previstas entraram no caminho:
 | `015_ordem_dos_anexos` | sem `sort_order` a grade saía na ordem em que os uploads terminaram, não na que a pessoa escolheu |
 | `016_avatar_blurhash` | a 002 guardou `avatar_key` e mais nada; a fase 6 pede a mancha de cor enquanto a foto carrega |
 
-**As migrations das fases 9 e 10 andam seis números:** `polls` vira **017**,
-`conversations` **018** e `boards` **019**. Migration aplicada não se edita; se
-algo estiver errado, crie a próxima.
+**As migrations das fases 9 e 10 andam mais ainda.** Além das seis não
+previstas, a fase 9 gastou três números com coisas que o pacote não antecipou:
+
+| aplicada | por quê |
+|---|---|
+| `017_membro_edita_notas` | `MANAGE_NOTES` ficou de fora do cargo padrão na 003, e rodando ficou claro que não é permissão de administração |
+| `018_mensagem_de_sistema` | a conclusão de tarefa precisa de uma mensagem que não é fala de ninguém; `messages.kind` chegou aqui, antes das enquetes |
+| `019_membro_mexe_no_quadro` | o mesmo da 017, para `MANAGE_TASKS` |
+
+Com isso, `polls` vira **020**, `conversations` **021** e `boards` **022**.
+Migration aplicada não se edita; se algo estiver errado, crie a próxima.

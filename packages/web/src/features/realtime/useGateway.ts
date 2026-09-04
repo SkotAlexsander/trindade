@@ -15,6 +15,7 @@ import {
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
 import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { receberTarefa } from '../tasks/queries';
 import { useVoz } from '../voice/store';
 import { tocar } from '../voice/sons';
 import { ATRASO_DA_FAIXA_MS, useConexao, useDigitando, usePresenca } from './store';
@@ -165,6 +166,10 @@ export function useGateway(): void {
       // já obedecia antes — a checagem que vale é a de lá.
       ws.on('PERMISSIONS_UPDATE', (d) => {
         useAuth.setState({ permissions: BigInt(d.permissions) });
+      }),
+
+      ws.on('TASK_UPDATE', (d) => {
+        receberTarefa(qc, d.task, d.removida ?? false);
       }),
 
       ws.on('READ_STATE_UPDATE', (d) => {

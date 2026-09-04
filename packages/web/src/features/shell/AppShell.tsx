@@ -24,6 +24,7 @@ import { useThread } from '../messages/store';
 import { primeiroDestino, withReadState } from '../channels/canais';
 import { useLeitura } from '../messages/leitura';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
+import { useQuadro } from '../tasks/store';
 import { CommandPalette } from './CommandPalette';
 import { ContextPanel } from './ContextPanel';
 import { ServerMenu } from './ServerMenu';
@@ -83,6 +84,7 @@ export function AppShell() {
   const podeGerenciar = can(permissoes, Perm.MANAGE_CHANNEL);
 
   const [painel, setPainel] = useState<PainelAberto>(null);
+  const pedidoDeQuadro = useQuadro((s) => s.pedido);
   const threadAberta = useThread((s) => s.parentId);
   const fecharThread = useThread((s) => s.fechar);
   const [elencoVisivel, setElencoVisivel] = useState(true);
@@ -154,6 +156,12 @@ export function AppShell() {
   useEffect(() => {
     if (painel !== 'thread') fecharThread();
   }, [painel, fecharThread]);
+
+  // "Virou tarefa" na mensagem abre o quadro. Sem isso o rodapé seria um
+  // rótulo, e o elo entre a conversa e o quadro só valeria num sentido.
+  useEffect(() => {
+    if (pedidoDeQuadro > 0) setPainel('tarefas');
+  }, [pedidoDeQuadro]);
 
   useHotkeys([
     { key: 'k', mod: true, emCampo: true, run: () => setPaletaAberta(true) },

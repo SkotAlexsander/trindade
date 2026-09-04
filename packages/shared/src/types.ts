@@ -75,6 +75,13 @@ export interface Message {
   channelId: string;
   author: MessageAuthor;
   content: string | null;
+  /**
+   * `system` é o que o produto escreveu por alguém — "Bruno concluiu tal
+   * tarefa". Fica **no fluxo**, e não numa tabela paralela: é assim que o grupo
+   * fica sabendo sem abrir o quadro, e é assim que a linha aparece na busca e
+   * no histórico como qualquer outra coisa que aconteceu ali.
+   */
+  kind: 'text' | 'system' | 'poll';
   parentId: string | null;
   replyToId: string | null;
   /**
@@ -125,3 +132,40 @@ export interface HealthResponse {
   ok: boolean;
   db: boolean;
 }
+
+/**
+ * Uma tarefa do quadro do canal.
+ *
+ * Título, dono e prazo. Sem etiqueta, sem prioridade, sem estimativa: cada
+ * campo a mais é uma decisão que alguém precisa tomar ao criar, e a fricção
+ * mata o uso. Ver design/08-projeto.md.
+ */
+export interface Task {
+  id: string;
+  channelId: string;
+  title: string;
+  body: string | null;
+  /** Três colunas fixas. Configuráveis é o que todos pedem e ninguém usa. */
+  columnKey: ColunaDoQuadro;
+  /**
+   * Ponto flutuante, e não índice: soltar entre duas tarefas grava a média das
+   * vizinhas — uma linha atualizada, sem reindexar a coluna inteira.
+   */
+  position: number;
+  assigneeId: string | null;
+  dueAt: string | null;
+  /** A mensagem que virou esta tarefa, quando houve uma. */
+  sourceMessageId: string | null;
+  createdBy: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export const COLUNAS = ['todo', 'doing', 'done'] as const;
+export type ColunaDoQuadro = (typeof COLUNAS)[number];
+
+export const NOME_DA_COLUNA: Record<ColunaDoQuadro, string> = {
+  todo: 'A fazer',
+  doing: 'Fazendo',
+  done: 'Feito',
+};

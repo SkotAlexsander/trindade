@@ -94,5 +94,34 @@ export function useAcoesDaMensagem() {
     [show],
   );
 
-  return { reagir, guardar, fixar, apagar, paraNotas };
+  /**
+   * "Criar tarefa".
+   *
+   * O título é a **primeira linha** da mensagem, cortada em 200: quase toda
+   * mensagem que vira tarefa começa pelo que precisa ser feito, e abrir um
+   * formulário para confirmar isso é a fricção que faz ninguém usar o quadro.
+   * O que sobrou continua na mensagem, a um clique de distância pelo elo de
+   * volta. Ver design/08-projeto.md.
+   */
+  const virarTarefa = useCallback(
+    (mensagem: Message) => {
+      const titulo = (mensagem.content ?? '').split('\n')[0]?.trim().slice(0, 200);
+      if (!titulo) {
+        show('Esta mensagem não tem texto para virar tarefa.', 'danger');
+        return;
+      }
+
+      // Sem escrita otimista: o cartão chega pelo `TASK_UPDATE`, o mesmo
+      // caminho que leva a tarefa para as outras quatro telas.
+      void api(`/channels/${mensagem.channelId}/tasks`, {
+        method: 'POST',
+        body: { title: titulo, sourceMessageId: mensagem.id },
+      })
+        .then(() => show('Tarefa criada em A fazer.'))
+        .catch(() => show('Não foi possível criar a tarefa.', 'danger'));
+    },
+    [show],
+  );
+
+  return { reagir, guardar, fixar, apagar, paraNotas, virarTarefa };
 }

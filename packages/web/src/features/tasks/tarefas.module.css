@@ -1,0 +1,272 @@
+/* O quadro do canal. Ver design/08-projeto.md. */
+
+.painel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
+}
+
+.nova {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.nova > *:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.colunas {
+  overflow-y: auto;
+  min-height: 0;
+  padding: var(--s-3);
+  display: grid;
+  gap: var(--s-4);
+  align-content: start;
+}
+
+.coluna {
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
+  border-radius: var(--r-surface);
+  /* A moldura só aparece quando há um cartão vindo: em repouso, uma caixa em
+     volta de cada coluna é ruído. */
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+}
+
+.coluna[data-sobre='true'] {
+  outline-color: var(--accent);
+}
+
+.cabecalhoDaColuna {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.titulo,
+.tituloBotao {
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+}
+
+.tituloBotao {
+  cursor: pointer;
+}
+
+.tituloBotao:hover {
+  color: var(--text-primary);
+}
+
+.contagem {
+  margin-left: auto;
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mostrar {
+  border: 0;
+  background: none;
+  padding: var(--s-1) 0;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: var(--text-meta);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mostrar:hover {
+  color: var(--text-secondary);
+}
+
+.cartao {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Sem rearranjo animado dos vizinhos: o cartão original desbota e pronto. */
+.cartao[data-arrastando='true'] {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.linhaTitulo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.marcar {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: none;
+  color: transparent;
+  cursor: pointer;
+}
+
+.marcar:hover {
+  border-color: var(--accent);
+  color: var(--text-tertiary);
+}
+
+.marcar[data-feita='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.tituloDaTarefa {
+  font-size: var(--text-ui);
+  color: var(--text-primary);
+  line-height: var(--leading-ui);
+}
+
+.tituloDaTarefa[data-feita='true'] {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.rodapeDoCartao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+}
+
+.dono,
+.semDono {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 2px var(--s-1);
+  margin-left: -2px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dono:disabled,
+.semDono:disabled {
+  cursor: default;
+}
+
+.dono:hover:not(:disabled),
+.semDono:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.semDono {
+  color: var(--text-tertiary);
+}
+
+.circulo {
+  width: 16px;
+  height: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-full);
+}
+
+.prazo {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.prazo [data-passou='true'],
+.prazo[data-passou='true'] {
+  color: var(--danger);
+}
+
+/*
+ * O campo de data é o próprio rótulo do prazo.
+ *
+ * Sem prazo ele fica com 18px de largura e só o ícone do calendário, que
+ * aparece no hover — um "dd/mm/aaaa" vazio em cada cartão pesaria mais que o
+ * título. Com prazo, o texto relativo é quem aparece, e o campo continua ali
+ * por cima para trocar a data em um clique.
+ */
+.prazo input {
+  width: 18px;
+  border: 0;
+  background: none;
+  color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.prazo[data-vazio='true'] input {
+  opacity: 0;
+}
+
+.cartao:hover .prazo[data-vazio='true'] input,
+.prazo[data-vazio='true'] input:focus-visible {
+  opacity: 1;
+}
+
+.prazo:not([data-vazio='true']) input {
+  width: 16px;
+  margin-left: calc(var(--s-1) * -1);
+}
+
+.prazo input::-webkit-calendar-picker-indicator {
+  margin: 0;
+  padding: 0;
+  filter: grayscale(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.prazo input::-webkit-datetime-edit,
+.prazo input::-webkit-inner-spin-field,
+.prazo input::-webkit-clear-button {
+  display: none;
+}
+
+.origem {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.origem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

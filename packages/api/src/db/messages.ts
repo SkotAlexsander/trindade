@@ -7,6 +7,8 @@ export interface MessageRow {
   parent_id: string | null;
   reply_to_id: string | null;
   content: string;
+  /** `system` é o que o produto escreveu por alguém. Ver migration 018. */
+  kind: 'text' | 'system' | 'poll';
   client_nonce: string | null;
   pinned_at: Date | null;
   edited_at: Date | null;
@@ -25,7 +27,7 @@ export interface ReactionRow {
 
 const COLUNAS = sql`
   m.id, m.channel_id, m.author_id, m.parent_id, m.reply_to_id, m.content,
-  m.client_nonce, m.pinned_at, m.edited_at, m.deleted_at, m.created_at,
+  m.kind, m.client_nonce, m.pinned_at, m.edited_at, m.deleted_at, m.created_at,
   u.username as author_username, u.display_name as author_display_name,
   u.avatar_key as author_avatar_key
 `;
@@ -177,11 +179,15 @@ export async function createMessage(input: {
   clientNonce: string;
   replyToId: string | null;
   parentId: string | null;
+  /** `system` é o que o produto escreveu por alguém. Ver migration 018. */
+  kind?: 'text' | 'system' | 'poll';
 }): Promise<{ row: MessageRow; novo: boolean }> {
   const inseridos = await sql<{ id: string }[]>`
-    insert into messages (channel_id, author_id, content, client_nonce, reply_to_id, parent_id)
+    insert into messages
+      (channel_id, author_id, content, client_nonce, reply_to_id, parent_id, kind)
     values (${input.channelId}, ${input.authorId}, ${input.content},
-            ${input.clientNonce}, ${input.replyToId}, ${input.parentId})
+            ${input.clientNonce}, ${input.replyToId}, ${input.parentId},
+            ${input.kind ?? 'text'})
     on conflict (author_id, client_nonce) where client_nonce is not null do nothing
     returning id
   `;

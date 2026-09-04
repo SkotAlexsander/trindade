@@ -1,12 +1,13 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
-import type { Channel, Role, User } from '@trindade/shared';
+import { NOME_DA_COLUNA, type Channel, type Role, type Task, type User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
-import { Clock, Pin } from '../../components/icones';
+import { Clock, Pin, Tasks } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
 import { Conteudo } from './Conteudo';
 import { Anexos } from './Anexos';
 import { CartaoDePerfil } from '../profile/CartaoDePerfil';
 import { PreviaDeLink } from './PreviaDeLink';
+import { useQuadro } from '../tasks/store';
 import { haQuantoTempo, hora } from './linhas';
 import { analisarMarkdown, mencionados, primeiroLink } from './markdown';
 import type { MensagemLocal } from './queries';
@@ -52,12 +53,14 @@ export function corDoCargo(roles: readonly Role[] | undefined): string | undefin
 export interface AcoesDisponiveis {
   podeFixar: boolean;
   podeAnotar: boolean;
+  podeTarefa: boolean;
   podeApagarDosOutros: boolean;
   onReagir: (mensagem: MensagemLocal, emoji: string, tirar: boolean) => void;
   onResponder: (mensagem: MensagemLocal) => void;
   onGuardar: (mensagem: MensagemLocal) => void;
   onFixar: (mensagem: MensagemLocal) => void;
   onParaNotas: (mensagem: MensagemLocal) => void;
+  onCriarTarefa: (mensagem: MensagemLocal) => void;
   onEditar: (mensagem: MensagemLocal) => void;
   onApagar: (mensagem: MensagemLocal) => void;
   onTentarDeNovo: (mensagem: MensagemLocal) => void;
@@ -89,6 +92,8 @@ export interface MessageProps {
   assumirFoco: boolean;
   /** Acesa por 800ms depois de um pulo vindo de uma citação ou da busca. */
   destacada: boolean;
+  /** A tarefa que nasceu desta mensagem, se existir. */
+  tarefa: Task | undefined;
   acoes: AcoesDisponiveis;
 }
 
@@ -104,8 +109,10 @@ export const Message = memo(function Message({
   focada,
   assumirFoco,
   destacada,
+  tarefa,
   acoes,
 }: MessageProps) {
+  const abrirQuadro = useQuadro((s) => s.abrir);
   const cargo = cargoDoTopo(autor?.roles);
   const cor = corDoCargo(autor?.roles);
   const apagada = mensagem.deletedAt !== null;
@@ -134,6 +141,31 @@ export const Message = memo(function Message({
     artigo.current?.scrollIntoView({ block: 'nearest' });
     if (document.activeElement !== artigo.current) artigo.current?.focus({ preventScroll: true });
   }, [assumirFoco]);
+
+  // A linha de sistema sai antes de tudo: sem avatar, sem cargo, sem barra de
+  // ações e sem entrar no bloco de ninguém. É o canal falando, e o que ela
+  // precisa é ocupar pouco espaço e não ser confundida com uma fala.
+  if (mensagem.kind === 'system') {
+    return (
+      <article
+        ref={artigo}
+        className={styles.sistema}
+        data-id={mensagem.id}
+        data-destacada={destacada || undefined}
+        tabIndex={focada ? 0 : -1}
+        onFocus={() => acoes.onFocar(mensagem.id)}
+      >
+        <Tasks size={12} />
+        <Conteudo
+          texto={mensagem.content ?? ''}
+          pessoas={pessoas}
+          canais={canais}
+          meuUsername={meuUsername}
+        />
+        <time dateTime={mensagem.createdAt}>{hora(mensagem.createdAt)}</time>
+      </article>
+    );
+  }
 
   // Mensagem otimista ainda não existe no servidor: agir sobre ela produziria
   // um 404. A barra só aparece quando há o que acionar.
@@ -306,6 +338,23 @@ export const Message = memo(function Message({
           </button>
         ) : null}
 
+        {/* O elo de ida: daqui em diante a mensagem carrega o que virou. Fica
+            preso à tarefa de verdade — arrastar o cartão para outra coluna
+            muda esta linha na conversa de todo mundo. */}
+        {tarefa ? (
+          <button
+            type="button"
+            className={styles.rodapeTarefa}
+            onClick={() => abrirQuadro()}
+            aria-label={`Virou tarefa em ${NOME_DA_COLUNA[tarefa.columnKey]} — abrir o quadro`}
+          >
+            <Tasks size={12} />
+            <span>Virou tarefa</span>
+            <span aria-hidden="true">·</span>
+            <span>{NOME_DA_COLUNA[tarefa.columnKey]}</span>
+          </button>
+        ) : null}
+
         {/* O erro pertence ao lugar da mensagem, nunca a um toast num canto:
             é ali que está o texto que a pessoa escreveu. */}
         {local === 'falhou' ? (
@@ -328,6 +377,7 @@ export const Message = memo(function Message({
           souOAutor={souOAutor}
           podeFixar={acoes.podeFixar}
           podeAnotar={acoes.podeAnotar}
+          podeTarefa={acoes.podeTarefa}
           podeApagar={souOAutor || acoes.podeApagarDosOutros}
           onReagir={(emoji) => {
             const minha = mensagem.reactions.find((r) => r.emoji === emoji)?.me ?? false;
@@ -337,6 +387,7 @@ export const Message = memo(function Message({
           onGuardar={() => acoes.onGuardar(mensagem)}
           onFixar={() => acoes.onFixar(mensagem)}
           onParaNotas={() => acoes.onParaNotas(mensagem)}
+          onCriarTarefa={() => acoes.onCriarTarefa(mensagem)}
           onEditar={() => acoes.onEditar(mensagem)}
           onApagar={() => acoes.onApagar(mensagem)}
           onThread={() => acoes.onThread(mensagem)}

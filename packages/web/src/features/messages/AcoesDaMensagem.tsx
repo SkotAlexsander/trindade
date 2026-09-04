@@ -1,5 +1,5 @@
 import { IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
-import { Mark, Notes, Pin, Reply, Smile, Trash } from '../../components/icones';
+import { Mark, Notes, Pin, Reply, Smile, Tasks, Trash } from '../../components/icones';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
 import { RAPIDOS } from './emojis';
 import type { MensagemLocal } from './queries';
@@ -28,6 +28,8 @@ export interface AcoesDaMensagemProps {
   onFixar: () => void;
   podeAnotar: boolean;
   onParaNotas: () => void;
+  podeTarefa: boolean;
+  onCriarTarefa: () => void;
   onEditar: () => void;
   onApagar: () => void;
   onThread: () => void;
@@ -44,6 +46,8 @@ export function AcoesDaMensagem({
   onFixar,
   podeAnotar,
   onParaNotas,
+  podeTarefa,
+  onCriarTarefa,
   onEditar,
   onApagar,
   onThread,
@@ -132,6 +136,13 @@ export function AcoesDaMensagem({
         {podeAnotar ? (
           <MenuItem icon={<Notes size={16} />} onSelect={onParaNotas}>
             Adicionar às notas
+          </MenuItem>
+        ) : null}
+        {/* O título já vem preenchido pela primeira linha: o gesto é levar a
+            conversa para o quadro, não preencher um formulário. */}
+        {podeTarefa ? (
+          <MenuItem icon={<Tasks size={16} />} onSelect={onCriarTarefa}>
+            Criar tarefa
           </MenuItem>
         ) : null}
         {podeApagar ? (
