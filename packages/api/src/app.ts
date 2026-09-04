@@ -1,5 +1,7 @@
 import Fastify, { LogController } from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 import {
   serializerCompiler,
   validatorCompiler,
@@ -7,7 +9,12 @@ import {
 } from 'fastify-type-provider-zod';
 import { config, isProduction } from './config.js';
 import { errorHandler } from './plugins/error-handler.js';
+import { authPlugin } from './plugins/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { authRoutes } from './routes/auth.js';
+import { meRoutes } from './routes/me.js';
+import { inviteRoutes } from './routes/invites.js';
+import { ipKey } from './lib/client-key.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -43,6 +50,29 @@ export async function buildApp() {
     credentials: true,
   });
 
+  await app.register(cookie);
+
+  // Global desligado: cada rota declara o próprio limite em `config.rateLimit`,
+  // nos números da tabela de docs/04-seguranca.md. A chave padrão é o HMAC do
+  // IP com sal que troca todo dia, nunca o IP em claro.
+  await app.register(rateLimit, {
+    global: false,
+    keyGenerator: (req) => ipKey(req),
+    addHeaders: { 'retry-after': true, 'x-ratelimit-reset': true },
+  });
+
+  await app.register(authPlugin);
+
+  await app.register(
+    async (api) => {
+      await api.register(healthRoutes);
+      await api.register(authRoutes);
+      await api.register(meRoutes);
+      await api.register(inviteRoutes);
+    },
+    { prefix: '/api' },
+  );
+
   // Log manual de requisição, sem IP.
   app.addHook('onResponse', (req, reply, done) => {
     req.log.debug(
@@ -51,8 +81,6 @@ export async function buildApp() {
     );
     done();
   });
-
-  await app.register(healthRoutes, { prefix: '/api' });
 
   return app;
 }

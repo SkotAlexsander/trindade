@@ -1,7 +1,7 @@
 import { usernameSchema, displayNameSchema, passwordSchema } from '@trindade/shared';
 import { anyUserExists, createUserWithRole } from '../db/users.js';
 import { closePool } from '../db/index.js';
-import { hashPassword } from '../lib/password.js';
+import { hashPassword } from '../lib/auth/password.js';
 import { createPrompter } from '../lib/prompt.js';
 
 /**
