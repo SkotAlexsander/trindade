@@ -33,6 +33,21 @@ export const clientEventSchema = z.discriminatedUnion('op', [
       }),
   }),
   z.object({ op: z.literal('TYPING_START'), d: z.object({ channelId: z.string().uuid() }) }),
+  /**
+   * Microfone e surdez.
+   *
+   * Vêm do cliente porque são decisão dele: o LiveKit sabe se a trilha está
+   * publicada, não se a pessoa escolheu se calar. O servidor guarda e repassa;
+   * quem entra depois recebe o estado no READY.
+   */
+  z.object({
+    op: z.literal('VOICE_STATE'),
+    d: z.object({
+      channelId: z.string().uuid(),
+      muted: z.boolean(),
+      deafened: z.boolean(),
+    }),
+  }),
   z.object({
     op: z.literal('PRESENCE_UPDATE'),
     d: z.object({
@@ -72,6 +87,12 @@ export interface VoiceState {
   muted: boolean;
   deafened: boolean;
   screenSharing: boolean;
+  /**
+   * Sair é um `VOICE_STATE_UPDATE` com `connected: false`, e não um evento
+   * próprio: quem recebe já tem o `channelId` para saber de qual grade tirar o
+   * avatar, e um segundo op só para isso seria mais uma coisa a manter em dia.
+   */
+  connected: boolean;
 }
 
 export interface ReadyPayload {

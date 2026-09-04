@@ -31,7 +31,17 @@ const envSchema = z.object({
   LIVEKIT_API_KEY: z.string().optional(),
   LIVEKIT_API_SECRET: z.string().optional(),
   TURN_URL: z.string().optional(),
+  /** O mesmo relay sobre TLS na 5349, para rede que bloqueia UDP. */
+  TURN_TLS_URL: z.string().optional(),
   TURN_STATIC_SECRET: z.string().optional(),
+  /**
+   * De onde o webhook do LiveKit pode chegar.
+   *
+   * A assinatura já é conferida; isto é a segunda tranca, e existe porque um
+   * webhook aceito de qualquer lugar é uma rota que reescreve o estado de voz
+   * de todo mundo. Vazio libera — só em desenvolvimento.
+   */
+  LIVEKIT_WEBHOOK_IPS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

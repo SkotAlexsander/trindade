@@ -1,0 +1,38 @@
+# LiveKit — SFU da chamada. Ver docs/06-realtime-e-webrtc.md.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  # Vinte portas em desenvolvimento, as mesmas publicadas no compose, e abaixo
+  # de 49152 — a faixa dinâmica do Windows começa ali. Em produção,
+  # 50000-50200 com `network_mode: host`.
+  port_range_start: 40000
+  port_range_end: 40019
+  # Em desenvolvimento tudo roda na mesma máquina; em produção o LiveKit
+  # precisa anunciar o endereço externo para o candidato relay fechar.
+  use_external_ip: false
+
+keys:
+  # Trocadas por variável em produção. Ver .env.example.
+  devkey: devsecretdevsecretdevsecretdevsecret
+
+room:
+  # Sala só nasce pela API. Com `true`, qualquer token válido cria salas
+  # arbitrárias — e o token é emitido por canal, então isso apagaria o
+  # escopo inteiro.
+  auto_create: false
+  empty_timeout: 300
+  max_participants: 8
+
+# O coturn é quem faz o relay. O TURN embutido do LiveKit fica desligado para
+# haver **um** caminho de mídia, com uma configuração de `denied-peer-ip` só.
+turn:
+  enabled: false
+
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:3000/api/livekit/webhook
+
+logging:
+  level: info

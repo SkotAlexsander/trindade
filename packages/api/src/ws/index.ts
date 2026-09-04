@@ -19,6 +19,7 @@ import * as attachmentsDb from '../db/attachments.js';
 import { toApiChannel } from '../services/channel-view.js';
 import { toApiMessage } from '../services/message-view.js';
 import { toApiAttachment } from '../services/attachment-view.js';
+import { definirMicrofone, esquecerUsuario, estadosDeVoz } from '../services/estado-de-voz.js';
 import { toApiUser } from '../services/user-view.js';
 import * as gw from './gateway.js';
 
@@ -94,7 +95,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       }),
       channels: canais.map(toApiChannel),
       readState: leitura,
-      voiceStates: [],
+      voiceStates: estadosDeVoz(),
       first: gw.primeiroReady(userId),
     };
     gw.send(conn, { op: 'READY', d: payload });
@@ -118,7 +119,13 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       const saida = gw.unregister(conn.sessionId);
       // Só marque offline quando **todas** as conexões caírem: fechar uma aba
       // não pode deixar a pessoa offline para os outros.
-      if (saida?.ultima) gw.broadcastPresenca(saida.userId, 'offline', conn.customStatus);
+      if (saida?.ultima) {
+        gw.broadcastPresenca(saida.userId, 'offline', conn.customStatus);
+        // E sai da chamada junto. O LiveKit também vai avisar, mas por outro
+        // caminho e com outro tempo; quem fecha o navegador não pode ficar
+        // parado na grade até o SFU perceber.
+        esquecerUsuario(saida.userId);
+      }
     });
   });
 }
@@ -183,6 +190,15 @@ async function tratar(conn: gw.Connection, bruto: Buffer, app: FastifyInstance):
       gw.broadcastPresenca(conn.userId, conn.status, conn.customStatus);
       return;
     }
+
+    case 'VOICE_STATE':
+      definirMicrofone(
+        conn.userId,
+        evento.d.channelId,
+        evento.d.muted,
+        evento.d.deafened,
+      );
+      return;
 
     case 'MESSAGE_CREATE':
       await criarMensagem(conn, evento.d, app);

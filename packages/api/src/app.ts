@@ -16,6 +16,7 @@ import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { inviteAdminRoutes, inviteRoutes } from './routes/invites.js';
 import { roleRoutes } from './routes/roles.js';
+import { livekitWebhookRoutes, voiceRoutes } from './routes/voice.js';
 import { channelRoutes } from './routes/channels.js';
 import { userRoutes } from './routes/users.js';
 import { messageRoutes } from './routes/messages.js';
@@ -92,6 +93,8 @@ export async function buildApp() {
       await api.register(inviteRoutes);
       await api.register(inviteAdminRoutes);
       await api.register(roleRoutes);
+      await api.register(voiceRoutes);
+      await api.register(livekitWebhookRoutes);
       await api.register(channelRoutes);
       await api.register(userRoutes);
       await api.register(messageRoutes);

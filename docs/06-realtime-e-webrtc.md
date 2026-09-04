@@ -180,9 +180,12 @@ export function voiceToken(user: User, channelId: string, perms: bigint) {
     canPublish: true,
     canSubscribe: true,
     canPublishData: true,
+    // No SDK 2.18 o tipo é o enum `TrackSource` do protocolo, não texto. O
+    // JWT sai com os nomes em texto de qualquer forma — o SDK converte.
     canPublishSources: can(perms, Perm.SHARE_SCREEN)
-      ? ['camera', 'microphone', 'screen_share', 'screen_share_audio']
-      : ['camera', 'microphone'],
+      ? [TrackSource.CAMERA, TrackSource.MICROPHONE,
+         TrackSource.SCREEN_SHARE, TrackSource.SCREEN_SHARE_AUDIO]
+      : [TrackSource.CAMERA, TrackSource.MICROPHONE],
   });
   return at.toJwt();
 }
@@ -250,7 +253,20 @@ denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
 ```
 
 Os `denied-peer-ip` não são opcionais. Sem eles, seu TURN é um proxy aberto para
-escanear a sua própria rede interna.
+escanear a sua própria rede interna. `packages/api/test/voz.test.ts` confere
+linha por linha que elas estão no arquivo — um arquivo de configuração perde
+uma linha em silêncio, e esta é a que ninguém veria faltar.
+
+Acrescentamos duas faixas ao que o rascunho listava: **CGNAT**
+(`100.64.0.0/10`), que é onde metade das conexões brasileiras começa, e
+`fe80::/10`, o link-local do IPv6.
+
+> Em desenvolvimento no Docker Desktop, as portas de mídia ficam **abaixo de
+> 49152**: essa é a faixa dinâmica do Windows, e publicar dentro dela colide
+> com o que o sistema já entregou a outro processo. O erro que aparece fala em
+> permissão e não diz nada disso. `network_mode: host` também não serve ali —
+> o "host" é a máquina virtual Linux, e a porta fica inalcançável sem erro
+> nenhum. Em produção, num Linux de verdade, `network_mode: host` é melhor.
 
 ### Credenciais efêmeras
 

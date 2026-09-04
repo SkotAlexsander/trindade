@@ -386,15 +386,33 @@ antes do cartão — a interface esconde a imagem e mantém o cartão.
 
 ### `POST /channels/:id/voice/token` — exige `CONNECT_VOICE`
 
-→ `200 { token, wsUrl, iceServers: [{ urls, username, credential }] }`
+→ `200 { token, wsUrl, room, iceServers, canShareScreen }`
 
-O token do LiveKit tem escopo restrito à sala daquele canal, validade de 6h.
-As credenciais TURN são efêmeras (HMAC com expiração).
+O token do LiveKit tem escopo restrito à sala daquele canal (`channel:<id>`),
+validade de 6h. `canPublishSources` só inclui a tela com `SHARE_SCREEN` — a
+interface esconde o botão, e o token recusa a trilha. As duas coisas, sempre.
 
-### `POST /livekit/webhook`
+As credenciais TURN são efêmeras: usuário `{expiração}:{userId}`, senha
+HMAC-SHA1 disso com o segredo estático. O coturn valida sozinho, sem banco.
+**Nunca senha fixa** — uma senha fixa vaza no primeiro `webrtc-internals`
+colado num chamado de suporte.
 
-Recebe eventos do LiveKit, valida a assinatura, converte em `VOICE_STATE_UPDATE`
-no WebSocket. Não é rota pública — restrinja por IP e valide o header.
+Erros: `MISSING_PERMISSION`, `VOICE_OFF`, `CHANNEL_NOT_FOUND`,
+`CHANNEL_NOT_VOICE`.
+
+### `POST /livekit/webhook` — sem sessão
+
+Recebe eventos do LiveKit, valida a assinatura e converte em
+`VOICE_STATE_UPDATE` no WebSocket. Quem chama é o SFU, não uma pessoa.
+
+Duas trancas: a origem (`LIVEKIT_WEBHOOK_IPS`, vazio libera — só em
+desenvolvimento) e a assinatura, conferida sobre o **corpo cru**. O
+`content-type` é `application/webhook+json` e o corpo não passa pelo parser de
+JSON: a assinatura é sobre os bytes exatos, e reordenar uma chave muda o hash.
+
+Vive num plugin separado do resto, e não apenas "registrado antes do hook de
+autenticação": proteção que depende da ordem das linhas é proteção que um dia
+se perde.
 
 ---
 
@@ -416,7 +434,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `TYPING_START` | alguém digitando | `{ channelId, userId }` |
 | `PRESENCE_UPDATE` | status mudou | `{ userId, status, customStatus }` |
 | `USER_UPDATE` | perfil ou cargo | `User` |
-| `VOICE_STATE_UPDATE` | entrou/saiu/mutou | `{ userId, channelId, muted, deafened, screenSharing }` |
+| `VOICE_STATE_UPDATE` | entrou/saiu/mutou | `{ userId, channelId, muted, deafened, screenSharing, connected }` |
 | `CHANNEL_CREATE` / `UPDATE` / `DELETE` | canal | `Channel` |
 | `TASK_UPDATE` | tarefa | `Task` |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |
@@ -428,6 +446,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 |---|---|
 | `MESSAGE_CREATE` | `{ channelId, content, clientNonce, replyToId?, parentId?, attachmentIds? }` |
 | `TYPING_START` | `{ channelId }` |
+| `VOICE_STATE` | `{ channelId, muted, deafened }` |
 | `PRESENCE_UPDATE` | `{ status, customStatus }` |
 | `SUBSCRIBE` | `{ channelIds }` |
 | `HEARTBEAT` | `{}` |

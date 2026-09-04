@@ -39,6 +39,45 @@ services:
       retries: 10
       start_period: 10s
 
+  # O SFU. Toda a mídia passa por ele: numa malha ponto a ponto, cada pessoa
+  # veria o endereço de todas as outras — ver docs/06-realtime-e-webrtc.md.
+  #
+  # Portas publicadas uma a uma, e não `network_mode: host`: no Docker Desktop
+  # o "host" é a máquina virtual Linux, não o Windows nem o macOS, e a porta
+  # fica inalcançável de fora sem nenhum erro que explique isso. Em produção,
+  # num Linux de verdade, `network_mode: host` é melhor — evita a tradução de
+  # endereço no caminho da mídia.
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml --node-ip 127.0.0.1
+    volumes:
+      - ./infra/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - '127.0.0.1:7880:7880'
+      - '127.0.0.1:7881:7881'
+      # Vinte portas, e **abaixo de 49152**: essa é a faixa dinâmica do
+      # Windows, e publicar dentro dela colide com o que o sistema já entregou
+      # a outro processo — o erro que aparece é de permissão, e não diz isso.
+      # A faixa de produção continua 50000-50200, com `network_mode: host`.
+      - '127.0.0.1:40000-40019:40000-40019/udp'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  # O relay. Sem ele, quem está atrás de CGNAT — metade do Brasil — não fecha
+  # conexão de mídia. As linhas `denied-peer-ip` do turnserver.conf não são
+  # opcionais: sem elas, este contêiner vira um scanner da rede interna.
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    command: -c /etc/coturn/turnserver.conf
+    volumes:
+      - ./infra/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    ports:
+      - '127.0.0.1:3478:3478'
+      - '127.0.0.1:3478:3478/udp'
+      - '127.0.0.1:40100-40119:40100-40119/udp'
+
 volumes:
   postgres_data:
   minio_data:
