@@ -123,7 +123,7 @@ docker compose up -d  # postgres, minio, livekit, coturn
 Atualizar esta seção ao fim de cada fase.
 
 - [x] Fase 1 — fundação
-- [ ] Fase 2 — autenticação
+- [x] Fase 2 — autenticação
 - [ ] Fase 3 — design system
 - [ ] Fase 4 — shell da aplicação
 - [ ] Fase 5 — mensagens em tempo real
@@ -177,3 +177,25 @@ já estar instalado e ter compilado tudo, inclusive o argon2 nativo. `Channel` e
 da API os cita sem definir. Não verificado por mim: a renderização da página em
 `localhost:5173` num navegador de verdade — só o build, o transform dos módulos
 e a resposta da API por trás dela.
+
+### Fase 2 — concluída
+
+41 testes passando, incluindo reuso de refresh derrubando a família inteira,
+TOTP fora da janela, e código de recuperação de uso único. Verificado também
+por HTTP real: cookie com HttpOnly/SameSite=Strict/Path restrito, convite de
+uso único, 5 erros de senha e 429 no sexto com Retry-After, backoff de
+1s/2s/4s/8s, e nenhum `localStorage` no código nem no bundle.
+
+Decidido diferente do prompt: `011_recovery_codes` — o modelo de dados não
+previu onde guardar os códigos; as migrations das fases 9 e 10 andam um número
+(`polls` vira 012, `conversations` 013, `boards` 014). `tokens.css` foi
+adiantado da fase 3 porque as telas não podem ser montadas sem os tokens; falta
+dela só os primitivos, a troca de tema e as fontes locais. O zxcvbn ficou em
+chunk sob demanda: são 523 kB gzip que não podem descer na tela de entrar.
+
+`ADMINISTRATOR` **não** isenta da hierarquia de cargos. Isentar deixaria a regra
+inócua justamente para a conta que causa mais estrago se for tomada.
+
+Não verificado por mim, por falta de navegador: renovação silenciosa do access
+token, sessão sobrevivendo ao recarregar a página, e o comportamento das seis
+caixas de código (colar, backspace, envio automático, balanço no erro).

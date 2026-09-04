@@ -1,0 +1,315 @@
+/* Telas de design/06-autenticacao.md. */
+
+.screen {
+  min-height: 100%;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  line-height: var(--leading-ui);
+  /* Ancorada a 20% do topo, não centralizada na vertical: centralizar joga o
+     formulário baixo demais e o teclado virtual do celular o cobre. */
+  padding: var(--auth-top) var(--s-4) var(--s-8);
+}
+
+.column {
+  width: 100%;
+  max-width: var(--auth-col-w);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.mark {
+  width: var(--s-2);
+  height: var(--s-2);
+  background: var(--accent);
+  border-radius: var(--r-field);
+}
+
+.wordmark {
+  /* Única aparição de --text-display no produto inteiro. */
+  font-size: var(--text-display);
+  font-weight: var(--weight-semi);
+  letter-spacing: -0.01em;
+}
+
+.title {
+  font-size: var(--text-title);
+  font-weight: var(--weight-semi);
+}
+
+.lede {
+  color: var(--text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+/* Rótulo acima do campo, nunca placeholder no lugar dele: o placeholder some
+   quando a pessoa digita e ela perde a referência. */
+.label {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--field-h);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  transition: border-color var(--dur-instant) var(--ease-out);
+}
+
+.inputWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.inputWrap[data-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--s-3);
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* O @ é prefixo fixo dentro do campo, não parte do valor. */
+.prefix {
+  padding-left: var(--s-3);
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.prefix + .input {
+  padding-left: var(--s-1);
+}
+
+.adornment {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding-right: var(--s-3);
+  color: var(--text-tertiary);
+}
+
+.reveal {
+  display: flex;
+  padding: var(--s-1);
+  background: none;
+  border: none;
+  border-radius: var(--r-control);
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.reveal:hover {
+  color: var(--text-secondary);
+}
+
+.availableOk {
+  color: var(--accent);
+}
+
+.availableNo {
+  color: var(--danger);
+}
+
+.hint {
+  font-size: var(--text-label);
+  color: var(--text-tertiary);
+}
+
+.fieldError {
+  font-size: var(--text-label);
+  color: var(--danger);
+}
+
+/* Erro acima do botão, nunca em toast. */
+.banner {
+  padding: var(--s-3);
+  background: var(--rust-wash);
+  border-left: 2px solid var(--danger);
+  border-radius: var(--r-field);
+  font-size: var(--text-ui);
+}
+
+.bannerInfo {
+  background: var(--cobalt-wash);
+  border-left-color: var(--accent);
+}
+
+.button {
+  width: 100%;
+  height: var(--field-h);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  border: none;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  transition: background var(--dur-instant) var(--ease-out);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--cobalt-hover);
+}
+
+.button:active:not(:disabled) {
+  background: var(--cobalt-press);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.footer {
+  font-size: var(--text-ui);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.link {
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* --- medidor de senha --------------------------------------------------- */
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.meterBars {
+  display: flex;
+  gap: var(--s-1);
+  flex: 1;
+}
+
+.meterSegment {
+  height: var(--s-1);
+  flex: 1;
+  background: var(--border);
+  border-radius: var(--r-field);
+  transition: background var(--dur-quick) var(--ease-out);
+}
+
+/* Nada de verde para "forte": verde no produto significa presença online, e
+   reaproveitar significado quebra o vocabulário. */
+.meterSegment[data-level='0'] {
+  background: var(--danger);
+}
+
+.meterSegment[data-level='1'] {
+  background: var(--danger);
+}
+
+.meterSegment[data-level='2'] {
+  background: var(--text-tertiary);
+}
+
+.meterSegment[data-level='3'],
+.meterSegment[data-level='4'] {
+  background: var(--accent);
+}
+
+.meterLabel {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  min-width: 8ch;
+}
+
+/* --- código de seis caixas ---------------------------------------------- */
+
+.codeRow {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: space-between;
+}
+
+.codeBox {
+  width: var(--code-box);
+  height: var(--code-box);
+  text-align: center;
+  font-size: var(--text-title);
+  font-family: var(--font-mono);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+}
+
+.codeBox:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.codeRow[data-shake='true'] {
+  animation: shake 200ms var(--ease-in-out);
+}
+
+/* Uma das poucas animações não disparadas por navegação no produto: comunica
+   erro sem texto e devolve a pessoa ao ponto de ação. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.center {
+  text-align: center;
+}

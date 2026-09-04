@@ -215,6 +215,38 @@ describe('login', () => {
     expect(codes.slice(0, 5)).toEqual([401, 401, 401, 401, 401]);
     expect(codes[5]).toBe(429);
   });
+
+  it('o balde do rate limit é por usuário, não só por IP', async () => {
+    // A chave da tabela de docs/04-seguranca.md é "usuário + hash de IP". Ela
+    // depende de o corpo já estar lido quando o limite é avaliado, e o hook
+    // padrão do plugin roda antes disso — o que faria a chave virar só o IP,
+    // em silêncio. Este teste é o que percebe se isso voltar.
+    await createUser({ username: 'ana' });
+    await createUser({ username: 'bruno' });
+
+    for (let i = 0; i < 5; i += 1) {
+      await client.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'ana', password: 'errada-de-proposito' },
+      });
+    }
+
+    const anaBloqueada = await client.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'ana', password: 'errada-de-proposito' },
+    });
+    expect(anaBloqueada.statusCode).toBe(429);
+
+    // Mesmo cliente, outro usuário: balde próprio, ainda livre.
+    const bruno = await client.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'bruno', password: SENHA_BOA },
+    });
+    expect(bruno.statusCode).toBe(200);
+  });
 });
 
 describe('rotação de refresh token', () => {

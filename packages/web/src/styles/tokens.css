@@ -1,0 +1,192 @@
+/* Tokens de design/01-tokens.md.
+ *
+ * Nenhum valor literal de cor, espaço, raio ou duração fora deste arquivo. Se
+ * você escreveu #5C9CE6 ou 12px num componente, existe um token faltando ou
+ * sendo ignorado.
+ *
+ * Este arquivo é da fase 3, adiantado porque as telas de autenticação da fase 2
+ * não podem ser montadas sem ele. A fase 3 acrescenta os primitivos, a troca de
+ * tema e as fontes locais — nada aqui precisa ser refeito. */
+
+:root {
+  /* base — frio, o registro */
+  --slate-abyss: #0e1419;
+  --slate-deep: #151f26;
+  --slate-mid: #1d2a33;
+  --slate-high: #24333d;
+  --slate-line: #26353f;
+  --slate-line-soft: #1e2c35;
+
+  /* texto */
+  --porcelain: #e6edf1;
+  --porcelain-dim: #8497a3;
+  --porcelain-faint: #5a6b77;
+
+  /* interação — frio */
+  --cobalt: #5c9ce6;
+  --cobalt-hover: #7bb0ec;
+  --cobalt-press: #4a87ce;
+  --cobalt-wash: rgba(92, 156, 230, 0.12);
+
+  /* presença ao vivo — quente. só isso. */
+  --ember: #e4a24a;
+  --ember-soft: #c98a38;
+  --ember-wash: rgba(228, 162, 74, 0.1);
+  --ember-glow: rgba(228, 162, 74, 0.22);
+
+  /* destrutivo */
+  --rust: #de5d52;
+  --rust-hover: #e8746a;
+  --rust-wash: rgba(222, 93, 82, 0.12);
+
+  /* status de presença */
+  --status-online: #4fb477;
+  --status-idle: #d8a64a;
+  --status-busy: #de5d52;
+  --status-offline: #4a5a66;
+
+  /* papéis semânticos — componente nunca usa a paleta bruta */
+  --bg-app: var(--slate-abyss);
+  --bg-panel: var(--slate-deep);
+  --bg-raised: var(--slate-mid);
+  --bg-hover: rgba(255, 255, 255, 0.035);
+  --bg-active: rgba(255, 255, 255, 0.06);
+  --bg-selected: var(--cobalt-wash);
+
+  /* superfície viva: onde a pessoa age agora. desloca 3° para o quente. */
+  --bg-live: #1a2229;
+
+  --text-primary: var(--porcelain);
+  --text-secondary: var(--porcelain-dim);
+  --text-tertiary: var(--porcelain-faint);
+  --text-on-accent: #0b1116;
+
+  --border: var(--slate-line);
+  --border-soft: var(--slate-line-soft);
+  --border-strong: #33454f;
+
+  --accent: var(--cobalt);
+  --live: var(--ember);
+  --danger: var(--rust);
+
+  --focus-ring:
+    0 0 0 2px var(--bg-app), 0 0 0 4px var(--cobalt);
+
+  /* tipografia */
+  --font-ui: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --font-read: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --text-meta: 0.6875rem; /* 11px  horário no gutter */
+  --text-label: 0.8125rem; /* 13px  rótulo de interface */
+  --text-ui: 0.9375rem; /* 15px  padrão da interface */
+  --text-body: 0.96875rem; /* 15.5px corpo de mensagem */
+  --text-section: 1.125rem; /* 18px */
+  --text-title: 1.375rem; /* 22px */
+  --text-display: 1.875rem; /* 30px  só em autenticação */
+
+  --leading-tight: 1.25;
+  --leading-ui: 1.4;
+  --leading-read: 1.62;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semi: 600;
+
+  --measure: 72ch;
+
+  /* espaço — escala de 4px, sem valores intermediários */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+
+  /* medidas do layout */
+  --rail-w: 56px;
+  --sidebar-w: 232px;
+  --panel-w: 320px;
+  --cast-h: 88px;
+  --header-h: 48px;
+  --gutter-w: 62px;
+
+  /* raio — varia por função */
+  --r-field: 2px;
+  --r-control: 4px;
+  --r-surface: 6px;
+  --r-media: 8px;
+  --r-full: 999px;
+
+  /* elevação — só em elemento que flutua sobre outro */
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.36);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.48);
+
+  /* movimento */
+  --dur-instant: 80ms;
+  --dur-quick: 140ms;
+  --dur-normal: 220ms;
+  --dur-slow: 400ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* medidas próprias das telas de autenticação */
+  --auth-col-w: 400px;
+  --auth-top: 20vh;
+  --field-h: 44px;
+  --code-box: 48px;
+}
+
+/* A troca não é inversão: a base clara é um cinza-papel frio e --bg-live
+   continua deslocando para o quente. */
+[data-theme='light'] {
+  --bg-app: #edf1f3;
+  --bg-panel: #e3e9ec;
+  --bg-raised: #ffffff;
+  --bg-live: #f2f0ec;
+  --bg-hover: rgba(14, 20, 25, 0.04);
+  --bg-active: rgba(14, 20, 25, 0.07);
+
+  --text-primary: #16212a;
+  --text-secondary: #4e626f;
+  --text-tertiary: #7b8d99;
+  --text-on-accent: #ffffff;
+
+  --border: #c9d4da;
+  --border-soft: #dae2e6;
+  --border-strong: #afbec7;
+
+  --accent: #2c6fbf;
+  --live: #a96a15;
+  --danger: #b93a30;
+}
+
+/* :focus-visible, nunca :focus — senão o anel aparece em clique de mouse. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-control);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,5 +1,4 @@
-/* Só o reset nesta fase. Tokens e tema entram na fase 3 — não invente valor
-   de cor ou espaço aqui, ver design/01-tokens.md. */
+/* Reset. Os valores vêm todos de tokens.css — não escreva literal aqui. */
 *,
 *::before,
 *::after {
@@ -18,7 +17,9 @@ body,
 
 body {
   -webkit-font-smoothing: antialiased;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-ui);
+  background: var(--bg-app);
+  color: var(--text-primary);
 }
 
 img,

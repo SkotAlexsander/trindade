@@ -55,8 +55,15 @@ export async function buildApp() {
   // Global desligado: cada rota declara o próprio limite em `config.rateLimit`,
   // nos números da tabela de docs/04-seguranca.md. A chave padrão é o HMAC do
   // IP com sal que troca todo dia, nunca o IP em claro.
+  //
+  // `hook: 'preHandler'` não é detalhe: o padrão do plugin é `onRequest`, que
+  // roda **antes** do corpo ser lido. A tabela do documento manda o login usar
+  // "usuário + hash de IP" como chave, e no `onRequest` o `req.body` é
+  // undefined — a chave viraria só o IP, silenciosamente, e todo mundo atrás
+  // do mesmo endereço dividiria o mesmo balde.
   await app.register(rateLimit, {
     global: false,
+    hook: 'preHandler',
     keyGenerator: (req) => ipKey(req),
     addHeaders: { 'retry-after': true, 'x-ratelimit-reset': true },
   });
