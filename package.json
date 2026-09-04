@@ -13,6 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "migrate": "pnpm --filter @trindade/api run migrate",
+    "dev:admin": "pnpm --filter api dev:admin",
+    "dev:seed": "pnpm --filter api dev:seed",
     "bootstrap": "pnpm --filter @trindade/api run bootstrap"
   },
   "devDependencies": {

@@ -77,7 +77,7 @@ with sync_playwright() as p:
     pgA = ctxA.new_page()
     erros = []
     pgA.on('pageerror', lambda e: erros.append(str(e)))
-    entrar(pgA, 'alex', 'senha-de-teste-123')
+    entrar(pgA, 'alex', 'cavalo-bateria-grampo-9')
 
     ctxB = b.new_context(viewport={'width': 1280, 'height': 800}, color_scheme='dark')
     pgB = ctxB.new_page()

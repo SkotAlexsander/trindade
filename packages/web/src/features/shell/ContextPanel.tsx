@@ -1,18 +1,32 @@
 import { forwardRef } from 'react';
+import type { Channel } from '@trindade/shared';
 import { IconButton } from '../../components';
 import { X } from '../../components/icones';
+import { PainelFixadas, PainelGuardadas } from '../messages/Paineis';
 import type { PainelAberto } from './ChannelHeader';
 import styles from './shell.module.css';
 
 const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
   busca: 'Buscar',
   fixadas: 'Fixadas',
+  guardadas: 'Guardadas',
   notas: 'Notas',
   tarefas: 'Tarefas',
 };
 
+/**
+ * Guardadas atravessa canais e os outros não. O subtítulo existe para essa
+ * diferença ficar dita, e não deduzida: sem ele, uma lista com mensagens de
+ * três canais dentro do painel de um canal parece defeito.
+ */
+const SUBTITULOS: Partial<Record<Exclude<PainelAberto, null>, string>> = {
+  guardadas: 'todas as conversas',
+  fixadas: 'neste canal',
+};
+
 export interface ContextPanelProps {
   aberto: PainelAberto;
+  canal: Channel | undefined;
   onFechar: () => void;
 }
 
@@ -24,20 +38,26 @@ export interface ContextPanelProps {
  * cada quadro. Ver design/02-shell-principal.md.
  */
 export const ContextPanel = forwardRef<HTMLDivElement, ContextPanelProps>(function ContextPanel(
-  { aberto, onFechar },
+  { aberto, canal, onFechar },
   ref,
 ) {
+  const subtitulo = aberto ? SUBTITULOS[aberto] : undefined;
   return (
     <div className={styles.painelSlot} data-open={aberto !== null} aria-hidden={aberto === null}>
       <aside className={styles.painel} ref={ref} aria-label={aberto ? TITULOS[aberto] : undefined}>
         <div className={styles.painelHead}>
           <span className="section-label">{aberto ? TITULOS[aberto] : ''}</span>
+          {subtitulo ? <span className={styles.painelSub}>{subtitulo}</span> : null}
           <IconButton label="Fechar painel" size="sm" onClick={onFechar}>
             <X size={16} />
           </IconButton>
         </div>
         <div className={styles.painelCorpo}>
-          {aberto ? 'Entra na fase em que este painel é implementado.' : null}
+          {aberto === 'fixadas' ? <PainelFixadas canal={canal} /> : null}
+          {aberto === 'guardadas' ? <PainelGuardadas /> : null}
+          {aberto === 'busca' || aberto === 'notas' || aberto === 'tarefas'
+            ? 'Entra na fase em que este painel é implementado.'
+            : null}
         </div>
       </aside>
     </div>

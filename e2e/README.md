@@ -17,6 +17,18 @@ python -m pip install playwright
 
 Usa o Chrome já instalado (`channel='chrome'`), sem baixar navegador.
 
+O elenco de desenvolvimento sai de um comando, e **todas as contas usam a mesma
+senha**, `cavalo-bateria-grampo-9`:
+
+```bash
+pnpm dev:seed     # alex, bruno, carla, daniel, eva + os quatro canais
+pnpm dev:admin    # a conta `admin`, com uma senha curta para uso à mão
+```
+
+`pnpm dev:seed` é também o conserto de `pnpm migrate down`, que desfaz **todas**
+as migrations e apaga o banco inteiro. Para desfazer só a última:
+`pnpm migrate down 1`.
+
 Com o `docker compose up -d` e o `pnpm dev` no ar:
 
 ```bash

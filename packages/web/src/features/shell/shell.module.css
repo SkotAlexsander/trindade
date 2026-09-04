@@ -291,17 +291,30 @@
   transform: translateX(0);
 }
 
+.elencoSlot[hidden] {
+  display: none;
+}
+
 .painelHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--s-2);
   padding: 0 var(--s-3);
   border-bottom: 1px solid var(--border-soft);
 }
 
+.painelHead > :last-child {
+  margin-left: auto;
+}
+
+.painelSub {
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
 .painelCorpo {
   overflow-y: auto;
-  padding: var(--s-4);
+  padding: var(--s-3);
   color: var(--text-secondary);
   min-height: 0;
 }

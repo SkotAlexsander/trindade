@@ -38,9 +38,27 @@ function countMigrationFiles(): number {
     .length;
 }
 
-// `down` sem contagem desfaz uma só. Aqui o padrão é desfazer tudo, que é o
-// que o aceite da fase 1 pede e o que se espera de `pnpm migrate down`.
+// `down` sem contagem desfaz uma só no CLI. Aqui o padrão é desfazer tudo, que
+// é o que o aceite da fase 1 pede e o que se espera de `pnpm migrate down`.
+//
+// E é por isso que ele pergunta antes. Quem digita `pnpm migrate down` para
+// conferir se a última migration é reversível leva junto o banco inteiro — eu
+// mesmo levei, em 4 de setembro de 2026, e é um engano de uma tecla:
+// `pnpm migrate down 1` faz o que se queria.
 const givesCount = rest.length > 0 && /^\d+$/.test(rest[0] ?? '');
+
+if (action === 'down' && !givesCount && process.env.MIGRATE_DOWN_ALL !== 'sim') {
+  const total = countMigrationFiles();
+  console.error(`
+  \`pnpm migrate down\` desfaz TODAS as ${total} migrations e apaga o banco
+  inteiro de ${new URL(config.DATABASE_URL).pathname.slice(1)}.
+
+  Se você queria desfazer só a última:   pnpm migrate down 1
+  Se você queria mesmo apagar tudo:      MIGRATE_DOWN_ALL=sim pnpm migrate down
+`);
+  process.exit(1);
+}
+
 const args =
   action === 'down' && !givesCount ? [action, String(countMigrationFiles()), ...rest] : [action, ...rest];
 

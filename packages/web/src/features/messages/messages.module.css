@@ -63,6 +63,98 @@
   box-shadow: inset 2px 0 0 var(--danger);
 }
 
+/* O foco itinerante: um anel dentro da linha, não em volta dela — em volta,
+   ele sairia da coluna e encostaria no painel vizinho. */
+.mensagem:focus {
+  outline: none;
+}
+
+.mensagem:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Alvo de um pulo: acende por 800ms e apaga. Só isto anima na lista. */
+.mensagem[data-destacada] {
+  animation: pisca var(--dur-slow) var(--ease-out) 2 alternate;
+}
+
+@keyframes pisca {
+  from {
+    background: transparent;
+  }
+  to {
+    background: var(--cyan-wash);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mensagem[data-destacada] {
+    animation: none;
+    background: var(--cyan-wash);
+  }
+}
+
+/* --- citação da resposta --------------------------------------------------
+   Guia em L de 1px: sobe do avatar da mensagem e vira à direita sob a
+   citação, ligando as duas sem caixa nem fundo. */
+
+.citacao {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  margin-left: calc(var(--gutter-w) - 20px);
+  padding-left: 20px;
+  min-width: 0;
+  position: relative;
+}
+
+.citacao::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  bottom: -2px;
+  width: 20px;
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-top-left-radius: 6px;
+}
+
+.citacaoTexto {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+  max-width: var(--measure);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.citacaoTexto strong {
+  font-weight: var(--weight-semi);
+  color: var(--text-secondary);
+  flex: none;
+}
+
+/* Uma linha e só: a citação é uma pista de para onde ir, não a mensagem. */
+.citacaoTexto > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+button.citacaoTexto:hover > span:last-child {
+  color: var(--text-primary);
+}
+
+.selo {
+  display: inline-flex;
+  color: var(--text-tertiary);
+}
+
 .gutter {
   display: flex;
   align-items: flex-start;
@@ -223,6 +315,113 @@
   padding: 0 var(--s-2);
 }
 
+/* --- barra de ações -------------------------------------------------------
+ *
+ * Sem atraso e **sem transição**. Atraso é frustrante, e transição de
+ * opacidade a cada movimento do mouse cintila numa lista longa: a barra pisca
+ * dezenas de vezes enquanto o ponteiro atravessa a tela. */
+
+.acoes {
+  position: absolute;
+  top: -14px;
+  right: var(--s-5);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-pop);
+}
+
+.mensagem:hover > .acoes,
+.mensagem:focus-within > .acoes {
+  display: flex;
+}
+
+.acao {
+  width: 28px;
+  height: 28px;
+}
+
+.acao[data-ativa='true'] {
+  color: var(--accent);
+}
+
+.acaoEmoji {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-control);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.acaoEmoji:hover {
+  background: var(--bg-hover);
+}
+
+.reticencias {
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+/* --- seletor de emoji ----------------------------------------------------- */
+
+.seletor {
+  width: 296px;
+  padding: var(--s-2);
+}
+
+.buscaEmoji {
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--s-2);
+  margin-bottom: var(--s-2);
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  color: var(--text-primary);
+  font-size: var(--text-label);
+}
+
+.buscaEmoji:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+
+.gradeEmoji {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.itemEmoji {
+  height: 32px;
+  border-radius: var(--r-control);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.itemEmoji[data-ativo='true'] {
+  background: var(--bg-active);
+}
+
+.semEmoji {
+  padding: var(--s-3) var(--s-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-label);
+}
+
+.emojiBotao {
+  font-size: 16px;
+  line-height: 1;
+}
+
 /* --- estados da lista ----------------------------------------------------- */
 
 .comeco,
@@ -282,7 +481,7 @@
   padding: 0 var(--s-4) var(--s-3);
 }
 
-.barraEdicao {
+.barraContexto {
   display: flex;
   align-items: center;
   gap: var(--s-2);
@@ -304,6 +503,11 @@
 
 /* Raio quase reto de propósito: campo muito arredondado parece "bolha de
    mensagem", que é vocabulário de aplicativo pessoal, não de trabalho. */
+.compositor[data-contexto='true'] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 .compositor {
   display: flex;
   align-items: flex-end;
@@ -350,4 +554,79 @@
   .rolagem {
     scroll-behavior: auto;
   }
+}
+
+/* --- linhas dos painéis de fixadas e guardadas ----------------------------
+ *
+ * Mesma linha para os dois. A diferença entre eles não é visual: é o
+ * cabeçalho, e o fato de guardadas nomear o canal de origem — sem isso a
+ * lista é um amontoado de frases sem lugar. */
+
+.linhaPainel {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: var(--s-3) var(--s-2);
+  border-bottom: 1px solid var(--border-soft);
+  text-align: left;
+}
+
+.linhaPainel:hover {
+  background: var(--bg-hover);
+}
+
+.linhaMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.linhaCanal {
+  color: var(--accent);
+  font-weight: var(--weight-medium);
+}
+
+.linhaAutor {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+/* Duas linhas e um degradê: o painel dá a pista, o canal dá a mensagem. */
+.linhaTexto {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font: var(--weight-normal) var(--text-label) / var(--leading-read) var(--font-read);
+  color: var(--text-primary);
+}
+
+.painelVazio {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-5) var(--s-2);
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+}
+
+.painelDica {
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+  line-height: var(--leading-read);
+}
+
+.avisoPainel {
+  margin-bottom: var(--s-2);
+  padding: var(--s-2);
+  border-left: 2px solid var(--mark-line);
+  background: var(--mark-wash);
+  color: var(--text-primary);
+  font-size: var(--text-meta);
+  line-height: var(--leading-read);
 }

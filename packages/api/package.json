@@ -11,6 +11,8 @@
     "test": "vitest run",
     "migrate": "node --import tsx ./src/scripts/migrate.ts",
     "bootstrap": "tsx src/scripts/bootstrap.ts",
+    "dev:admin": "tsx src/scripts/dev-admin.ts",
+    "dev:seed": "tsx src/scripts/dev-seed.ts",
     "keygen": "tsx src/scripts/keygen.ts",
     "test:watch": "vitest"
   },

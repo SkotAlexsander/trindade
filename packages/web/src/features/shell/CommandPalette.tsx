@@ -11,6 +11,7 @@ export interface CommandPaletteProps {
   onFechar: () => void;
   canais: ChannelWithState[];
   pessoas: User[];
+  onAbrirPainel: (qual: 'fixadas' | 'guardadas') => void;
 }
 
 interface Resultado {
@@ -50,7 +51,13 @@ export function pontuar(alvo: string, termo: string): number | null {
   return pontos - a.length * 0.01;
 }
 
-export function CommandPalette({ aberta, onFechar, canais, pessoas }: CommandPaletteProps) {
+export function CommandPalette({
+  aberta,
+  onFechar,
+  canais,
+  pessoas,
+  onAbrirPainel,
+}: CommandPaletteProps) {
   const navigate = useNavigate();
   const [termo, setTermo] = useState('');
   const [selecionado, setSelecionado] = useState(0);
@@ -71,8 +78,22 @@ export function CommandPalette({ aberta, onFechar, canais, pessoas }: CommandPal
         rotulo: 'Convidar alguém',
         run: () => navigate('/config/convites'),
       },
+      {
+        id: 'acao-guardadas',
+        grupo: 'Ações',
+        rotulo: 'Guardadas',
+        detalhe: 'suas, de todas as conversas',
+        run: () => onAbrirPainel('guardadas'),
+      },
+      {
+        id: 'acao-fixadas',
+        grupo: 'Ações',
+        rotulo: 'Fixadas',
+        detalhe: 'deste canal, de todo mundo',
+        run: () => onAbrirPainel('fixadas'),
+      },
     ],
-    [navigate],
+    [navigate, onAbrirPainel],
   );
 
   const resultados = useMemo(() => {

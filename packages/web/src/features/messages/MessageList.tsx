@@ -1,22 +1,20 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import type { User } from '@trindade/shared';
+import { Perm, can, type User } from '@trindade/shared';
 import { Skeleton, Spinner } from '../../components';
 import { ArrowDown } from '../../components/icones';
-import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
-import { mexerNaReacao } from './queries';
-import { Message } from './Message';
+import { Message, type AcoesDisponiveis } from './Message';
 import { montarSecoes, rotuloDoDia } from './linhas';
 import { useCarregarAntigas, useMessages, type MensagemLocal } from './queries';
+import { DURACAO_DO_PISCA_MS, useComposer, useDestaque, useFoco } from './store';
+import { useAcoesDaMensagem } from './useAcoes';
 import { useEnviarMensagem } from './useEnviar';
 import styles from './messages.module.css';
 
 /**
- * O histórico e o comportamento de rolagem.
+ * O histórico, o comportamento de rolagem e o foco itinerante.
  *
- * É a parte que a maioria dos clones de chat erra, e as regras estão em
- * design/04-mensagens.md:
+ * As regras de rolagem estão em design/04-mensagens.md:
  *
  * - gruda no fim **só** se já estava a menos de 100px do fim
  * - se a pessoa rolou para cima, mensagem nova não move nada; aparece um botão
@@ -37,11 +35,20 @@ export interface MessageListProps {
 }
 
 export function MessageList({ channelId, pessoas }: MessageListProps) {
-  const qc = useQueryClient();
   const eu = useAuth((s) => s.user);
+  const permissoes = useAuth((s) => s.permissions);
   const { data, isPending } = useMessages(channelId);
   const { carregar, carregando } = useCarregarAntigas(channelId);
   const { tentarDeNovo, descartar } = useEnviarMensagem();
+  const { reagir, guardar, fixar, apagar } = useAcoesDaMensagem();
+
+  const responder = useComposer((s) => s.responder);
+  const editar = useComposer((s) => s.editar);
+  const focoId = useFoco((s) => s.id);
+  const focar = useFoco((s) => s.focar);
+  const destaqueId = useDestaque((s) => s.id);
+  const limparDestaque = useDestaque((s) => s.limpar);
+  const pular = useDestaque((s) => s.pular);
 
   const rolagem = useRef<HTMLDivElement>(null);
   const coladoNoFim = useRef(true);
@@ -54,8 +61,8 @@ export function MessageList({ channelId, pessoas }: MessageListProps) {
 
   const mensagens = useMemo(() => data?.mensagens ?? [], [data]);
   const secoes = useMemo(() => montarSecoes(mensagens), [mensagens]);
-
   const porId = useMemo(() => new Map(pessoas.map((p) => [p.id, p])), [pessoas]);
+  const mensagensPorId = useMemo(() => new Map(mensagens.map((m) => [m.id, m])), [mensagens]);
 
   const irAoFim = useCallback((comportamento: ScrollBehavior = 'auto') => {
     const el = rolagem.current;
@@ -134,18 +141,156 @@ export function MessageList({ channelId, pessoas }: MessageListProps) {
     if (el.scrollHeight <= el.clientHeight) aoRolar();
   }, [isPending, mensagens.length, aoRolar]);
 
-  const reagir = useCallback(
-    (messageId: string, emoji: string, tirar: boolean) => {
-      if (!eu) return;
-      const caminho = `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`;
-      // Otimista: o evento do socket confirma, e se a chamada falhar o estado
-      // volta ao que era.
-      mexerNaReacao(qc, { messageId, channelId, userId: eu.id, emoji }, eu.id, !tirar);
-      void api(caminho, { method: tirar ? 'DELETE' : 'PUT' }).catch(() => {
-        mexerNaReacao(qc, { messageId, channelId, userId: eu.id, emoji }, eu.id, tirar);
-      });
+  // --- pular e piscar ------------------------------------------------------
+  useEffect(() => {
+    if (!destaqueId) return;
+    const alvo = rolagem.current?.querySelector<HTMLElement>(`[data-id="${destaqueId}"]`);
+    alvo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const id = setTimeout(limparDestaque, DURACAO_DO_PISCA_MS);
+    return () => clearTimeout(id);
+  }, [destaqueId, limparDestaque]);
+
+  // --- teclado -------------------------------------------------------------
+  //
+  // Entra-se na lista por `⇧ Tab` a partir do compositor: ela é um único ponto
+  // de parada do Tab, e a última mensagem é o alvo quando ainda não há foco.
+  // `↑` **não** entra aqui — no compositor essa tecla já é "editar a última".
+  const focoAtual = focoId ?? mensagens[mensagens.length - 1]?.id ?? null;
+
+  const mover = useCallback(
+    (passo: number) => {
+      const i = mensagens.findIndex((m) => m.id === focoAtual);
+      const proxima = mensagens[Math.min(mensagens.length - 1, Math.max(0, i + passo))];
+      if (proxima) focar(proxima.id);
     },
-    [qc, channelId, eu],
+    [mensagens, focoAtual, focar],
+  );
+
+  const digitarNoCompositor = useCallback(
+    (tecla: string) => {
+      focar(null);
+      const campo = document.getElementById('compositor');
+      if (!(campo instanceof HTMLTextAreaElement)) return;
+      campo.focus();
+      // Pelo setter nativo e com um evento de `input` de verdade: atribuir
+      // `campo.value` direto não faz o React ver a mudança, e o primeiro
+      // caractere se perderia — que é justamente o que transformaria este
+      // atalho em defeito.
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLTextAreaElement.prototype,
+        'value',
+      )?.set;
+      setter?.call(campo, campo.value + tecla);
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+    [focar],
+  );
+
+  const aoTeclar = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const alvo = focoAtual ? mensagens.find((m) => m.id === focoAtual) : undefined;
+
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        mover(e.key === 'ArrowDown' ? 1 : -1);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        focar(null);
+        document.getElementById('compositor')?.focus();
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const acionavel = alvo && !alvo.local && !alvo.deletedAt;
+        const meuTexto = alvo?.author.id === eu?.id;
+
+        if (acionavel && alvo) {
+          switch (e.key.toLowerCase()) {
+            case 'r':
+              e.preventDefault();
+              responder(alvo);
+              return;
+            case 'e':
+              if (!meuTexto) break;
+              e.preventDefault();
+              editar(alvo);
+              return;
+            case 's':
+              e.preventDefault();
+              guardar(alvo, !alvo.saved);
+              return;
+            case 'p':
+              if (!can(permissoes, Perm.PIN_MESSAGE)) break;
+              e.preventDefault();
+              fixar(alvo, alvo.pinnedAt === null);
+              return;
+            default:
+              break;
+          }
+        }
+
+        // Qualquer outro caractere imprimível leva ao compositor **com a
+        // tecla**: perder o primeiro caractere seria pior que não ter o atalho.
+        e.preventDefault();
+        digitarNoCompositor(e.key);
+        return;
+      }
+
+      if (e.key === 'Delete' && alvo && !alvo.local && !alvo.deletedAt) {
+        const meuTexto = alvo.author.id === eu?.id;
+        if (!meuTexto && !can(permissoes, Perm.DELETE_ANY_MESSAGE)) return;
+        e.preventDefault();
+        if (confirm('Apagar esta mensagem?')) apagar(alvo);
+      }
+    },
+    [
+      focoAtual,
+      mensagens,
+      mover,
+      focar,
+      eu?.id,
+      responder,
+      editar,
+      guardar,
+      fixar,
+      apagar,
+      permissoes,
+      digitarNoCompositor,
+    ],
+  );
+
+  const acoes: AcoesDisponiveis = useMemo(
+    () => ({
+      podeFixar: can(permissoes, Perm.PIN_MESSAGE),
+      podeApagarDosOutros: can(permissoes, Perm.DELETE_ANY_MESSAGE),
+      onReagir: reagir,
+      onResponder: responder,
+      onGuardar: (m) => guardar(m, !m.saved),
+      onFixar: (m) => fixar(m, m.pinnedAt === null),
+      onEditar: editar,
+      onApagar: (m) => {
+        if (confirm('Apagar esta mensagem?')) apagar(m);
+      },
+      onTentarDeNovo: tentarDeNovo,
+      onDescartar: descartar,
+      onPular: pular,
+      onFocar: focar,
+    }),
+    [
+      permissoes,
+      reagir,
+      responder,
+      guardar,
+      fixar,
+      editar,
+      apagar,
+      tentarDeNovo,
+      descartar,
+      pular,
+      focar,
+    ],
   );
 
   if (isPending) return <Esqueleto />;
@@ -156,6 +301,7 @@ export function MessageList({ channelId, pessoas }: MessageListProps) {
         ref={rolagem}
         className={styles.rolagem}
         onScroll={aoRolar}
+        onKeyDown={aoTeclar}
         role="log"
         aria-live="polite"
         aria-label="Mensagens"
@@ -186,10 +332,17 @@ export function MessageList({ channelId, pessoas }: MessageListProps) {
                 mensagem={linha.mensagem}
                 cabeca={linha.cabeca}
                 autor={porId.get(linha.mensagem.author.id)}
+                meuId={eu?.id ?? ''}
                 meuUsername={eu?.username ?? ''}
-                onReagir={reagir}
-                onTentarDeNovo={tentarDeNovo}
-                onDescartar={descartar}
+                respondida={
+                  linha.mensagem.replyToId
+                    ? mensagensPorId.get(linha.mensagem.replyToId)
+                    : undefined
+                }
+                focada={linha.mensagem.id === focoAtual}
+                assumirFoco={linha.mensagem.id === focoId}
+                destacada={linha.mensagem.id === destaqueId}
+                acoes={acoes}
               />
             ))}
           </section>

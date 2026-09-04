@@ -11,7 +11,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 SHOTS = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 SHOTS.mkdir(parents=True, exist_ok=True)
 BASE = 'http://localhost:5173'
-USUARIO, SENHA = 'alex', 'senha-de-teste-123'
+USUARIO, SENHA = 'alex', 'cavalo-bateria-grampo-9'
 
 resultados = []
 
@@ -84,10 +84,14 @@ with sync_playwright() as p:
     estados = pg.evaluate("""() => [...document.querySelectorAll('[aria-label="Elenco"] button')]
         .map(b => ({ rotulo: b.getAttribute('aria-label'), estado: b.dataset.estado,
                      filtro: getComputedStyle(b.querySelector('span')).filter }))""")
+    # Quantos estão offline depende de quem mais está com o navegador aberto:
+    # desde a fase 5 a presença é real, e não mais o valor de espaço reservado.
+    # O que se verifica é a regra — quem está fora aparece esmaecido e continua
+    # ocupando o lugar.
     offline = [e for e in estados if e['estado'] == 'offline']
     check('offline aparece esmaecido, não some',
-          len(offline) == 1 and 'grayscale' in offline[0]['filtro'],
-          offline[0]['rotulo'] if offline else 'nenhum offline')
+          len(offline) >= 1 and all('grayscale' in e['filtro'] for e in offline),
+          f"{len(offline)} offline: " + ', '.join(e['rotulo'] for e in offline))
 
     online = [e for e in estados if e['estado'] == 'online']
     check('online tem anel de duas camadas',
@@ -124,7 +128,9 @@ with sync_playwright() as p:
           f'{round(antes)} -> {round(depois)}')
 
     # --- 5. Escape só fecha o painel se o foco estiver dentro ------------
-    pg.locator('div[id="compositor"]').click()
+    # Desde a fatia 3 da fase 5 o compositor é um `textarea` de verdade,
+    # dentro da rota, e não mais o retângulo de espaço reservado do shell.
+    pg.locator('#compositor').click()
     pg.keyboard.press('Escape')
     pg.wait_for_timeout(300)
     aindaAberto = pg.evaluate("""() => document.querySelector('div[class*="painelSlot"]').dataset.open""")

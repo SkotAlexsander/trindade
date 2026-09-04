@@ -146,14 +146,18 @@ só, na mensagem focada; as demais ficam em `-1`. `↑` e `↓` movem, e o item
 focado é rolado para dentro da viewport com `block: 'nearest'` — nunca
 `'center'`, que faz a lista pular a cada tecla.
 
+Entra-se na lista por `⇧ Tab` a partir do compositor, não por `↑`. Uma versão
+anterior desta seção dizia `↑`, e contradizia `design/04-mensagens.md`, onde
+`↑` no campo vazio já era "editar a última mensagem". Duas ações na mesma tecla
+separadas por um estado invisível é o atalho que ninguém acerta duas vezes.
+
 Com a mensagem focada: `E` editar (só as suas), `R` responder, `T` thread,
 `P` fixar, `+` seletor de reação, `Delete` apagar com confirmação,
 `Alt Enter` marcar como não lida a partir dela, `⇧ F10` menu de contexto,
 `Esc` devolve o foco ao compositor.
 
-`↑` com o compositor **vazio** entra na lista. `↑` com o compositor **cheio**
-continua editando a última mensagem, como já estava. A condição é o campo estar
-vazio, não o cursor estar na primeira linha.
+`↑` no compositor continua como em `design/04-mensagens.md`: campo vazio abre a
+sua última mensagem para edição.
 
 **Qualquer caractere imprimível foca o compositor e digita a tecla.** O primeiro
 caractere não pode se perder — se perder, o atalho vira defeito e é melhor não
@@ -195,6 +199,7 @@ conteúdo, **não sobrepondo**. Compositor continua aceitando texto e enfileira.
 - A lista de guardadas nomeia o canal de origem em cada linha
 - Apagar uma mensagem guardada a remove da lista, sem lápide
 - Fixar exige `PIN_MESSAGE` no servidor, não só no botão
-- `↑` no campo vazio entra na lista; com texto, edita a última
+- `↑` no campo vazio abre a última mensagem sua para edição
+- `⇧ Tab` a partir do compositor entra na lista; `Esc` volta ao compositor
 - Digitar uma letra com o foco na lista leva o texto ao compositor **com a letra**
 - Toda ação da mensagem focada tem atalho e menu de contexto por `⇧ F10`

@@ -299,6 +299,28 @@ não uma cópia, e manter o texto ali seria desfazer o apagar por outro caminho.
 O painel de fixadas foi antecipado da fase 9 para a fase 5, porque o botão já
 existia no cabeçalho desde a fase 4.
 
+### Contas de desenvolvimento
+
+```bash
+pnpm dev:seed     # alex, bruno, carla, daniel, eva + os quatro canais
+pnpm dev:admin    # a conta `admin`, senha curta, para uso à mão
+```
+
+Todas as contas do elenco usam `cavalo-bateria-grampo-9`. A `admin` usa
+`010623` — **abaixo dos 12 caracteres do `passwordSchema`**, e por isso o
+script escreve o hash direto no banco em vez de passar pela rota. A regra
+continua valendo em toda porta de entrada real, e os dois scripts recusam
+rodar com `NODE_ENV=production`.
+
+O elenco tem cinco lugares no painel. Com a `admin` são seis contas, então uma
+fica de fora da faixa — some quem tem o nome mais tarde em ordem. Para não ter
+a sexta conta: `DEV_ADMIN_USER=alex pnpm dev:admin`.
+
+**`pnpm migrate down` desfaz TODAS as migrations**, por decisão do aceite da
+fase 1. Eu apaguei o banco de desenvolvimento assim em 4 de setembro de 2026,
+tentando conferir se a migration 013 era reversível. Agora ele pergunta antes;
+para desfazer só a última, `pnpm migrate down 1`.
+
 ### Tokens: nomes antigos corrigidos
 
 A troca de direção visual da fase 3 reescreveu `00-direcao-visual.md` e

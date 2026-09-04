@@ -5,7 +5,12 @@ import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../comp
 import type { ChannelWithState } from '../channels/canais';
 import styles from './shell.module.css';
 
-export type PainelAberto = 'busca' | 'fixadas' | 'notas' | 'tarefas' | null;
+/**
+ * `guardadas` está nesta união mas **não** na barra de botões do cabeçalho:
+ * aqueles quatro são do canal em que você está, e guardadas atravessa todos.
+ * O gatilho dela mora no menu do seu próprio nome e em `Ctrl/⌘ ⇧ B`.
+ */
+export type PainelAberto = 'busca' | 'fixadas' | 'guardadas' | 'notas' | 'tarefas' | null;
 
 const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: ReactNode }> = [
   { id: 'busca', rotulo: 'Buscar no canal', icone: <Search size={18} /> },

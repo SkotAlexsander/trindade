@@ -66,6 +66,7 @@ export function AppShell() {
   const podeGerenciar = can(permissoes, Perm.MANAGE_CHANNEL);
 
   const [painel, setPainel] = useState<PainelAberto>(null);
+  const [elencoVisivel, setElencoVisivel] = useState(true);
   const [paletaAberta, setPaletaAberta] = useState(false);
   const [gaveta, setGaveta] = useState(false);
   const painelRef = useRef<HTMLDivElement>(null);
@@ -94,8 +95,17 @@ export function AppShell() {
     [canais, slug, navigate],
   );
 
+  const alternarPainel = useCallback((qual: Exclude<PainelAberto, null>) => {
+    setPainel((atual) => (atual === qual ? null : qual));
+  }, []);
+
   useHotkeys([
     { key: 'k', mod: true, emCampo: true, run: () => setPaletaAberta(true) },
+    // Do canal em que você está.
+    { key: 'p', mod: true, emCampo: true, run: () => alternarPainel('fixadas') },
+    { key: 'u', mod: true, emCampo: true, run: () => setElencoVisivel((v) => !v) },
+    // Suas, de todas as conversas.
+    { key: 'b', mod: true, shift: true, emCampo: true, run: () => alternarPainel('guardadas') },
     { key: 'ArrowDown', alt: true, run: () => irParaVizinho(1) },
     { key: 'ArrowUp', alt: true, run: () => irParaVizinho(-1) },
     {
@@ -170,7 +180,18 @@ export function AppShell() {
           )}
         </div>
 
-        <CastPanel users={pessoas} typing={digitando} acender={conectado} />
+        {/* Escondido, não desmontado: na faixa estreita o elenco é o último
+            filho e recebe `order: -1` para virar faixa no topo da gaveta.
+            Desmontá-lo passaria essa regra para a lista de canais, que subiria
+            por cima do cabeçalho. */}
+        <div className={styles.elencoSlot} hidden={!elencoVisivel}>
+          <CastPanel
+            users={pessoas}
+            typing={digitando}
+            acender={conectado}
+            onGuardadas={() => alternarPainel('guardadas')}
+          />
+        </div>
       </div>
 
       {gaveta && estreito ? (
@@ -181,7 +202,7 @@ export function AppShell() {
       <ChannelHeader
         canal={canalAtual}
         painel={painel}
-        onPainel={(qual) => setPainel((atual) => (atual === qual ? null : qual))}
+        onPainel={alternarPainel}
         onAbrirGaveta={() => setGaveta(true)}
         mostrarGaveta={estreito}
       >
@@ -189,13 +210,19 @@ export function AppShell() {
       </ChannelHeader>
 
       {/* --- coluna 4: painel contextual --- */}
-      <ContextPanel ref={painelRef} aberto={painel} onFechar={() => setPainel(null)} />
+      <ContextPanel
+        ref={painelRef}
+        aberto={painel}
+        canal={canalAtual}
+        onFechar={() => setPainel(null)}
+      />
 
       <CommandPalette
         aberta={paletaAberta}
         onFechar={() => setPaletaAberta(false)}
         canais={canais}
         pessoas={pessoas}
+        onAbrirPainel={alternarPainel}
       />
     </div>
   );

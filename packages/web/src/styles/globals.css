@@ -128,8 +128,15 @@ h6 {
   font-weight: inherit;
 }
 
+/* O botão do navegador vem com fundo, borda e padding próprios, e todo
+   componente daqui os sobrescreve — menos os que só queriam uma área
+   clicável, que apareciam como caixinhas cinzas. O reset é aqui, uma vez. */
 button {
   cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: inherit;
 }
 
 button:disabled {

@@ -280,8 +280,16 @@ Não vale para `Ctrl`, `Alt`, `⌘`, teclas de função nem navegação.
 
 ### Mensagem em foco
 
-`↑` e `↓` com o compositor vazio movem o foco pela lista. A mensagem focada
-ganha o anel de foco e responde a:
+A lista é **um único ponto de parada do `Tab`**: `⇧ Tab` a partir do compositor
+entra nela, na última mensagem. Dentro, `↑` e `↓` movem o foco e `Esc` devolve
+ao compositor.
+
+Entrar na lista **não** é `↑` no compositor. `↑` no campo vazio já é "editar a
+última mensagem" desde `04-mensagens.md`, e dar dois significados à mesma tecla
+conforme um estado invisível é o tipo de atalho que ninguém acerta duas vezes
+seguidas.
+
+A mensagem focada ganha o anel de foco e responde a:
 
 | Tecla | Ação |
 |---|---|
@@ -300,8 +308,8 @@ Este grupo inteiro depende de foco itinerante na lista (`roving tabindex`), que
 é a mesma coisa de que a navegação por teclado precisa para ser acessível. Sai
 de graça junto: implementar um é implementar o outro.
 
-`↑` com o compositor **cheio** continua sendo "editar a última mensagem". O
-compositor vazio é a condição que separa os dois comportamentos.
+`↑` no compositor não muda: campo vazio edita a sua última mensagem, campo com
+texto move o cursor dentro do texto, como em qualquer campo.
 
 ### Voz e vídeo
 

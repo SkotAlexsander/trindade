@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import type { Role, User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
-import { Clock } from '../../components/icones';
+import { Clock, Pin } from '../../components/icones';
+import { AcoesDaMensagem } from './AcoesDaMensagem';
 import { hora } from './linhas';
 import type { MensagemLocal } from './queries';
 import styles from './messages.module.css';
@@ -14,17 +15,6 @@ import styles from './messages.module.css';
  * no gutter no hover. Repetir o cabeçalho a cada linha é o maior desperdício
  * vertical do design de chat. Ver design/04-mensagens.md.
  */
-
-export interface MessageProps {
-  mensagem: MensagemLocal;
-  cabeca: boolean;
-  autor: User | undefined;
-  /** Nome de usuário de quem está lendo — para destacar a menção a você. */
-  meuUsername: string;
-  onReagir: (messageId: string, emoji: string, tirar: boolean) => void;
-  onTentarDeNovo: (mensagem: MensagemLocal) => void;
-  onDescartar: (mensagem: MensagemLocal) => void;
-}
 
 function maisAlto(roles: readonly Role[]): Role | undefined {
   return roles.reduce<Role | undefined>(
@@ -65,27 +55,114 @@ function ehMencaoAMim(conteudo: string | null, meuUsername: string): boolean {
   return conteudo.includes(`@${meuUsername}`);
 }
 
+export interface AcoesDisponiveis {
+  podeFixar: boolean;
+  podeApagarDosOutros: boolean;
+  onReagir: (mensagem: MensagemLocal, emoji: string, tirar: boolean) => void;
+  onResponder: (mensagem: MensagemLocal) => void;
+  onGuardar: (mensagem: MensagemLocal) => void;
+  onFixar: (mensagem: MensagemLocal) => void;
+  onEditar: (mensagem: MensagemLocal) => void;
+  onApagar: (mensagem: MensagemLocal) => void;
+  onTentarDeNovo: (mensagem: MensagemLocal) => void;
+  onDescartar: (mensagem: MensagemLocal) => void;
+  onPular: (messageId: string) => void;
+  onFocar: (messageId: string) => void;
+}
+
+export interface MessageProps {
+  mensagem: MensagemLocal;
+  cabeca: boolean;
+  autor: User | undefined;
+  meuId: string;
+  meuUsername: string;
+  /** A mensagem citada, se esta for uma resposta e ela estiver carregada. */
+  respondida: MensagemLocal | undefined;
+  /** Único ponto de parada do Tab na lista — o foco itinerante. */
+  focada: boolean;
+  /**
+   * Pedido explícito de foco, distinto de `focada`.
+   *
+   * Sem a distinção, entrar na lista não funciona: a última mensagem já é o
+   * ponto de parada por padrão, então `focada` nunca muda de valor quando se
+   * pede o foco para ela, e o efeito que chama `.focus()` nunca roda.
+   */
+  assumirFoco: boolean;
+  /** Acesa por 800ms depois de um pulo vindo de uma citação ou da busca. */
+  destacada: boolean;
+  acoes: AcoesDisponiveis;
+}
+
 export const Message = memo(function Message({
   mensagem,
   cabeca,
   autor,
+  meuId,
   meuUsername,
-  onReagir,
-  onTentarDeNovo,
-  onDescartar,
+  respondida,
+  focada,
+  assumirFoco,
+  destacada,
+  acoes,
 }: MessageProps) {
   const cargo = cargoDoTopo(autor?.roles);
   const cor = corDoCargo(autor?.roles);
   const apagada = mensagem.deletedAt !== null;
   const local = mensagem.local;
+  const souOAutor = mensagem.author.id === meuId;
+  const artigo = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!assumirFoco) return;
+    // `nearest` e nunca `center`: centralizar faz a lista pular meia tela a
+    // cada tecla de seta.
+    artigo.current?.scrollIntoView({ block: 'nearest' });
+    if (document.activeElement !== artigo.current) artigo.current?.focus({ preventScroll: true });
+  }, [assumirFoco]);
+
+  // Mensagem otimista ainda não existe no servidor: agir sobre ela produziria
+  // um 404. A barra só aparece quando há o que acionar.
+  const temAcoes = !apagada && !local;
 
   return (
     <article
+      ref={artigo}
       className={styles.mensagem}
       data-cabeca={cabeca}
       data-local={local ?? undefined}
       data-mencionado={ehMencaoAMim(mensagem.content, meuUsername)}
+      data-destacada={destacada || undefined}
+      data-id={mensagem.id}
+      tabIndex={focada ? 0 : -1}
+      onFocus={() => acoes.onFocar(mensagem.id)}
     >
+      {mensagem.replyToId ? (
+        <div className={styles.citacao}>
+          {respondida ? (
+            <button
+              type="button"
+              className={styles.citacaoTexto}
+              onClick={() => acoes.onPular(respondida.id)}
+            >
+              <Avatar
+                id={respondida.author.id}
+                name={respondida.author.displayName}
+                src={respondida.author.avatarUrl}
+                size="xs"
+              />
+              <strong>{respondida.author.displayName}</strong>
+              <span>{respondida.deletedAt ? 'mensagem apagada' : respondida.content}</span>
+            </button>
+          ) : (
+            // A original pode estar fora do trecho carregado. Dizer isso é
+            // melhor que uma citação vazia que parece defeito.
+            <span className={styles.citacaoTexto}>
+              <span>mensagem original acima do histórico carregado</span>
+            </span>
+          )}
+        </div>
+      ) : null}
+
       <div className={styles.gutter}>
         {cabeca ? (
           <Avatar
@@ -110,16 +187,24 @@ export const Message = memo(function Message({
       <div className={styles.conteudo}>
         {cabeca ? (
           <div className={styles.cabecalho}>
-            <span
-              className={styles.nome}
-              style={cor ? { color: cor } : undefined}
-            >
+            <span className={styles.nome} style={cor ? { color: cor } : undefined}>
               {mensagem.author.displayName}
             </span>
             {cargo ? <span className={styles.cargo}>{cargo.name}</span> : null}
             <time className={styles.hora} dateTime={mensagem.createdAt}>
               {hora(mensagem.createdAt)}
             </time>
+
+            {/* Fixada muda a linha para todo mundo, porque é do canal.
+                Guardada **não** muda nada aqui — só o botão da barra acende —
+                senão a mesma conversa pareceria diferente para cada pessoa. */}
+            {mensagem.pinnedAt ? (
+              <Tooltip label="Fixada neste canal">
+                <span className={styles.selo}>
+                  <Pin size={12} />
+                </span>
+              </Tooltip>
+            ) : null}
           </div>
         ) : null}
 
@@ -142,7 +227,7 @@ export const Message = memo(function Message({
                 data-minha={r.me}
                 aria-pressed={r.me}
                 aria-label={`${r.emoji}, ${r.count}`}
-                onClick={() => onReagir(mensagem.id, r.emoji, r.me)}
+                onClick={() => acoes.onReagir(mensagem, r.emoji, r.me)}
               >
                 <span aria-hidden="true">{r.emoji}</span>
                 <span>{r.count}</span>
@@ -156,16 +241,34 @@ export const Message = memo(function Message({
         {local === 'falhou' ? (
           <p className={styles.falhou}>
             Não enviou.{' '}
-            <button type="button" onClick={() => onTentarDeNovo(mensagem)}>
+            <button type="button" onClick={() => acoes.onTentarDeNovo(mensagem)}>
               Tentar de novo
             </button>
             <span aria-hidden="true"> · </span>
-            <button type="button" onClick={() => onDescartar(mensagem)}>
+            <button type="button" onClick={() => acoes.onDescartar(mensagem)}>
               Descartar
             </button>
           </p>
         ) : null}
       </div>
+
+      {temAcoes ? (
+        <AcoesDaMensagem
+          mensagem={mensagem}
+          souOAutor={souOAutor}
+          podeFixar={acoes.podeFixar}
+          podeApagar={souOAutor || acoes.podeApagarDosOutros}
+          onReagir={(emoji) => {
+            const minha = mensagem.reactions.find((r) => r.emoji === emoji)?.me ?? false;
+            acoes.onReagir(mensagem, emoji, minha);
+          }}
+          onResponder={() => acoes.onResponder(mensagem)}
+          onGuardar={() => acoes.onGuardar(mensagem)}
+          onFixar={() => acoes.onFixar(mensagem)}
+          onEditar={() => acoes.onEditar(mensagem)}
+          onApagar={() => acoes.onApagar(mensagem)}
+        />
+      ) : null}
     </article>
   );
 });

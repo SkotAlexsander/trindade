@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { User } from '@trindade/shared';
-import { Avatar, IconButton, Tooltip } from '../../components';
-import { Headphones, Mic, MicOff, HeadphonesOff, Settings } from '../../components/icones';
+import { useNavigate } from 'react-router-dom';
+import { Avatar, IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
+import { Headphones, Mark, Mic, MicOff, HeadphonesOff, Settings } from '../../components/icones';
 import { useAuth } from '../auth/store';
 import styles from './cast.module.css';
 
@@ -27,6 +28,12 @@ export interface CastPanelProps {
   /** Verdadeiro no primeiro READY da sessão, falso em reconexão. */
   acender?: boolean;
   onSelect?: (user: User) => void;
+  /**
+   * Abre o painel de guardadas. O gatilho fica aqui, no rodapé com o seu nome,
+   * e não no cabeçalho do canal: aquela barra é do canal em que você está, e
+   * guardadas atravessa todos. Ver design/04-mensagens.md.
+   */
+  onGuardadas?: () => void;
 }
 
 /** Primeiro nome, truncado em 6 sem reticências: `Cristina` vira `Crist`. */
@@ -35,8 +42,15 @@ export function nomeCurto(displayName: string): string {
   return primeiro.length > 6 ? primeiro.slice(0, 5) : primeiro;
 }
 
-export function CastPanel({ users, typing, acender = false, onSelect }: CastPanelProps) {
+export function CastPanel({
+  users,
+  typing,
+  acender = false,
+  onSelect,
+  onGuardadas,
+}: CastPanelProps) {
   const eu = useAuth((state) => state.user);
+  const navigate = useNavigate();
   const [microfone, setMicrofone] = useState(true);
   const [fone, setFone] = useState(true);
 
@@ -78,9 +92,25 @@ export function CastPanel({ users, typing, acender = false, onSelect }: CastPane
       {eu ? (
         <div className={styles.voce}>
           <Avatar id={eu.id} name={eu.displayName} src={eu.avatarUrl} size="sm" status={eu.status} />
-          <button type="button" className={styles.voceNome}>
-            {eu.displayName}
-          </button>
+          <Menu
+            label="Você"
+            placement="top-start"
+            trigger={
+              <button type="button" className={styles.voceNome}>
+                {eu.displayName}
+              </button>
+            }
+          >
+            <MenuItem
+              icon={<Mark size={16} />}
+              onSelect={() => onGuardadas?.()}
+            >
+              Guardadas
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem onSelect={() => navigate('/config/perfil')}>Editar perfil</MenuItem>
+            <MenuItem onSelect={() => navigate('/config/conta')}>Conta e segurança</MenuItem>
+          </Menu>
           <div className={styles.controles}>
             <Tooltip label={microfone ? 'Desligar microfone (Ctrl ⇧ M)' : 'Ligar microfone (Ctrl ⇧ M)'}>
               <IconButton
