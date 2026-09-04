@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Perm, can, type User } from '@trindade/shared';
+import { Perm, can, type Channel, type User } from '@trindade/shared';
 import { Skeleton, Spinner } from '../../components';
 import { ArrowDown } from '../../components/icones';
 import { useAuth } from '../auth/store';
@@ -32,9 +32,10 @@ const LIMITE_SEM_JANELA = 200;
 export interface MessageListProps {
   channelId: string;
   pessoas: readonly User[];
+  canais: readonly Channel[];
 }
 
-export function MessageList({ channelId, pessoas }: MessageListProps) {
+export function MessageList({ channelId, pessoas, canais }: MessageListProps) {
   const eu = useAuth((s) => s.user);
   const permissoes = useAuth((s) => s.permissions);
   const { data, isPending } = useMessages(channelId);
@@ -334,6 +335,8 @@ export function MessageList({ channelId, pessoas }: MessageListProps) {
                 autor={porId.get(linha.mensagem.author.id)}
                 meuId={eu?.id ?? ''}
                 meuUsername={eu?.username ?? ''}
+                pessoas={pessoas}
+                canais={canais}
                 respondida={
                   linha.mensagem.replyToId
                     ? mensagensPorId.get(linha.mensagem.replyToId)

@@ -1,9 +1,11 @@
-import { memo, useEffect, useRef } from 'react';
-import type { Role, User } from '@trindade/shared';
+import { memo, useEffect, useMemo, useRef } from 'react';
+import type { Channel, Role, User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
 import { Clock, Pin } from '../../components/icones';
 import { AcoesDaMensagem } from './AcoesDaMensagem';
+import { Conteudo } from './Conteudo';
 import { hora } from './linhas';
+import { analisarMarkdown, mencionados } from './markdown';
 import type { MensagemLocal } from './queries';
 import styles from './messages.module.css';
 
@@ -44,17 +46,6 @@ export function corDoCargo(roles: readonly Role[] | undefined): string | undefin
   return maisAlto(roles.filter((r) => r.color))?.color ?? undefined;
 }
 
-/**
- * Menção a quem está lendo.
- *
- * Comparação de texto por enquanto: o analisador de menções chega junto com o
- * markdown, na próxima fatia, e é ele que vai substituir isto.
- */
-function ehMencaoAMim(conteudo: string | null, meuUsername: string): boolean {
-  if (!conteudo || !meuUsername) return false;
-  return conteudo.includes(`@${meuUsername}`);
-}
-
 export interface AcoesDisponiveis {
   podeFixar: boolean;
   podeApagarDosOutros: boolean;
@@ -76,6 +67,8 @@ export interface MessageProps {
   autor: User | undefined;
   meuId: string;
   meuUsername: string;
+  pessoas: readonly User[];
+  canais: readonly Channel[];
   /** A mensagem citada, se esta for uma resposta e ela estiver carregada. */
   respondida: MensagemLocal | undefined;
   /** Único ponto de parada do Tab na lista — o foco itinerante. */
@@ -99,6 +92,8 @@ export const Message = memo(function Message({
   autor,
   meuId,
   meuUsername,
+  pessoas,
+  canais,
   respondida,
   focada,
   assumirFoco,
@@ -111,6 +106,18 @@ export const Message = memo(function Message({
   const local = mensagem.local;
   const souOAutor = mensagem.author.id === meuId;
   const artigo = useRef<HTMLElement>(null);
+
+  // A árvore é montada uma vez e serve para desenhar **e** para saber se você
+  // foi citado. Procurar `@usuario` no texto cru acharia dentro de um bloco de
+  // código, e a linha inteira mudaria de cor por engano.
+  const blocos = useMemo(
+    () => (mensagem.content ? analisarMarkdown(mensagem.content) : []),
+    [mensagem.content],
+  );
+  const meCitou = useMemo(
+    () => Boolean(meuUsername) && mencionados(blocos).has(meuUsername),
+    [blocos, meuUsername],
+  );
 
   useEffect(() => {
     if (!assumirFoco) return;
@@ -130,7 +137,7 @@ export const Message = memo(function Message({
       className={styles.mensagem}
       data-cabeca={cabeca}
       data-local={local ?? undefined}
-      data-mencionado={ehMencaoAMim(mensagem.content, meuUsername)}
+      data-mencionado={meCitou}
       data-destacada={destacada || undefined}
       data-id={mensagem.id}
       tabIndex={focada ? 0 : -1}
@@ -211,10 +218,15 @@ export const Message = memo(function Message({
         {apagada ? (
           <p className={styles.apagada}>Mensagem apagada</p>
         ) : (
-          <p className={styles.corpo}>
-            {mensagem.content}
+          <div className={styles.corpoBloco}>
+            <Conteudo
+              texto={mensagem.content ?? ''}
+              pessoas={pessoas}
+              canais={canais}
+              meuUsername={meuUsername}
+            />
             {mensagem.editedAt ? <span className={styles.editado}>(editado)</span> : null}
-          </p>
+          </div>
         )}
 
         {mensagem.reactions.length > 0 ? (

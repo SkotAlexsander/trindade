@@ -299,6 +299,30 @@ não uma cópia, e manter o texto ali seria desfazer o apagar por outro caminho.
 O painel de fixadas foi antecipado da fase 9 para a fase 5, porque o botão já
 existia no cabeçalho desde a fase 4.
 
+### Markdown sem DOMPurify, de propósito
+
+`design/04-mensagens.md` pedia `marked` + DOMPurify. `markdown.ts` faz outra
+coisa: analisa à mão e devolve **nós React**, nunca HTML.
+
+O DOMPurify existe para limpar HTML que se vai injetar. Aqui não se injeta
+HTML nenhum, e o React escapa texto por construção — a classe inteira de XSS
+por conteúdo de mensagem deixa de existir em vez de ser filtrada. Vale o mesmo
+para o realce de sintaxe: `realce.ts` usa `codeToTokens` do Shiki, não
+`codeToHtml`, para não precisar de `dangerouslySetInnerHTML`.
+
+**Sobra um vetor, e é o único ponto perigoso do arquivo:** o `href` de um
+link. `hrefSeguro` usa lista de permitidos (`http`, `https`, `mailto`), nunca
+de proibidos, e sem esquema assume `https`. Há teste para `javascript:`,
+`data:` e `vbscript:`.
+
+Se um dia for preciso aceitar HTML de verdade — de um webhook, de uma
+importação — aí o DOMPurify volta, e o documento continua certo.
+
+O Shiki entra com **oito linguagens e um tema**, pelo caminho de granularidade
+fina e com o motor de JavaScript em vez do WASM. Cada linguagem é um pedaço
+próprio, buscado quando alguém escreve o primeiro bloco daquela linguagem: uma
+conversa sem código não paga por nada disso.
+
 ### Contas de desenvolvimento
 
 ```bash

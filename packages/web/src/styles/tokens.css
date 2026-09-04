@@ -83,6 +83,18 @@
 
   --focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--cyan);
 
+  /* --- bloco de código ----------------------------------------------------
+     O bloco de código é superfície de terminal e **não acompanha o tema**. O
+     realce vem de um tema escuro do Shiki; clarear o fundo exigiria carregar
+     um segundo tema inteiro para ganhar pouco, e um bloco escuro sobre papel
+     é convenção antiga o bastante para não surpreender ninguém. Sem estes
+     tokens, `--text-primary` no tema claro pinta texto quase preto sobre
+     fundo quase preto. */
+
+  --code-bg: var(--abyss);
+  --code-ink: var(--ice);
+  --code-line: rgba(34, 211, 238, 0.12);
+
   /* Cor da marca. Ciano no escuro, preto no claro: no fundo quase preto o
      ciano é a assinatura; sobre papel a mesma cor perde presença e a versão
      preta lê melhor. Um token para a regra viver num lugar só. */

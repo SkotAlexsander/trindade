@@ -39,7 +39,12 @@ export function Canal() {
     <div className={styles.canal}>
       {/* A chave força a lista a recomeçar ao trocar de canal: posição de
           rolagem e contadores de um canal não valem para o outro. */}
-      <MessageList key={canal.id} channelId={canal.id} pessoas={pessoas ?? []} />
+      <MessageList
+        key={canal.id}
+        channelId={canal.id}
+        pessoas={pessoas ?? []}
+        canais={canais ?? []}
+      />
       <Digitando channelId={canal.id} pessoas={pessoas ?? []} />
       <Composer canal={canal} />
     </div>

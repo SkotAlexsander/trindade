@@ -522,6 +522,20 @@ button.citacaoTexto:hover > span:last-child {
   border-color: var(--border-strong);
 }
 
+/* O anel vai na moldura, não no campo.
+ *
+ * É o mesmo defeito que apareceu no campo de senha da fase 2: desenhado no
+ * `textarea`, o anel corta a caixa ao meio e joga o clipe e o botão de enviar
+ * para fora dela. Aqui o campo abre mão do anel e a moldura o assume. */
+.campo:focus-visible {
+  box-shadow: none;
+}
+
+.compositor:has(.campo:focus-visible) {
+  box-shadow: var(--focus-ring);
+  border-color: var(--accent);
+}
+
 .campo {
   flex: 1;
   min-width: 0;
@@ -629,4 +643,171 @@ button.citacaoTexto:hover > span:last-child {
   color: var(--text-primary);
   font-size: var(--text-meta);
   line-height: var(--leading-read);
+}
+
+/* --- conteúdo da mensagem -------------------------------------------------- */
+
+.corpoBloco {
+  max-width: var(--measure);
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+}
+
+/* Um parágrafo só não ganha espaço extra: a maioria das mensagens é isso. */
+.corpoBloco > *:only-child {
+  margin: 0;
+}
+
+.link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Menção troca de família tipográfica: no meio do texto ela vira interface,
+   porque é isso que ela é — um objeto, não palavra. */
+.mencao {
+  color: var(--accent);
+  background: var(--cyan-wash);
+  padding: 0 3px;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 0.94em;
+  font-weight: var(--weight-medium);
+}
+
+button.mencao:hover {
+  background: var(--bg-active);
+}
+
+.codigoEmLinha {
+  padding: 1px 5px;
+  border-radius: 3px;
+  /* Este acompanha o tema: é uma palavra no meio da frase, não uma
+     superfície. Só o bloco vira terminal. */
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  color: var(--text-primary);
+  font: var(--weight-normal) 0.88em var(--font-mono);
+}
+
+/* Revelado não volta a esconder: quem clicou já leu, e re-esconder é piada. */
+.spoiler {
+  border-radius: 3px;
+  padding: 0 3px;
+  background: var(--high);
+  color: transparent;
+  text-shadow: none;
+}
+
+.spoiler[data-aberto='true'] {
+  background: var(--bg-active);
+  color: inherit;
+  cursor: text;
+}
+
+.spoiler:not([data-aberto='true']) * {
+  color: transparent;
+}
+
+.citacaoTexto2 {
+  border-left: 2px solid var(--border-strong);
+  padding-left: var(--s-3);
+  color: var(--text-secondary);
+  font: var(--weight-normal) var(--text-body) / var(--leading-read) var(--font-read);
+}
+
+.lista {
+  padding-left: var(--s-5);
+  font: var(--weight-normal) var(--text-body) / var(--leading-read) var(--font-read);
+  color: var(--text-primary);
+}
+
+.lista li {
+  list-style: revert;
+}
+
+/* --- bloco de código ------------------------------------------------------- */
+
+.bloco {
+  position: relative;
+  width: 100%;
+  max-width: var(--measure);
+  border: 1px solid var(--code-line);
+  border-radius: var(--r-control);
+  background: var(--code-bg);
+  overflow: hidden;
+}
+
+.blocoBarra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 var(--s-2) 0 var(--s-3);
+  border-bottom: 1px solid var(--code-line);
+  font-size: var(--text-meta);
+  color: var(--ice-faint);
+}
+
+.blocoLingua {
+  font-family: var(--font-mono);
+}
+
+/* Só no hover: uma barra com botão permanente em cada bloco de código vira
+   ruído numa conversa cheia deles. */
+.blocoCopiar {
+  color: var(--ice-faint);
+  font-size: var(--text-meta);
+  opacity: 0;
+}
+
+.bloco:hover .blocoCopiar,
+.blocoCopiar:focus-visible {
+  opacity: 1;
+}
+
+.blocoCopiar:hover {
+  color: var(--ice);
+}
+
+.blocoCodigo {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  font: var(--weight-normal) 13px / 1.55 var(--font-mono);
+  color: var(--code-ink);
+  tab-size: 2;
+}
+
+/* Colapsado: quinze linhas mais o degradê que avisa que há mais. */
+.bloco[data-colapsado='true'] .blocoCodigo {
+  max-height: calc(15 * 1.55 * 13px);
+  overflow-y: hidden;
+}
+
+.bloco[data-colapsado='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--code-bg));
+  pointer-events: none;
+}
+
+.mostrarTudo {
+  display: block;
+  width: 100%;
+  height: 28px;
+  border-top: 1px solid var(--code-line);
+  color: var(--cyan);
+  font-size: var(--text-meta);
+  font-family: var(--font-ui);
+}
+
+.mostrarTudo:hover {
+  background: var(--bg-hover);
 }

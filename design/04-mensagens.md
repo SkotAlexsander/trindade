@@ -130,9 +130,18 @@ Acima de 15 linhas, colapse com um degradê e "Mostrar tudo".
 }
 ```
 
-Menção troca de família tipográfica: no meio da serifa, ela vira interface,
-porque é isso que ela é — um objeto clicável, não texto. É uma distinção sutil
-que a leitura registra sem que ninguém a note.
+Menção troca para `--font-ui`: no meio do corpo, ela vira interface, porque é
+isso que ela é — um objeto clicável, não texto.
+
+> **Nota de 4 de setembro de 2026.** Esta regra foi escrita quando o corpo era
+> Source Serif 4, e a troca de serifa para sem-serifa era o sinal principal. A
+> mudança de direção visual tirou a serifa: `--font-read` e `--font-ui` são
+> hoje a mesma família, e o `font-family` na menção não muda nada visualmente.
+>
+> A regra fica — o dia em que o corpo voltar a ter uma família própria, a
+> menção já está do lado certo. Mas **o que distingue a menção hoje é o par
+> fundo + peso**, e é isso que precisa sobreviver a qualquer ajuste de cor.
+> Um teste que só olhasse a família passaria sem verificar nada.
 
 Mensagem que menciona **você** ganha fundo `--cyan-wash` na linha inteira e uma
 borda esquerda de 2px em `--accent`.
