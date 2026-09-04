@@ -14,6 +14,7 @@ import {
   buttonClass,
   footerClass,
   formClass,
+  hintClass,
   inputClass,
   linkClass,
   meterBarsClass,
@@ -206,7 +207,7 @@ export function CriarConta() {
           )}
         </Field>
 
-        <Field label="Senha" error={passwordError} hint="Mínimo de 12 caracteres.">
+        <Field label="Senha" error={passwordError}>
           {(id) => (
             <PasswordInput
               id={id}
@@ -232,6 +233,8 @@ export function CriarConta() {
             <span className={meterLabelClass}>{strength.label}</span>
           </div>
         ) : null}
+
+        {passwordError ? null : <p className={hintClass}>Mínimo de 12 caracteres.</p>}
 
         {error ? <Banner>{error}</Banner> : null}
 

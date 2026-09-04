@@ -8,6 +8,21 @@ import { AppError } from '../lib/errors.js';
 import type { ApiError } from '@trindade/shared';
 
 /**
+ * Erros do Fastify que são culpa do cliente, traduzidos para a linguagem do
+ * contrato. Sem isso todos viram `INTERNAL_ERROR` e o cliente não sabe o que
+ * corrigir.
+ */
+const CLIENT_ERRORS: Record<string, { error: string; code: string }> = {
+  FST_ERR_CTP_EMPTY_JSON_BODY: { error: 'corpo da requisição vazio', code: 'INVALID_BODY' },
+  FST_ERR_CTP_INVALID_JSON_BODY: { error: 'corpo da requisição inválido', code: 'INVALID_BODY' },
+  FST_ERR_CTP_INVALID_MEDIA_TYPE: {
+    error: 'tipo de conteúdo não suportado',
+    code: 'UNSUPPORTED_MEDIA_TYPE',
+  },
+  FST_ERR_CTP_BODY_TOO_LARGE: { error: 'conteúdo grande demais', code: 'FILE_TOO_LARGE' },
+};
+
+/**
  * Ponto único de saída de erro. Toda resposta de erro da API tem a forma
  * `{ error, code, field? }`. Ver docs/05-contrato-api.md.
  */
@@ -39,12 +54,19 @@ export const errorHandler = fp(function errorHandlerPlugin(app: FastifyInstance)
       return reply.code(429).send({ error: 'muitas tentativas', code: 'RATE_LIMITED' });
     }
 
+    // Erro de 4xx é do cliente, não nosso. Chamar isso de "falha interna"
+    // manda quem depura procurar bug no servidor por um corpo malformado.
+    if (status < 500) {
+      req.log.warn({ code: err.code, status }, 'requisição malformada');
+      return reply.code(status).send({
+        error: CLIENT_ERRORS[err.code ?? '']?.error ?? 'requisição inválida',
+        code: CLIENT_ERRORS[err.code ?? '']?.code ?? 'BAD_REQUEST',
+      });
+    }
+
     // Nada de vazar stack ou mensagem de driver para o cliente.
     req.log.error({ err }, 'erro não tratado');
-    return reply.code(status < 500 ? status : 500).send({
-      error: 'falha interna',
-      code: 'INTERNAL_ERROR',
-    });
+    return reply.code(500).send({ error: 'falha interna', code: 'INTERNAL_ERROR' });
   });
 
   app.setNotFoundHandler((_req, reply) => {

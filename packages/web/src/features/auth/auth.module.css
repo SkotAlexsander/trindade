@@ -85,6 +85,20 @@
   border-color: var(--accent);
 }
 
+/* O anel vai no campo inteiro, não no <input>.
+ *
+ * A regra global de tokens.css aplica o box-shadow ao elemento focado; num
+ * campo com adorno — o olho da senha, o ✓ do usuário — isso desenha o anel só
+ * em volta do <input> e parte o campo visualmente em duas caixas. */
+.input:focus-visible {
+  box-shadow: none;
+}
+
+.inputWrap:has(.input:focus-visible) {
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-field);
+}
+
 .inputWrap[data-invalid='true'] {
   border-color: var(--danger);
 }

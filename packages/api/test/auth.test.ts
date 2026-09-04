@@ -415,6 +415,62 @@ describe('sessão autenticada', () => {
   });
 });
 
+describe('forma dos erros', () => {
+  it('corpo malformado é erro do cliente, não "falha interna"', async () => {
+    // Um JSON quebrado respondendo INTERNAL_ERROR manda quem depura procurar
+    // bug no servidor. Isto apareceu de verdade ao chamar a API por HTTP.
+    const res = await client.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' },
+      payload: '{isto não é json',
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('INVALID_BODY');
+    expect(res.json().error).not.toContain('interna');
+  });
+
+  it('tipo de conteúdo não suportado devolve 415 com código próprio', async () => {
+    const res = await client.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'username=ana',
+    });
+
+    expect(res.statusCode).toBe(415);
+    expect(res.json().code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+
+  it('nenhum erro de cliente se disfarça de falha interna', async () => {
+    const casos = [
+      { headers: { 'content-type': 'application/json' }, payload: '{quebrado' },
+      { headers: { 'content-type': 'application/xml' }, payload: '<a/>' },
+      { headers: { 'content-type': 'text/plain' }, payload: 'ana' },
+    ];
+
+    for (const caso of casos) {
+      const res = await client.inject({ method: 'POST', url: '/api/auth/login', ...caso });
+      expect(res.statusCode).toBeGreaterThanOrEqual(400);
+      expect(res.statusCode).toBeLessThan(500);
+      expect(res.json().code).not.toBe('INTERNAL_ERROR');
+    }
+  });
+
+  it('erro de validação aponta o campo', async () => {
+    const res = await client.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'MAIÚSCULO INVÁLIDO', password: 'x' },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('INVALID_INPUT');
+    expect(res.json().field).toBe('username');
+  });
+});
+
 describe('prévia de convite', () => {
   it('mostra só quem convidou', async () => {
     const admin = await createUser({ username: 'admin', displayName: 'Ana', roleName: 'Admin' });

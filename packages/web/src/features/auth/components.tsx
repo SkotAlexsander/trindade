@@ -238,6 +238,7 @@ export function CodeInput(props: {
 
 export const codeLength = CODE_LENGTH;
 export const centerClass = styles.center;
+export const hintClass = styles.hint;
 export const footerClass = styles.footer;
 export const titleClass = styles.title;
 export const ledeClass = styles.lede;
