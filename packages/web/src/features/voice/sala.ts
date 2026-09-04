@@ -5,7 +5,9 @@ import {
   RoomEvent,
   Track,
   TrackEvent,
+  VideoPreset,
   VideoPresets,
+  VideoQuality,
   type LocalTrackPublication,
   type LocalVideoTrack,
   type RemoteParticipant,
@@ -14,6 +16,7 @@ import {
 import type { CadeiaDeEntrada } from '../../lib/midia';
 import { abrirCamera, aplicarSaida, encerrar, podeEscolherSaida } from '../../lib/midia';
 import { lerPreferencias } from '../../lib/preferencias';
+import { camadasDe, type MotivoDeLimitacao, type Preset } from './presets';
 import type { FaseDaChamada, Qualidade } from './store';
 
 /**
@@ -47,6 +50,13 @@ export interface Participante {
   identity: string;
   eu: boolean;
   video: RemoteVideoTrack | LocalVideoTrack | null;
+  /** Tem uma tela publicada — o cartão vira "está transmitindo". */
+  transmitindo: boolean;
+  /** Você assinou essa tela. Até clicar, o servidor não envia nada dela. */
+  assistindo: boolean;
+  tela: RemoteVideoTrack | LocalVideoTrack | null;
+  /** Só na sua própria: quantos estão assistindo agora. */
+  espectadores: number;
 }
 
 export interface Credenciais {
@@ -120,7 +130,27 @@ export async function entrar(
       if (surdo) p.setVolume(0);
       avisarParticipantes(retornos);
     })
-    .on(RoomEvent.ParticipantDisconnected, () => avisarParticipantes(retornos))
+    .on(RoomEvent.ParticipantDisconnected, (p) => {
+      espectadoresDaMinhaTela.delete(p.identity);
+      avisarParticipantes(retornos);
+    })
+    .on(RoomEvent.TrackPublished, (publicacao) => {
+      // A contrapartida do `autoSubscribe: false`: tudo que não é tela é
+      // assinado assim que aparece. Sem isto, ninguém ouviria ninguém.
+      if (publicacao.source !== Track.Source.ScreenShare) publicacao.setSubscribed(true);
+      avisarParticipantes(retornos);
+    })
+    .on(RoomEvent.TrackUnpublished, () => avisarParticipantes(retornos))
+    .on(RoomEvent.DataReceived, (carga, participante) => {
+      const aviso = lerAviso(carga);
+      if (!aviso || !participante) return;
+      // "Estou assistindo a sua tela." O SDK não conta espectadores por trilha,
+      // e transmitir para ninguém é comum o bastante para valer um aviso.
+      if (aviso.alvo !== room.localParticipant.identity) return;
+      if (aviso.assistindo) espectadoresDaMinhaTela.add(participante.identity);
+      else espectadoresDaMinhaTela.delete(participante.identity);
+      avisarParticipantes(retornos);
+    })
     .on(RoomEvent.TrackSubscribed, () => avisarParticipantes(retornos))
     .on(RoomEvent.TrackUnsubscribed, () => avisarParticipantes(retornos))
     .on(RoomEvent.TrackMuted, () => avisarParticipantes(retornos))
@@ -142,6 +172,11 @@ export async function entrar(
       // Inegociável. Ver o cabeçalho deste arquivo.
       iceTransportPolicy: 'relay',
     },
+    // **Assistir é opcional**, e é aqui que isso deixa de ser conversa: sem
+    // assinatura automática, a tela de quem transmite não sai do servidor até
+    // alguém clicar em "Assistir". Voz e câmera são assinadas na hora, logo
+    // abaixo — o que se paga por escolha é a tela, que é o que custa caro.
+    autoSubscribe: false,
   });
 
   publicacao =
@@ -170,13 +205,29 @@ function avisarParticipantes(retornos: Retornos): void {
 
   const doParticipante = (p: {
     identity: string;
-    getTrackPublication: (source: Track.Source) => { videoTrack?: unknown; isMuted: boolean } | undefined;
+    getTrackPublication: (
+      source: Track.Source,
+    ) => { videoTrack?: unknown; isMuted: boolean; isSubscribed?: boolean } | undefined;
   }): Participante => {
+    const eu = p.identity === room.localParticipant.identity;
     const pub = p.getTrackPublication(Track.Source.Camera);
     // Trilha muda não é trilha: quem desliga a câmera no meio some do vídeo
     // sem sair da grade, e o cartão volta a ser o avatar.
     const video = pub && !pub.isMuted ? ((pub.videoTrack as RemoteVideoTrack) ?? null) : null;
-    return { identity: p.identity, eu: p.identity === room.localParticipant.identity, video };
+
+    const tela = p.getTrackPublication(Track.Source.ScreenShare);
+    // **Assistir é opcional.** Enquanto ninguém clica, a publicação existe e a
+    // assinatura não — e o servidor não manda um byte daquela tela.
+    const assistindo = eu ? Boolean(tela) : Boolean(tela?.isSubscribed);
+    return {
+      identity: p.identity,
+      eu,
+      video,
+      transmitindo: Boolean(tela),
+      assistindo,
+      tela: assistindo ? ((tela?.videoTrack as RemoteVideoTrack) ?? null) : null,
+      espectadores: eu ? espectadoresDaMinhaTela.size : 0,
+    };
   };
 
   retornos.aoMudarParticipantes([
@@ -245,6 +296,252 @@ export async function definirCamera(ligada: boolean, retornos: Retornos): Promis
 
 export function cameraLigada(): boolean {
   return publicacaoDeVideo !== null;
+}
+
+/* ------------------------------------------------------------------------- *
+ * Tela
+ * ------------------------------------------------------------------------- */
+
+const espectadoresDaMinhaTela = new Set<string>();
+
+interface AvisoDeEspectador {
+  tipo: 'assistindo';
+  alvo: string;
+  assistindo: boolean;
+}
+
+function lerAviso(carga: Uint8Array): AvisoDeEspectador | null {
+  try {
+    const bruto: unknown = JSON.parse(new TextDecoder().decode(carga));
+    if (typeof bruto !== 'object' || bruto === null) return null;
+    const aviso = bruto as Record<string, unknown>;
+    if (aviso.tipo !== 'assistindo' || typeof aviso.alvo !== 'string') return null;
+    return { tipo: 'assistindo', alvo: aviso.alvo, assistindo: Boolean(aviso.assistindo) };
+  } catch {
+    // Mensagem de dados de outra versão nossa, ou lixo. Ignorar é o certo:
+    // isto alimenta um contador, não uma decisão de acesso.
+    return null;
+  }
+}
+
+/** Quantas telas estão no ar. Três é o teto, e é decisão de produto. */
+export const MAXIMO_DE_TELAS = 3;
+
+export function telasNoAr(): number {
+  if (!sala) return 0;
+  const remotas = [...sala.remoteParticipants.values()].filter((p) =>
+    p.getTrackPublication(Track.Source.ScreenShare),
+  ).length;
+  return remotas + (sala.localParticipant.getTrackPublication(Track.Source.ScreenShare) ? 1 : 0);
+}
+
+/**
+ * Começa a transmitir.
+ *
+ * **Nada de `await` antes do `setScreenShareEnabled`.** O Safari só abre o
+ * seletor de tela dentro da mesma pilha do clique; qualquer espera no caminho
+ * quebra o gesto e o pedido é recusado sem explicação. Por isso o preset e o
+ * áudio já chegam decididos aqui.
+ */
+export async function iniciarTela(preset: Preset, comAudioDoSistema: boolean): Promise<void> {
+  if (!sala) return;
+
+  const camadas = camadasDe(preset).map(
+    (c) => new VideoPreset(c.largura, c.altura, c.bitrate, c.fps),
+  );
+
+  await sala.localParticipant.setScreenShareEnabled(
+    true,
+    {
+      resolution: { width: preset.largura, height: preset.altura, frameRate: preset.fps },
+      contentHint: preset.dica,
+      // Sem processamento de voz: cancelamento de eco e supressão de ruído
+      // existem para voz e destroem música. 48 kHz, dois canais.
+      audio: comAudioDoSistema
+        ? {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            sampleRate: 48_000,
+            channelCount: 2,
+          }
+        : false,
+      systemAudio: 'include',
+      // Trocar de janela sem interromper a transmissão. Detalhe pequeno, muito
+      // usado.
+      surfaceSwitching: 'include',
+      // A aba do próprio produto fora da lista: compartilhar a aba onde você se
+      // assiste cria um túnel infinito.
+      selfBrowserSurface: 'exclude',
+    },
+    {
+      // VP9 tem modo específico para captura de tela e trata texto muito melhor
+      // que o H.264, que foi feito para vídeo natural e lê borda de letra como
+      // ruído.
+      videoCodec: 'vp9',
+      screenShareEncoding: { maxBitrate: preset.bitrate, maxFramerate: preset.fps },
+      screenShareSimulcastLayers: camadas,
+    },
+  );
+}
+
+export async function pararTela(): Promise<void> {
+  await sala?.localParticipant.setScreenShareEnabled(false);
+}
+
+export function transmitindo(): boolean {
+  return Boolean(sala?.localParticipant.getTrackPublication(Track.Source.ScreenShare));
+}
+
+/**
+ * Troca o preset **sem parar e recomeçar**.
+ *
+ * `applyConstraints` na trilha que já existe: a resolução muda em um ou dois
+ * segundos, o seletor nativo não reaparece e ninguém que assiste é derrubado.
+ */
+export async function trocarPreset(preset: Preset): Promise<void> {
+  const pub = sala?.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+  const trilha = pub?.track?.mediaStreamTrack;
+  if (!trilha) return;
+
+  await trilha.applyConstraints({
+    width: { ideal: preset.largura },
+    height: { ideal: preset.altura },
+    frameRate: { ideal: preset.fps },
+  });
+  trilha.contentHint = preset.dica;
+}
+
+/**
+ * Assinar ou largar a tela de alguém.
+ *
+ * O aviso de volta é por mensagem de dados porque o SDK não conta espectadores
+ * por trilha, e quem transmite precisa saber que está transmitindo para
+ * ninguém.
+ */
+export async function assistir(identity: string, ligar: boolean): Promise<void> {
+  const participante = sala?.remoteParticipants.get(identity);
+  const pub = participante?.getTrackPublication(Track.Source.ScreenShare);
+  if (!pub) return;
+  pub.setSubscribed(ligar);
+
+  const audio = participante?.getTrackPublication(Track.Source.ScreenShareAudio);
+  audio?.setSubscribed(ligar);
+
+  const carga = new TextEncoder().encode(
+    JSON.stringify({ tipo: 'assistindo', alvo: identity, assistindo: ligar }),
+  );
+  await sala?.localParticipant.publishData(carga, { reliable: true });
+}
+
+export type QualidadeDoEspectador = 'auto' | 'fonte' | '720p';
+
+/**
+ * A qualidade que **o espectador** escolhe, e que só vale para ele.
+ *
+ * "Automática" deixa o `adaptiveStream` escolher a camada pelo tamanho do
+ * elemento na tela — assistir numa janelinha não puxa 1440p. "Fonte" força a
+ * camada alta, que é o que se quer ao maximizar para ler código e o automático
+ * demora a subir.
+ */
+export function definirQualidade(identity: string, qualidade: QualidadeDoEspectador): void {
+  const pub = sala?.remoteParticipants.get(identity)?.getTrackPublication(Track.Source.ScreenShare);
+  if (!pub) return;
+
+  if (qualidade === 'fonte') {
+    pub.setVideoQuality(VideoQuality.HIGH);
+    return;
+  }
+  if (qualidade === '720p') {
+    pub.setVideoDimensions({ width: 1280, height: 720 });
+    return;
+  }
+  // Automática: devolver o controle ao `adaptiveStream` é pedir a camada pelo
+  // tamanho do elemento, que é o que ele já faz sozinho.
+  pub.setVideoQuality(VideoQuality.HIGH);
+}
+
+export interface EstatisticasDaTela {
+  bitrate: number;
+  largura: number;
+  altura: number;
+  fps: number;
+  /** O que o codificador diz estar segurando: nada, a máquina ou a rede. */
+  motivo: MotivoDeLimitacao;
+}
+
+let ultimoRelatorio: { bytes: number; quando: number } | null = null;
+
+/**
+ * O que a barra de quem transmite mostra: preset, resolução real e bitrate real.
+ *
+ * O bitrate é o de verdade, do `getStats`, e não o alvo — porque a linha só
+ * serve para explicar por que a imagem piorou, e para isso ela tem de contar o
+ * que está acontecendo, não o que foi pedido.
+ */
+export async function estatisticasDaTela(): Promise<EstatisticasDaTela | null> {
+  const pub = sala?.localParticipant.getTrackPublication(Track.Source.ScreenShare);
+  const trilha = pub?.track;
+  if (!trilha) {
+    ultimoRelatorio = null;
+    return null;
+  }
+
+  const relatorio = await trilha.getRTCStatsReport?.();
+  if (!relatorio) return null;
+
+  let bytes = 0;
+  let largura = 0;
+  let altura = 0;
+  let fps = 0;
+  let motivo: MotivoDeLimitacao = 'none';
+
+  relatorio.forEach((linha: Record<string, unknown>) => {
+    if (linha.type !== 'outbound-rtp' || linha.kind !== 'video') return;
+    // Com simulcast há uma linha por camada; somar dá o que sai de verdade, e
+    // a resolução que interessa é a da maior.
+    bytes += Number(linha.bytesSent ?? 0);
+    const l = Number(linha.frameWidth ?? 0);
+    if (l > largura) {
+      largura = l;
+      altura = Number(linha.frameHeight ?? 0);
+      fps = Math.round(Number(linha.framesPerSecond ?? 0));
+    }
+    const razao = linha.qualityLimitationReason;
+    if (razao === 'cpu' || razao === 'bandwidth' || razao === 'other') motivo = razao;
+  });
+
+  const agora = Date.now();
+  let bitrate = 0;
+  if (ultimoRelatorio && agora > ultimoRelatorio.quando) {
+    bitrate = ((bytes - ultimoRelatorio.bytes) * 8000) / (agora - ultimoRelatorio.quando);
+  }
+  ultimoRelatorio = { bytes, quando: agora };
+
+  return { bitrate: Math.max(0, bitrate), largura, altura, fps, motivo };
+}
+
+/**
+ * Quanto a conexão aguenta subir, medido nos primeiros segundos da chamada.
+ *
+ * Vira a linha "Sua conexão suporta até" no seletor de preset. É uma estimativa
+ * do próprio WebRTC, e por isso a interface a usa para **avisar**, nunca para
+ * proibir.
+ */
+export async function bandaDeSubida(): Promise<number | null> {
+  // Sai do relatório da trilha de voz, que sempre existe numa chamada: o par
+  // de candidatos é o mesmo para tudo o que sobe.
+  const publicacaoDeAudio = sala?.localParticipant.getTrackPublication(Track.Source.Microphone);
+  const relatorio = await publicacaoDeAudio?.track?.getRTCStatsReport?.();
+  if (!relatorio) return null;
+
+  let disponivel: number | null = null;
+  relatorio.forEach((linha: Record<string, unknown>) => {
+    if (linha.type === 'candidate-pair' && linha.availableOutgoingBitrate) {
+      disponivel = Number(linha.availableOutgoingBitrate);
+    }
+  });
+  return disponivel;
 }
 
 /** A saída escolhida nas configurações, se este navegador deixar escolher. */

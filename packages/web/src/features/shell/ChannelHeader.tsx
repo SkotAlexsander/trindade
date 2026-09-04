@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { IconButton, Tooltip } from '../../components';
 import { FaixaConexao } from '../realtime/FaixaConexao';
 import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
+import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
 import styles from './shell.module.css';
 
 /**
@@ -34,11 +35,14 @@ export interface ChannelHeaderProps {
   onAbrirGaveta?: () => void;
   mostrarGaveta?: boolean;
   /**
-   * Cobre a conversa inteira, cabeçalho incluído — a grade da chamada. É
-   * sobreposição e não outra rota: a chamada e o que se escreve nela são a
-   * mesma sala, e trocar de tela obrigaria a escolher uma das duas.
+   * A chamada, que divide esta coluna com a conversa.
+   *
+   * Não é outra rota, e em `ambos` também não é sobreposição: as duas coisas
+   * ficam na tela ao mesmo tempo, porque numa chamada há gente falando e gente
+   * escrevendo ao mesmo tempo. Ver design/07-chamada.md.
    */
-  sobreposicao?: ReactNode;
+  chamada?: ReactNode;
+  modoDaSala?: 'mensagens' | 'ambos' | 'chamada';
   children: ReactNode;
 }
 
@@ -48,11 +52,64 @@ export function ChannelHeader({
   onPainel,
   onAbrirGaveta,
   mostrarGaveta = false,
-  sobreposicao,
+  chamada,
+  modoDaSala = 'mensagens',
   children,
 }: ChannelHeaderProps) {
+  const coluna = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState(() => lerPreferencias().larguraDaConversa);
+
+  /**
+   * Arrastar a divisa entre a chamada e a conversa.
+   *
+   * `setPointerCapture` em vez de ouvintes no documento: o ponteiro continua
+   * pertencendo à alça mesmo quando o cursor passa por cima do vídeo, que é
+   * justamente onde um arrasto costuma se perder.
+   */
+  const arrastar = useCallback((evento: React.PointerEvent<HTMLButtonElement>) => {
+    const caixa = coluna.current?.getBoundingClientRect();
+    if (!caixa) return;
+
+    /* A alça é guardada numa variável **antes** de qualquer coisa assíncrona.
+       O React zera `currentTarget` quando o handler retorna, e os ouvintes
+       abaixo rodam depois disso: lê-lo lá dentro dava `null`, o `pointerup`
+       explodia e o arrasto ficava grudado no cursor até o próximo clique. */
+    const alca = evento.currentTarget;
+    alca.setPointerCapture(evento.pointerId);
+
+    const mover = (e: PointerEvent) => {
+      // A conversa não pode sumir nem engolir a chamada: abaixo de 260px não
+      // cabe uma mensagem, e acima de 760 não sobra chamada.
+      const proposta = Math.min(760, Math.max(260, Math.round(caixa.right - e.clientX)));
+      larguraAtual.current = proposta;
+      setLargura(proposta);
+    };
+
+    const soltar = () => {
+      alca.removeEventListener('pointermove', mover);
+      alca.removeEventListener('pointerup', soltar);
+      alca.removeEventListener('pointercancel', soltar);
+      salvarPreferencias({ larguraDaConversa: larguraAtual.current });
+    };
+
+    alca.addEventListener('pointermove', mover);
+    alca.addEventListener('pointerup', soltar);
+    // O ponteiro pode ser cancelado pelo sistema — sem isto, o arrasto continua
+    // depois de a mão ter saído da mesa.
+    alca.addEventListener('pointercancel', soltar);
+  }, []);
+
+  // O valor no instante de soltar, sem reassinar os ouvintes a cada pixel.
+  const larguraAtual = useRef(largura);
+  larguraAtual.current = largura;
+
   return (
-    <div className={styles.conversa}>
+    <div
+      ref={coluna}
+      className={styles.conversa}
+      data-chamada={modoDaSala}
+      style={{ '--conversa-w': `${largura}px` } as React.CSSProperties}
+    >
       {/* Primeira linha da grade: empurra o conteúdo, não sobrepõe. */}
       <FaixaConexao />
 
@@ -102,7 +159,29 @@ export function ChannelHeader({
           usa este mesmo cabeçalho e não tem onde escrever. */}
       <div className={styles.historico}>{children}</div>
 
-      {sobreposicao}
+      <div className={styles.chamadaSlot}>{chamada}</div>
+
+      {/* Um separador de verdade: as setas do teclado também movem, porque
+          arrastar com o mouse não pode ser a única forma. */}
+      <button
+        type="button"
+        className={styles.divisor}
+        role="separator"
+        aria-label="Ajustar a largura da conversa"
+        aria-orientation="vertical"
+        aria-valuenow={largura}
+        aria-valuemin={260}
+        aria-valuemax={760}
+        onPointerDown={arrastar}
+        onKeyDown={(e) => {
+          const passo = e.key === 'ArrowLeft' ? 24 : e.key === 'ArrowRight' ? -24 : 0;
+          if (!passo) return;
+          e.preventDefault();
+          const proximo = Math.min(760, Math.max(260, largura + passo));
+          setLargura(proximo);
+          salvarPreferencias({ larguraDaConversa: proximo });
+        }}
+      />
     </div>
   );
 }

@@ -6,27 +6,37 @@ import {
   HeadphonesOff,
   Mic,
   MicOff,
+  Monitor,
   Video,
   VideoOff,
   X,
 } from '../../components/icones';
-import type { Participante } from './sala';
-import { useVoz } from './store';
+import type { Participante, QualidadeDoEspectador } from './sala';
+import { useVoz, type ModoDaSala } from './store';
 import { useChamada } from './useChamada';
 import styles from './grade.module.css';
 
+const MODOS: { id: ModoDaSala; nome: string }[] = [
+  { id: 'chamada', nome: 'Só a chamada' },
+  { id: 'ambos', nome: 'As duas' },
+  { id: 'mensagens', nome: 'Só a conversa' },
+];
+
 /**
- * A grade de participantes.
+ * A grade da chamada.
  *
- * **Sobreposição sobre a conversa, não janela nova.** O que está sendo dito na
- * chamada e o que está escrito no canal são a mesma sala; abrir uma janela
- * separaria as duas coisas e obrigaria a escolher uma.
+ * **Divide a coluna da conversa, e não uma janela nova.** O que está sendo dito
+ * na chamada e o que está escrito no canal são a mesma sala; uma janela
+ * separaria as duas coisas e obrigaria a escolher uma. Aqui a escolha existe,
+ * mas é de quem está na sala e tem três respostas — inclusive "as duas".
  *
- * Layout automático: 1 ocupa tudo, 2 lado a lado, 3 e 4 em 2x2, 5 em 3+2.
- * Ver design/07-chamada.md.
+ * **Cada tela transmitida é uma caixa própria**, ao lado das pessoas, e não uma
+ * troca de layout: quem transmite continua sendo alguém na chamada, e a tela é
+ * mais uma coisa acontecendo. Clicar na caixa põe aquela tela em primeiro plano.
+ * Ver design/07-chamada.md e design/12-compartilhamento-de-tela.md.
  */
 export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas: User[] }) {
-  const grade = useVoz((s) => s.grade);
+  const modo = useVoz((s) => s.modo);
   const fase = useVoz((s) => s.fase);
   const channelId = useVoz((s) => s.channelId);
   const participantes = useVoz((s) => s.participantes);
@@ -35,13 +45,40 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
   const deafened = useVoz((s) => s.deafened);
   const camera = useVoz((s) => s.camera);
   const estados = useVoz((s) => s.estados);
+  const telaEmFoco = useVoz((s) => s.telaEmFoco);
+  const qualidadeDoEspectador = useVoz((s) => s.qualidadeDoEspectador);
+  const podeCompartilhar = useVoz((s) => s.podeCompartilhar);
+  const transmitindo = useVoz((s) => s.transmitindo);
 
-  const { sair, alternarMudo, alternarSurdo, alternarCamera, alternarGrade } = useChamada();
+  const {
+    sair,
+    alternarMudo,
+    alternarSurdo,
+    alternarCamera,
+    alternarGrade,
+    definirModo,
+    assistir,
+    focar,
+    pararDeTransmitir,
+    escolherTela,
+    definirQualidadeDoEspectador,
+  } = useChamada();
 
-  if (!grade || fase === 'fora') return null;
+  if (modo === 'mensagens' || fase === 'fora') return null;
 
   const canal = canais.find((c) => c.id === channelId);
   const quantos = participantes.length;
+  const emFoco = participantes.find((p) => p.identity === telaEmFoco && p.tela) ?? null;
+  const nomeDe = (p: Participante) =>
+    pessoas.find((u) => u.id === p.identity)?.displayName ?? 'Alguém';
+
+  // Uma caixa por pessoa, mais uma por tela transmitida.
+  const azulejos = [
+    ...participantes.map((p) => ({ chave: `p:${p.identity}`, tela: false, p })),
+    ...participantes
+      .filter((x) => x.transmitindo)
+      .map((p) => ({ chave: `t:${p.identity}`, tela: true, p })),
+  ];
 
   return (
     <section className={styles.grade} aria-label="Participantes da chamada">
@@ -52,11 +89,30 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
             · {quantos} {quantos === 1 ? 'pessoa' : 'pessoas'}
           </span>
         </h2>
-        <Tooltip label="Fechar a grade">
+
+        {/* Três estados, e não um botão de fechar: numa chamada há gente
+            falando e gente escrevendo ao mesmo tempo, e qual das duas ocupa a
+            tela é escolha de quem está na sala — não nossa. */}
+        <div className={styles.modos} role="group" aria-label="O que mostrar">
+          {MODOS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={styles.modo}
+              data-ativo={modo === m.id}
+              aria-pressed={modo === m.id}
+              onClick={() => definirModo(m.id)}
+            >
+              {m.nome}
+            </button>
+          ))}
+        </div>
+
+        <Tooltip label="Voltar à conversa">
           <button
             type="button"
             className={styles.fechar}
-            aria-label="Fechar a grade"
+            aria-label="Voltar à conversa"
             onClick={alternarGrade}
           >
             <X size={18} />
@@ -64,21 +120,49 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
         </Tooltip>
       </header>
 
-      {quantos <= 1 ? (
-        <p className={styles.sozinho}>Você está sozinho na sala.</p>
-      ) : null}
+      {quantos <= 1 ? <p className={styles.sozinho}>Você está sozinho na sala.</p> : null}
 
-      <div className={styles.cartoes} data-quantidade={Math.min(quantos, 5)}>
-        {participantes.map((p) => (
-          <Cartao
-            key={p.identity}
-            participante={p}
-            pessoa={pessoas.find((u) => u.id === p.identity)}
-            falando={falando.has(p.identity)}
-            mudo={p.eu ? muted : (estados[p.identity]?.muted ?? false)}
+      {emFoco ? (
+        <div className={styles.comFoco}>
+          <TelaEmFoco
+            participante={emFoco}
+            nome={nomeDe(emFoco)}
+            qualidade={qualidadeDoEspectador}
+            onQualidade={definirQualidadeDoEspectador}
+            onFechar={() => focar(null)}
           />
-        ))}
-      </div>
+          <div className={styles.fileira}>
+            {azulejos.map((a) => (
+              <Azulejo
+                key={a.chave}
+                {...a}
+                nome={nomeDe(a.p)}
+                pessoa={pessoas.find((u) => u.id === a.p.identity)}
+                falando={falando.has(a.p.identity)}
+                mudo={a.p.eu ? muted : (estados[a.p.identity]?.muted ?? false)}
+                onAssistir={assistir}
+                onFocar={focar}
+                compacto
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.cartoes} data-quantidade={Math.min(azulejos.length, 5)}>
+          {azulejos.map((a) => (
+            <Azulejo
+              key={a.chave}
+              {...a}
+              nome={nomeDe(a.p)}
+              pessoa={pessoas.find((u) => u.id === a.p.identity)}
+              falando={falando.has(a.p.identity)}
+              mudo={a.p.eu ? muted : (estados[a.p.identity]?.muted ?? false)}
+              onAssistir={assistir}
+              onFocar={focar}
+            />
+          ))}
+        </div>
+      )}
 
       <div className={styles.controles}>
         <Botao
@@ -111,6 +195,21 @@ export function GradeDaChamada({ canais, pessoas }: { canais: Channel[]; pessoas
         >
           {camera ? <Video size={20} /> : <VideoOff size={20} />}
         </Botao>
+
+        {/* Sem `SHARE_SCREEN` o botão não existe — e o token também não
+            deixaria publicar a trilha. As duas coisas, sempre. */}
+        {podeCompartilhar ? (
+          <Botao
+            rotulo={transmitindo ? 'Parar de transmitir' : 'Compartilhar tela'}
+            estado={transmitindo ? 'Transmitindo' : 'Compartilhar tela'}
+            desligado={false}
+            pressionado={transmitindo}
+            aceso={transmitindo}
+            onClick={() => (transmitindo ? pararDeTransmitir() : escolherTela(true))}
+          >
+            <Monitor size={20} />
+          </Botao>
+        ) : null}
 
         {/* Separado fisicamente dos outros: distância evita clique acidental. */}
         <button type="button" className={styles.sair} onClick={() => void sair()}>
@@ -156,35 +255,46 @@ function Botao({
   );
 }
 
-/**
- * Sem câmera o cartão **não** é um retângulo preto: é o avatar de 80px sobre
- * `--bg-raised`. Vídeo desligado e vídeo travado precisam ser distinguíveis de
- * relance.
- */
-function Cartao({
-  participante,
-  pessoa,
-  falando,
-  mudo,
-}: {
-  participante: Participante;
+interface PropsDeAzulejo {
+  p: Participante;
+  tela: boolean;
+  nome: string;
   pessoa: User | undefined;
   falando: boolean;
   mudo: boolean;
-}) {
-  const video = useRef<HTMLVideoElement>(null);
+  onAssistir: (identity: string, ligar: boolean) => void;
+  onFocar: (identity: string | null) => void;
+  /** Na fileira lateral de 160px não cabe convite: fica o essencial. */
+  compacto?: boolean;
+}
+
+function Azulejo(props: PropsDeAzulejo) {
+  return props.tela ? <CaixaDeTela {...props} /> : <CaixaDePessoa {...props} />;
+}
+
+/** Liga a trilha ao elemento e desliga ao sair. O SDK cuida do resto. */
+function useTrilhaDeVideo(trilha: Participante['video']) {
+  const elemento = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const trilha = participante.video;
-    const elemento = video.current;
-    if (!trilha || !elemento) return;
-    trilha.attach(elemento);
+    const alvo = elemento.current;
+    if (!trilha || !alvo) return;
+    trilha.attach(alvo);
     return () => {
-      trilha.detach(elemento);
+      trilha.detach(alvo);
     };
-  }, [participante.video]);
+  }, [trilha]);
 
-  const nome = pessoa?.displayName ?? 'Alguém';
+  return elemento;
+}
+
+/**
+ * Sem câmera o cartão **não** é um retângulo preto: é o avatar sobre
+ * `--bg-raised`. Vídeo desligado e vídeo travado precisam ser distinguíveis de
+ * relance.
+ */
+function CaixaDePessoa({ p, nome, pessoa, falando, mudo }: PropsDeAzulejo) {
+  const video = useTrilhaDeVideo(p.video);
 
   return (
     <div
@@ -193,32 +303,142 @@ function Cartao({
       // Quem está falando não é indicado só por cor: o rótulo diz.
       aria-label={falando ? `${nome}, falando` : nome}
     >
-      {participante.video ? (
+      {p.video ? (
         <video
           ref={video}
           className={styles.video}
           // A prévia é espelhada **só para você**. A trilha publicada não é —
           // texto ao contrário na camiseta de alguém é o sintoma de quem
           // espelhou a trilha em vez da apresentação.
-          data-espelhado={participante.eu}
+          data-espelhado={p.eu}
           autoPlay
           playsInline
-          muted={participante.eu}
+          muted={p.eu}
         />
       ) : (
         <span className={styles.semVideo}>
-          <Avatar id={participante.identity} name={nome} src={pessoa?.avatarUrl} size="xl" />
+          <Avatar id={p.identity} name={nome} src={pessoa?.avatarUrl} size="xl" />
         </span>
       )}
 
       <footer className={styles.rodape}>
-        <span className={styles.nome}>{participante.eu ? 'Você' : nome}</span>
+        <span className={styles.nome}>{p.eu ? 'Você' : nome}</span>
         {mudo ? (
           <span className={styles.mudo} aria-label="microfone fechado">
             <MicOff size={14} />
           </span>
         ) : null}
       </footer>
+    </div>
+  );
+}
+
+/**
+ * A tela transmitida, na própria caixa.
+ *
+ * Enquanto ninguém clica em "Assistir", a caixa é um convite e o servidor não
+ * envia um byte daquela tela — o custo de uma tela em 4K é pago só por quem
+ * está olhando. Depois de aceito, clicar na caixa põe a tela em primeiro plano.
+ */
+function CaixaDeTela({ p, nome, onAssistir, onFocar, compacto = false }: PropsDeAzulejo) {
+  const video = useTrilhaDeVideo(p.tela);
+  const rotulo = p.eu ? 'Sua tela' : `Tela de ${nome}`;
+
+  if (!p.assistindo) {
+    return (
+      <div className={styles.cartao} data-tela="true">
+        <span className={styles.transmitindo} data-compacto={compacto}>
+          <Monitor size={compacto ? 20 : 28} />
+          {compacto ? null : (
+            <>
+              <strong>{nome}</strong>
+              <span>está transmitindo</span>
+            </>
+          )}
+          <button
+            type="button"
+            className={styles.assistir}
+            onClick={() => onAssistir(p.identity, true)}
+          >
+            Assistir
+          </button>
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={styles.cartao}
+      data-tela="true"
+      aria-label={`${rotulo}. Clique para ver em primeiro plano.`}
+      onClick={() => onFocar(p.identity)}
+    >
+      {/* `contain`, nunca `cover`: cortar a tela de alguém para preencher o
+          quadro esconde justamente o canto onde estava o que ela queria
+          mostrar. */}
+      <video ref={video} className={styles.videoDeTela} autoPlay playsInline muted />
+      <footer className={styles.rodape}>
+        <span className={styles.nome}>
+          <Monitor size={12} /> {rotulo}
+        </span>
+      </footer>
+    </button>
+  );
+}
+
+const QUALIDADES: { id: QualidadeDoEspectador; nome: string; nota: string }[] = [
+  { id: 'auto', nome: 'Automática', nota: 'segue o tamanho na tela' },
+  { id: 'fonte', nome: 'Fonte', nota: 'o que a outra pessoa envia' },
+  { id: '720p', nome: '720p', nota: 'economizar dados' },
+];
+
+/** A transmissão em primeiro plano, com a qualidade escolhida por quem assiste. */
+function TelaEmFoco({
+  participante,
+  nome,
+  qualidade,
+  onQualidade,
+  onFechar,
+}: {
+  participante: Participante;
+  nome: string;
+  qualidade: QualidadeDoEspectador;
+  onQualidade: (q: QualidadeDoEspectador) => void;
+  onFechar: () => void;
+}) {
+  const video = useTrilhaDeVideo(participante.tela);
+
+  return (
+    <div className={styles.foco}>
+      <video ref={video} className={styles.telaCheia} autoPlay playsInline muted />
+
+      <div className={styles.barraDaTela}>
+        <span className={styles.deQuem}>{participante.eu ? 'Sua tela' : `Tela de ${nome}`}</span>
+
+        {/* A escolha é de quem assiste, e vale só para ele: quem transmite não
+            sabe nem se importa. É o simulcast que torna isso possível. */}
+        {participante.eu ? null : (
+          <label className={styles.qualidade}>
+            <span className="visually-hidden">Qualidade</span>
+            <select
+              value={qualidade}
+              onChange={(e) => onQualidade(e.target.value as QualidadeDoEspectador)}
+            >
+              {QUALIDADES.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.nome} — {q.nota}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <button type="button" className={styles.fechar} onClick={onFechar}>
+          Voltar à grade
+        </button>
+      </div>
     </div>
   );
 }

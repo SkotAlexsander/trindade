@@ -1,0 +1,73 @@
+/* O diálogo de escolha do preset. Ver design/12-compartilhamento-de-tela.md. */
+
+.presets {
+  display: grid;
+  gap: 2px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--s-4);
+}
+
+.legenda {
+  padding: 0 0 var(--s-2);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.preset {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  border-radius: var(--r-control);
+  cursor: pointer;
+  font-size: var(--text-ui);
+  color: var(--text-primary);
+}
+
+.preset:hover {
+  background: var(--bg-hover);
+}
+
+.preset input {
+  accent-color: var(--accent);
+}
+
+.detalhe {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Disponível, com aviso: a pessoa pode tentar; o produto só não finge que vai
+   funcionar. */
+.aviso {
+  grid-column: 2 / -1;
+  color: var(--status-idle);
+  font-size: var(--text-meta);
+}
+
+.linhaAudio {
+  margin-bottom: var(--s-3);
+}
+
+.banda {
+  margin: 0;
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.medida {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}

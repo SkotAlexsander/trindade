@@ -123,9 +123,12 @@ export function AppShell() {
     alternarSurdo,
     alternarCamera,
     alternarGrade,
+    escolherTela,
+    pararDeTransmitir,
     sair: sairDaChamada,
   } = useChamada();
-  const gradeAberta = useVoz((state) => state.grade);
+  const transmitindo = useVoz((state) => state.transmitindo);
+  const modoDaSala = useVoz((state) => (state.fase === 'fora' ? 'mensagens' : state.modo));
   const canalDaChamada = useVoz((state) => (state.fase === 'fora' ? null : state.channelId));
 
   // `Alt ⇧ C` leva ao canal da chamada em andamento. Serve para achar de volta
@@ -164,6 +167,15 @@ export function AppShell() {
     { key: 'a', mod: true, shift: true, emCampo: true, run: alternarSurdo },
     { key: 'd', mod: true, shift: true, emCampo: true, run: () => void sairDaChamada() },
     { key: 'v', mod: true, shift: true, emCampo: true, run: alternarCamera },
+    {
+      key: 'e',
+      mod: true,
+      shift: true,
+      emCampo: true,
+      // O atalho abre o diálogo de qualidade, não o seletor do navegador: o
+      // pedido de captura precisa vir de um clique para o Safari aceitar.
+      run: () => (transmitindo ? pararDeTransmitir() : escolherTela(true)),
+    },
     { key: 'c', alt: true, shift: true, run: irParaChamada },
     { key: 'ArrowDown', alt: true, run: () => irParaVizinho(1) },
     { key: 'ArrowUp', alt: true, run: () => irParaVizinho(-1) },
@@ -173,7 +185,7 @@ export function AppShell() {
       run: () => {
         // A grade cobre a conversa; sair dela é o primeiro significado de
         // Escape enquanto está aberta. Fechá-la não sai da chamada.
-        if (gradeAberta) {
+        if (modoDaSala !== 'mensagens') {
           alternarGrade();
           return;
         }
@@ -272,7 +284,8 @@ export function AppShell() {
         onPainel={alternarPainel}
         onAbrirGaveta={() => setGaveta(true)}
         mostrarGaveta={estreito}
-        sobreposicao={<GradeDaChamada canais={canais} pessoas={pessoas} />}
+        modoDaSala={modoDaSala}
+        chamada={<GradeDaChamada canais={canais} pessoas={pessoas} />}
       >
         <Outlet />
       </ChannelHeader>

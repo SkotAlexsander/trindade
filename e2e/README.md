@@ -211,6 +211,20 @@ deviam estar dois. Reiniciar o SFU limpa tudo, porque as salas vivem em memória
 docker compose restart livekit
 ```
 
+**`fase-07-tela.py`** — 26 verificações do compartilhamento de tela. A que dá
+nome à fatia: **quem não clicou em "Assistir" não recebe pacote nenhum**, lido
+em `getStats` (`inbound-rtp` de vídeo em zero) e não na interface. Cobre também
+o diálogo de presets, a caixa própria da tela ao lado das pessoas, o clique que
+põe uma tela em primeiro plano, o contador de espectadores, o seletor de
+qualidade do espectador e os três modos da sala.
+
+Neste Chrome headless o `getDisplayMedia` **nunca resolve** — não há tela, o
+seletor não abre e nem `--auto-select-desktop-capture-source` acha uma fonte; a
+promessa fica pendurada para sempre. O roteiro troca só essa função por uma que
+devolve um `<canvas>` animado. Todo o resto é o caminho de verdade: publicação
+como fonte de tela, assinatura por escolha, contagem de bytes, foco e contador.
+O que fica de fora é escolher a janela, que é coisa de olhar.
+
 ### O relay não pode estar em 127.0.0.1
 
 Custou uma tarde. Enquanto a página **não** tem permissão de microfone, o Chrome

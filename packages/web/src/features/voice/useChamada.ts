@@ -11,9 +11,11 @@ import {
   type ModoDePortao,
 } from '../../lib/midia';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
+import { presetPorId, type IdDePreset } from './presets';
 import { tocar } from './sons';
 import * as sala from './sala';
-import { useVoz } from './store';
+import type { QualidadeDoEspectador } from './sala';
+import { useVoz, type ModoDaSala } from './store';
 
 /**
  * Entrar, sair, calar e ensurdecer.
@@ -57,7 +59,16 @@ export interface Chamada {
   alternarMudo: () => void;
   alternarSurdo: () => void;
   alternarCamera: () => void;
+  definirModo: (modo: ModoDaSala) => void;
   alternarGrade: () => void;
+  /** Não recebe `await` antes do seletor nativo: o Safari exige o mesmo gesto. */
+  transmitir: (preset: IdDePreset, comAudio: boolean) => void;
+  pararDeTransmitir: () => void;
+  escolherTela: (aberto: boolean) => void;
+  assistir: (identity: string, ligar: boolean) => void;
+  focar: (identity: string | null) => void;
+  trocarPreset: (preset: IdDePreset) => void;
+  definirQualidadeDoEspectador: (qualidade: QualidadeDoEspectador) => void;
   destravarAudio: () => void;
 }
 
@@ -81,8 +92,18 @@ function retornosDaSala(show: (mensagem: string, tipo?: ToastKind) => void): sal
     aoFalar: (falando) => useVoz.getState().definir({ falando }),
     aoMudarQualidade: (qualidade) => useVoz.getState().definir({ qualidade }),
     aoBloquearAudio: (audioBloqueado) => useVoz.getState().definir({ audioBloqueado }),
-    aoMudarParticipantes: (participantes) =>
-      useVoz.getState().definir({ participantes, camera: sala.cameraLigada() }),
+    aoMudarParticipantes: (participantes) => {
+      const voz = useVoz.getState();
+      // Quem estava sendo assistido parou: o foco volta para a grade sozinho,
+      // em vez de ficar num vídeo que não existe mais.
+      const foco = participantes.find((p) => p.identity === voz.telaEmFoco);
+      voz.definir({
+        participantes,
+        camera: sala.cameraLigada(),
+        transmitindo: sala.transmitindo(),
+        telaEmFoco: foco?.assistindo ? voz.telaEmFoco : null,
+      });
+    },
     aoCairACamera: () =>
       show('A câmera parou. O aparelho foi removido ou está em uso por outro programa.'),
   };
@@ -137,7 +158,14 @@ export function useChamada(): Chamada {
 
         await sala.entrar(credenciais, cadeia, retornosDaSala(show));
 
-        useVoz.getState().definir({ fase: 'conectado', muted: false, deafened: false });
+        useVoz.getState().definir({
+          fase: 'conectado',
+          muted: false,
+          deafened: false,
+          // A interface esconde o botão sem a permissão; o token já não
+          // deixaria publicar a trilha. As duas coisas, sempre.
+          podeCompartilhar: credenciais.canShareScreen,
+        });
         anunciar(channelId, false, false);
         tocar('entrar');
       } catch (erro) {
@@ -191,10 +219,26 @@ export function useChamada(): Chamada {
    * estado impossível de ignorar, a câmera não tem sinal equivalente e o custo
    * do engano é de outra ordem. Ligar pede a permissão naquele momento.
    */
+  /**
+   * Ligar câmera ou tela **abre a chamada na tela**.
+   *
+   * Quem liga a câmera quer ser visto e ver; deixar isso escondido atrás de um
+   * segundo clique é esconder justamente o que a pessoa acabou de pedir. Se o
+   * modo guardado for "só a chamada", é ele que vale — a escolha de quem usa
+   * ganha da nossa.
+   */
+  const mostrarAChamada = useCallback(() => {
+    const voz = useVoz.getState();
+    if (voz.modo !== 'mensagens') return;
+    const guardado = lerPreferencias().modoDaSala;
+    voz.definir({ modo: guardado === 'mensagens' ? 'ambos' : guardado });
+  }, []);
+
   const alternarCamera = useCallback(() => {
     const voz = useVoz.getState();
     if (voz.fase !== 'conectado') return;
     const ligar = !voz.camera;
+    if (ligar) mostrarAChamada();
     // O estado só muda quando a trilha existe de verdade: botão aceso sem
     // imagem é a mesma mentira que botão aceso com imagem congelada.
     void sala
@@ -204,12 +248,104 @@ export function useChamada(): Chamada {
         useVoz.getState().definir({ camera: sala.cameraLigada() });
         show(explicarErroDeMidia(erro, 'camera') ?? 'Não consegui abrir a câmera.', 'danger');
       });
-  }, [show]);
+  }, [show, mostrarAChamada]);
+
+  const definirModo = useCallback((modo: ModoDaSala) => {
+    if (useVoz.getState().fase === 'fora') return;
+    /* Guardada como preferência de máquina: quem trabalha com a conversa ao
+       lado quer isso em toda chamada, não só nesta. **`mensagens` não é
+       guardado** — é "esconda a chamada agora", não uma escolha de layout, e
+       gravá-lo fazia o botão de reabrir a chamada não reabrir nada. */
+    if (modo !== 'mensagens') salvarPreferencias({ modoDaSala: modo });
+    useVoz.getState().definir({ modo });
+  }, []);
 
   const alternarGrade = useCallback(() => {
     const voz = useVoz.getState();
     if (voz.fase === 'fora') return;
-    voz.definir({ grade: !voz.grade });
+    const guardado = lerPreferencias().modoDaSala;
+    definirModo(
+      voz.modo === 'mensagens' ? (guardado === 'mensagens' ? 'ambos' : guardado) : 'mensagens',
+    );
+  }, [definirModo]);
+
+
+  /**
+   * Começa a transmitir.
+   *
+   * **Sem `await` antes do seletor nativo.** O Safari só o abre dentro da mesma
+   * pilha do clique, e qualquer espera no caminho faz o pedido ser recusado sem
+   * explicação nenhuma — por isso esta função não é `async` e o preset já chega
+   * decidido.
+   */
+  const transmitir = useCallback(
+    (preset: IdDePreset, comAudio: boolean) => {
+      if (sala.telasNoAr() >= sala.MAXIMO_DE_TELAS) {
+        show(`Já há ${sala.MAXIMO_DE_TELAS} transmissões. Aguarde uma encerrar.`);
+        return;
+      }
+      salvarPreferencias({ presetDeTela: preset, audioDaTela: comAudio });
+      mostrarAChamada();
+      sala
+        .iniciarTela(presetPorId(preset), comAudio)
+        .then(() => useVoz.getState().definir({ transmitindo: sala.transmitindo() }))
+        .catch((erro: unknown) => {
+          useVoz.getState().definir({ transmitindo: sala.transmitindo() });
+          // Cancelar o seletor é uma ação legítima e não vira aviso nenhum.
+          const texto = explicarErroDeMidia(erro, 'tela');
+          if (texto) show(texto, 'danger');
+        });
+    },
+    [show, mostrarAChamada],
+  );
+
+  const escolherTela = useCallback((aberto: boolean) => {
+    const voz = useVoz.getState();
+    if (aberto && (!voz.podeCompartilhar || voz.fase !== 'conectado')) return;
+    voz.definir({ escolhendoTela: aberto });
+  }, []);
+
+  const pararDeTransmitir = useCallback(() => {
+    void sala.pararTela().then(() =>
+      useVoz.getState().definir({ transmitindo: sala.transmitindo(), estatisticas: null }),
+    );
+  }, []);
+
+  /**
+   * Assinar a tela de alguém — ou largá-la.
+   *
+   * Enquanto ninguém clica, o servidor não envia um byte daquela transmissão:
+   * o custo de uma tela em 4K é pago só por quem está olhando.
+   */
+  const assistir = useCallback(
+    (identity: string, ligar: boolean) => {
+      if (ligar) mostrarAChamada();
+      void sala.assistir(identity, ligar);
+      // Assistir **não** joga direto no primeiro plano: a tela aparece como
+      // mais uma caixa na grade, ao lado das pessoas, e quem quiser só aquela
+      // tela clica nela. Pular esse passo esconderia todo mundo sem pedir.
+      useVoz.getState().definir({
+        telaEmFoco: ligar ? useVoz.getState().telaEmFoco : null,
+        qualidadeDoEspectador: 'auto',
+      });
+    },
+    [mostrarAChamada],
+  );
+
+  const focar = useCallback((identity: string | null) => {
+    useVoz.getState().definir({ telaEmFoco: identity });
+  }, []);
+
+  const trocarPreset = useCallback((preset: IdDePreset) => {
+    salvarPreferencias({ presetDeTela: preset });
+    void sala.trocarPreset(presetPorId(preset));
+  }, []);
+
+  const definirQualidadeDoEspectador = useCallback((qualidade: QualidadeDoEspectador) => {
+    const emFoco = useVoz.getState().telaEmFoco;
+    if (!emFoco) return;
+    sala.definirQualidade(emFoco, qualidade);
+    useVoz.getState().definir({ qualidadeDoEspectador: qualidade });
   }, []);
 
   const destravarAudio = useCallback(() => {
@@ -222,7 +358,15 @@ export function useChamada(): Chamada {
     alternarMudo,
     alternarSurdo,
     alternarCamera,
+    definirModo,
     alternarGrade,
+    transmitir,
+    pararDeTransmitir,
+    escolherTela,
+    assistir,
+    focar,
+    trocarPreset,
+    definirQualidadeDoEspectador,
     destravarAudio,
   };
 }

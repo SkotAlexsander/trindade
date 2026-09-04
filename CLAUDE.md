@@ -519,6 +519,37 @@ trilha morre sozinha ~150ms depois de abrir, em qualquer combinação de flags. 
 teste verifica a recuperação, que é o caso real de quem perde a câmera para
 outro programa no meio da chamada.
 
+**Fatia 5: compartilhar tela.** Seis presets por finalidade, simulcast em três
+camadas, e **assistir é opcional** — `autoSubscribe: false` na conexão, com voz
+e câmera assinadas na hora e a tela só quando alguém clica. Enquanto ninguém
+clica, o servidor não envia um byte daquela transmissão.
+
+**A linha "rede limitando" passou a ouvir o codificador.** A primeira versão
+comparava o bitrate real com o alvo do preset e acusava rede apertada sempre que
+a tela estava parada — que é justamente quando está tudo certo. Agora quem
+responde é o `qualityLimitationReason`.
+
+**Ajustes pedidos pelo dono do projeto em 4 de setembro de 2026**, depois de ver
+rodando:
+
+- A chamada **divide** a coluna da conversa em vez de cobri-la, com três modos:
+  só a chamada, as duas, só a conversa. A escolha fica guardada — menos
+  "só a conversa", que é "esconda agora" e não um layout; guardá-la fazia o
+  botão de reabrir não reabrir nada.
+- **Cada tela transmitida é uma caixa própria**, ao lado das pessoas. Clicar
+  põe aquela tela em primeiro plano.
+- A divisa entre a chamada e a conversa é **arrastável**, com as setas do
+  teclado também. O arrasto guardava `event.currentTarget` numa closure e o
+  React o zera quando o handler retorna: o `pointerup` explodia e o arrasto
+  ficava grudado no cursor.
+- Espaçamentos: `align-content: safe center` na grade — com o centro normal, o
+  que não cabe é cortado **no começo**, e a primeira fileira some sem aviso.
+
+**Um `> *` mais específico que uma classe.** A alça do divisor caía na coluna da
+conversa porque `.conversa[data-chamada='ambos'] > *` vence `.divisor`; o
+resultado era o cabeçalho e o histórico jogados em linhas implícitas, a chamada
+com um terço da altura e o resto da coluna preto.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

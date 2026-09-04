@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { Channel, User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
 import {
   Expandir,
+  Monitor,
   Headphones,
   HeadphonesOff,
   Mic,
@@ -10,6 +11,11 @@ import {
   Video,
   VideoOff,
 } from '../../components/icones';
+import { DialogoDeTela } from './DialogoDeTela';
+import { emMbps, presetPorId, redeLimitando } from './presets';
+import { lerPreferencias } from '../../lib/preferencias';
+import * as sala from './sala';
+import type { EstatisticasDaTela } from './sala';
 import { naChamada, useVoz } from './store';
 import { useChamada } from './useChamada';
 import styles from './voz.module.css';
@@ -42,9 +48,53 @@ export function BarraDeChamada({
   const estados = useVoz((s) => s.estados);
 
   const camera = useVoz((s) => s.camera);
-  const grade = useVoz((s) => s.grade);
-  const { entrar, sair, alternarMudo, alternarSurdo, alternarCamera, alternarGrade, destravarAudio } =
-    useChamada();
+  const modo = useVoz((s) => s.modo);
+  const podeCompartilhar = useVoz((s) => s.podeCompartilhar);
+  const transmitindo = useVoz((s) => s.transmitindo);
+  const escolhendoTela = useVoz((s) => s.escolhendoTela);
+  const estatisticas = useVoz((s) => s.estatisticas);
+  const participantes = useVoz((s) => s.participantes);
+  const {
+    entrar,
+    sair,
+    alternarMudo,
+    alternarSurdo,
+    alternarCamera,
+    alternarGrade,
+    escolherTela,
+    pararDeTransmitir,
+    destravarAudio,
+  } = useChamada();
+
+  /* O bitrate exibido é o **real**, do `getStats`, a cada 2s — e não o alvo do
+     preset. A linha existe para explicar por que a imagem piorou, e para isso
+     tem de contar o que está acontecendo, não o que foi pedido. */
+  useEffect(() => {
+    if (!transmitindo) return;
+    let vivo = true;
+    const ler = () => {
+      void sala.estatisticasDaTela().then((e) => {
+        if (vivo) useVoz.getState().definir({ estatisticas: e });
+      });
+    };
+    ler();
+    const relogio = setInterval(ler, 2000);
+    return () => {
+      vivo = false;
+      clearInterval(relogio);
+    };
+  }, [transmitindo]);
+
+  /* A medição de upload dos primeiros segundos vira a linha "Sua conexão
+     suporta até" no seletor de preset. Feita uma vez, e depois de a chamada
+     assentar: medir no instante da conexão mede o aperto do começo. */
+  useEffect(() => {
+    if (fase !== 'conectado') return;
+    const espera = setTimeout(() => {
+      void sala.bandaDeSubida().then((b) => useVoz.getState().definir({ bandaDeSubida: b }));
+    }, 5000);
+    return () => clearTimeout(espera);
+  }, [fase]);
 
   const canal = canais.find((c) => c.id === channelId);
   const dentro = useMemo(
@@ -92,6 +142,8 @@ export function BarraDeChamada({
           </button>
         </div>
       ) : null}
+
+      {transmitindo ? <LinhaDaTransmissao estatisticas={estatisticas} participantes={participantes} /> : null}
 
       {dentro.length > 0 ? (
         <div className={styles.avatares}>
@@ -157,11 +209,27 @@ export function BarraDeChamada({
           </button>
         </Tooltip>
 
-        <Tooltip label={grade ? 'Fechar a grade' : 'Ver quem está na chamada'}>
+        {podeCompartilhar ? (
+          <Tooltip label={transmitindo ? 'Parar de transmitir' : 'Compartilhar tela'}>
+            <button
+              type="button"
+              className={styles.controle}
+              data-aceso={transmitindo}
+              aria-pressed={transmitindo}
+              aria-label={transmitindo ? 'Transmitindo' : 'Compartilhar tela'}
+              disabled={!conectado}
+              onClick={() => (transmitindo ? pararDeTransmitir() : escolherTela(true))}
+            >
+              <Monitor size={18} />
+            </button>
+          </Tooltip>
+        ) : null}
+
+        <Tooltip label={modo === 'mensagens' ? 'Ver quem está na chamada' : 'Voltar à conversa'}>
           <button
             type="button"
             className={styles.controle}
-            aria-pressed={grade}
+            aria-pressed={modo !== 'mensagens'}
             aria-label="Grade de participantes"
             disabled={!conectado}
             onClick={alternarGrade}
@@ -176,7 +244,55 @@ export function BarraDeChamada({
           Sair
         </button>
       </div>
+
+      <DialogoDeTela aberto={escolhendoTela} onFechar={() => escolherTela(false)} />
     </section>
+  );
+}
+
+/**
+ * O que a barra mostra enquanto você transmite.
+ *
+ * O contador de espectadores é o mais útil daqui: transmitir para ninguém é
+ * comum, e a pessoa deve saber.
+ */
+function LinhaDaTransmissao({
+  estatisticas,
+  participantes,
+}: {
+  estatisticas: EstatisticasDaTela | null;
+  participantes: { eu: boolean; espectadores: number }[];
+}) {
+  const preset = presetPorId(lerPreferencias().presetDeTela);
+  const eu = participantes.find((p) => p.eu);
+  const quantos = eu?.espectadores ?? 0;
+  const limitando = estatisticas ? redeLimitando(estatisticas.motivo) : false;
+
+  return (
+    <div className={styles.transmissao}>
+      <span className={styles.linhaStatus}>
+        <Monitor size={14} /> Você está transmitindo
+      </span>
+      <span className={styles.detalheDaTela}>
+        {preset.nome}
+        {estatisticas && estatisticas.largura > 0
+          ? ` · ${estatisticas.largura}×${estatisticas.altura}${estatisticas.fps ? `@${estatisticas.fps}` : ''}`
+          : ''}
+        {estatisticas && estatisticas.bitrate > 0 ? ` · ${emMbps(estatisticas.bitrate)}` : ''}
+      </span>
+      {/* Explicar por que a imagem piorou evita que a pessoa culpe o produto. */}
+      {limitando && estatisticas ? (
+        <span className={styles.limitando}>Rede limitando a {emMbps(estatisticas.bitrate)}</span>
+      ) : null}
+      {estatisticas?.motivo === 'cpu' ? (
+        <span className={styles.limitando}>
+          A máquina não está dando conta. Um preset menor ajuda.
+        </span>
+      ) : null}
+      <span className={styles.detalheDaTela}>
+        {quantos === 0 ? 'ninguém assistindo' : `${quantos} assistindo`}
+      </span>
+    </div>
   );
 }
 

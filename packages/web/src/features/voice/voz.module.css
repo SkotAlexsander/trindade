@@ -19,6 +19,7 @@
   display: flex;
   align-items: center;
   gap: var(--s-1);
+  min-width: 0;
   font-size: var(--text-label);
   font-weight: var(--weight-semi);
   color: var(--text-primary);
@@ -59,6 +60,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Num flex, `overflow: hidden` sozinho não encolhe: sem `min-width: 0` o
+     nome empurra o indicador de qualidade para fora da barra. */
+  min-width: 0;
 }
 
 .qualidade {
@@ -67,6 +71,7 @@
   gap: 2px;
   margin-left: auto;
   height: 12px;
+  flex: none;
 }
 
 .qualidade i {
@@ -235,4 +240,25 @@
   .noCanal > span {
     transition: none;
   }
+}
+
+/* --- enquanto você transmite --------------------------------------------- */
+
+.transmissao {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-1) 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: var(--text-label);
+}
+
+.detalheDaTela {
+  color: var(--text-secondary);
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.limitando {
+  color: var(--status-idle);
+  font-size: var(--text-meta);
 }

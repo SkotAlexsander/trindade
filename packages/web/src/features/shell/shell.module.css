@@ -149,6 +149,93 @@
   background: var(--bg-app);
 }
 
+/* --- a chamada dentro da coluna da conversa -------------------------------
+   `ambos` divide a coluna: a chamada à esquerda, a conversa numa faixa à
+   direita. `chamada` cobre tudo. `mensagens` some com a chamada da tela sem
+   sair dela — o que se vê é escolha de quem está na sala. */
+
+.chamadaSlot {
+  display: contents;
+}
+
+.conversa[data-chamada='ambos'] {
+  grid-template-columns: minmax(0, 1fr) 5px var(--conversa-w, 380px);
+}
+
+.conversa[data-chamada='ambos'] > * {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.conversa[data-chamada='ambos'] > .chamadaSlot {
+  display: block;
+  position: relative;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  min-height: 0;
+}
+
+/* A alça: uma faixa de 5px que só existe quando há duas colunas. O cursor e o
+   `role="separator"` com as setas do teclado fazem dela um controle, e não um
+   truque de mouse. */
+/* O seletor é qualificado porque a regra `> *` acima é mais específica que uma
+   classe sozinha: sem isto, a alça caía na coluna da conversa, empurrava o
+   cabeçalho e o histórico para linhas implícitas, e a chamada ficava com um
+   terço da altura e o resto preto. */
+.conversa[data-chamada='ambos'] > .divisor {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  cursor: col-resize;
+  background: var(--border-soft);
+  border: 0;
+  padding: 0;
+  touch-action: none;
+}
+
+.divisor:hover,
+.divisor:focus-visible {
+  background: var(--accent);
+}
+
+.conversa:not([data-chamada='ambos']) > .divisor {
+  display: none;
+}
+
+/* `chamada` **esconde** a conversa em vez de cobri-la: um painel coberto
+   continua no caminho do teclado e do leitor de tela, e um campo de texto
+   invisível que ainda recebe foco é dos piores defeitos de acessibilidade. */
+.conversa[data-chamada='chamada'] > *:not(.chamadaSlot) {
+  display: none;
+}
+
+.conversa[data-chamada='chamada'] > .chamadaSlot {
+  display: block;
+  position: relative;
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  min-height: 0;
+}
+
+/* Numa faixa estreita não há duas colunas que prestem: a chamada cobre, e o
+   seletor continua trocando para a conversa. */
+@media (max-width: 899px) {
+  .conversa[data-chamada='ambos'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .conversa[data-chamada='ambos'] > * {
+    grid-column: 1;
+  }
+  .conversa[data-chamada='ambos'] > .divisor {
+    display: none;
+  }
+  .conversa[data-chamada='ambos'] > .chamadaSlot {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    border-right: 0;
+  }
+}
+
 .cabecalho {
   display: flex;
   align-items: center;

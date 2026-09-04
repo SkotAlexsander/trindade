@@ -147,6 +147,12 @@ Clicar assina a trilha. Até lá, o servidor não envia um byte daquela
 transmissão para essa pessoa — o custo de uma tela em 4K é pago só por quem
 está olhando.
 
+> Ajustado em 4 de setembro de 2026, a pedido do dono do projeto: a tela
+> transmitida é uma **caixa própria na grade**, ao lado das pessoas, e não o
+> cartão da pessoa que transmite. Quem transmite continua sendo alguém na
+> chamada; a tela é mais uma coisa acontecendo. Clicar na caixa põe aquela tela
+> em primeiro plano, com as demais numa fileira lateral.
+
 Exceção: se você está sozinho com quem transmite numa conversa privada, assiste
 automaticamente. Pedir "Assistir" para a única outra pessoa da sala é cerimônia.
 

@@ -1,9 +1,13 @@
 /* A grade de participantes. Ver design/07-chamada.md. */
 
 .grade {
+  /* Consulta de contêiner: as caixas se arrumam pela largura desta área, e não
+     pela da janela. */
+  container-type: inline-size;
+  /* Preenche a fatia que a moldura deu — que em `ambos` é uma coluna e em
+     `chamada` é a conversa inteira. Quem decide o tamanho é o shell. */
   position: absolute;
   inset: 0;
-  z-index: 5;
   display: grid;
   grid-template-rows: var(--header-h) minmax(0, 1fr) 56px;
   background: var(--bg-app);
@@ -13,16 +17,24 @@
 .cabecalho {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
   padding: 0 var(--s-3);
   border-bottom: 1px solid var(--border-soft);
+  min-width: 0;
 }
 
+
+
+/* O nome do canal cede antes de o seletor de modo quebrar. */
 .titulo {
   font-size: var(--text-ui);
   font-weight: var(--weight-semi);
   color: var(--text-primary);
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .contagem {
@@ -61,43 +73,60 @@
 
 .cartoes {
   display: grid;
-  gap: 8px;
+  gap: var(--s-2);
   padding: var(--s-3);
-  align-content: center;
-  justify-content: center;
+  /* Linhas justas e o bloco inteiro centrado. Dividir a altura entre as linhas
+     deixava as caixas certas e o espaço entre elas enorme — o grupo perdia a
+     leitura de "isto aqui é uma coisa só".
+     `safe` é o detalhe que importa: com o centro normal, o que não cabe é
+     cortado no começo, e o topo da primeira fileira some sem aviso. */
+  grid-auto-rows: min-content;
+  align-content: safe center;
+  justify-content: safe center;
+  justify-items: center;
   min-height: 0;
   overflow: auto;
+  /* Quantas caixas cabem lado a lado é pergunta sobre **esta coluna**, não
+     sobre a janela: em "as duas" a chamada divide a largura com a conversa, e
+     duas caixas de 16:9 numa faixa estreita não mostram rosto nenhum. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
 }
 
-/* 1 ocupa tudo; 2 lado a lado; 3 e 4 em 2x2. */
-.cartoes[data-quantidade='1'] {
-  grid-template-columns: minmax(0, 1fr);
-}
-.cartoes[data-quantidade='2'] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.cartoes[data-quantidade='3'],
-.cartoes[data-quantidade='4'] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
+/* Com espaço, vale o desenho do documento: 1 ocupa tudo, 2 lado a lado, 3 e 4
+   em 2x2, 5 em 3+2. */
+@container (min-width: 620px) {
+  .cartoes[data-quantidade='1'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cartoes[data-quantidade='2'],
+  .cartoes[data-quantidade='3'],
+  .cartoes[data-quantidade='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-/* 5 em 3+2: seis colunas, cada cartão ocupando duas. Os dois de baixo começam
-   deslocados de uma coluna, o que os deixa centrados sob os três de cima. */
-.cartoes[data-quantidade='5'] {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-.cartoes[data-quantidade='5'] > * {
-  grid-column: span 2;
-}
-.cartoes[data-quantidade='5'] > *:nth-child(4) {
-  grid-column: 2 / span 2;
-}
-.cartoes[data-quantidade='5'] > *:nth-child(5) {
-  grid-column: 4 / span 2;
+  /* 5 em 3+2: seis colunas, cada cartão ocupando duas. Os dois de baixo começam
+     deslocados de uma coluna, o que os deixa centrados sob os três de cima. */
+  .cartoes[data-quantidade='5'] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .cartoes[data-quantidade='5'] > * {
+    grid-column: span 2;
+  }
+  .cartoes[data-quantidade='5'] > *:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+  .cartoes[data-quantidade='5'] > *:nth-child(5) {
+    grid-column: 4 / span 2;
+  }
 }
 
 .cartao {
   position: relative;
+  /* A largura manda e a altura sai da proporção; `max-height` impede que a
+     caixa estoure a linha quando a área é baixa. */
+  width: 100%;
+  height: auto;
+  max-height: 100%;
   aspect-ratio: 16 / 9;
   min-width: 0;
   border-radius: var(--r-media);
@@ -172,7 +201,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--s-2);
-  padding: 0 var(--s-3);
+  /* O "Sair" fica absoluto à direita; o espaço reservado aqui impede que os
+     botões centrais escorreguem por baixo dele numa coluna estreita. */
+  padding: 0 88px;
   border-top: 1px solid var(--border-soft);
   position: relative;
 }
@@ -230,14 +261,211 @@
 
 /* Numa faixa estreita a grade vira uma coluna só: dois cartões de 16:9 lado a
    lado em 400px não mostram rosto nenhum. */
-@media (max-width: 700px) {
-  .cartoes[data-quantidade],
-  .cartoes[data-quantidade='5'] {
+/* --- transmissão --------------------------------------------------------- */
+
+/* O cartão de quem transmite, antes de alguém clicar. Não é um vídeo preto: é
+   um convite, e o vídeo só começa a existir quando ele é aceito. */
+.transmitindo {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-1);
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  text-align: center;
+}
+
+.transmitindo strong {
+  color: var(--text-primary);
+}
+
+.assistir {
+  margin-top: var(--s-2);
+  height: 32px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
+  cursor: pointer;
+}
+
+.assistir:hover {
+  background: var(--cyan-hover);
+}
+
+.espectadores {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: var(--text-meta);
+}
+
+/* Com uma tela em foco: a transmissão ocupa o principal e os participantes
+   viram uma fileira lateral de 160px. */
+.comFoco {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  min-height: 0;
+}
+
+.fileira {
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: var(--s-2);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.foco {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  min-height: 0;
+}
+
+/* `contain`, nunca `cover`: cortar a tela de alguém para preencher o quadro
+   esconde justamente o canto onde estava o que ela queria mostrar. */
+.telaCheia {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--void, #000);
+  border-radius: var(--r-media);
+  min-height: 0;
+}
+
+.barraDaTela {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.deQuem {
+  color: var(--text-primary);
+  font-weight: var(--weight-semi);
+}
+
+.qualidade select {
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  padding: 2px var(--s-2);
+}
+
+.barraDaTela .fechar {
+  margin-left: auto;
+  width: auto;
+  padding: 0 var(--s-2);
+  height: 28px;
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .comFoco {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 96px;
   }
-  .cartoes[data-quantidade='5'] > *,
-  .cartoes[data-quantidade='5'] > *:nth-child(4),
-  .cartoes[data-quantidade='5'] > *:nth-child(5) {
-    grid-column: auto;
+  .fileira {
+    grid-auto-flow: column;
+    grid-auto-columns: 160px;
+    grid-auto-rows: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
+}
+
+/* Na fileira de 160px o convite inteiro não cabe: fica o ícone e o botão, e o
+   nome já está no rodapé do cartão. */
+.transmitindo[data-compacto='true'] {
+  gap: var(--s-1);
+}
+
+.transmitindo[data-compacto='true'] .assistir {
+  margin-top: 0;
+  height: 24px;
+  padding: 0 var(--s-2);
+  font-size: var(--text-meta);
+}
+
+/* O rodapé do cartão compacto não disputa espaço com o convite. */
+.fileira .cartao {
+  height: auto;
+  width: 100%;
+}
+
+.fileira .rodape {
+  padding: var(--s-1);
+  font-size: var(--text-meta);
+}
+
+/* O seletor de três estados. Segmentado, e não um menu: são três, e ver os
+   três de uma vez é o que torna a escolha óbvia. */
+.modos {
+  display: flex;
+  margin-left: auto;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-raised);
+  border-radius: var(--r-control);
+}
+
+.modo {
+  border: 0;
+  background: none;
+  padding: 3px var(--s-2);
+  border-radius: var(--r-control);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-meta);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.modo:hover {
+  color: var(--text-primary);
+}
+
+.modo[data-ativo='true'] {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: var(--weight-semi);
+}
+
+.cabecalho .fechar {
+  margin-left: var(--s-2);
+}
+
+/* A caixa da tela: mesma moldura das pessoas, conteúdo diferente. */
+.cartao[data-tela='true'] {
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.videoDeTela {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--void, #000);
+}
+
+.cartao[data-tela='true'] .nome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
 }

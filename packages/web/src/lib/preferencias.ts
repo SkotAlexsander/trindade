@@ -61,6 +61,19 @@ export interface PreferenciasDeMidia {
   espelharPrevia: boolean;
   sons: Sons;
   volumeDosSons: number;
+  /**
+   * O último preset de transmissão usado. O produto não adivinha o conteúdo;
+   * ele lembra o que a pessoa escolheu.
+   */
+  presetDeTela: string;
+  audioDaTela: boolean;
+  /**
+   * O que fica na tela durante uma chamada: só a conversa, só as pessoas, ou
+   * as duas coisas lado a lado.
+   */
+  modoDaSala: 'mensagens' | 'ambos' | 'chamada';
+  /** Largura da faixa de conversa ao lado da chamada, em pixels. */
+  larguraDaConversa: number;
 }
 
 export const CHAVE = 'trindade:midia';
@@ -100,6 +113,10 @@ export const PADRAO: PreferenciasDeMidia = {
     microfone: true,
   },
   volumeDosSons: 70,
+  presetDeTela: 'padrao',
+  audioDaTela: false,
+  modoDaSala: 'ambos',
+  larguraDaConversa: 380,
 };
 
 /** O piso do medidor. Abaixo disto é silêncio digital, não sinal fraco. */
@@ -177,6 +194,13 @@ export function sanear(bruto: unknown): PreferenciasDeMidia {
       microfone: booleano(s.microfone, PADRAO.sons.microfone),
     },
     volumeDosSons: numero(b.volumeDosSons, 0, 100, PADRAO.volumeDosSons),
+    presetDeTela: typeof b.presetDeTela === 'string' ? b.presetDeTela : PADRAO.presetDeTela,
+    audioDaTela: booleano(b.audioDaTela, PADRAO.audioDaTela),
+    modoDaSala:
+      b.modoDaSala === 'mensagens' || b.modoDaSala === 'ambos' || b.modoDaSala === 'chamada'
+        ? b.modoDaSala
+        : PADRAO.modoDaSala,
+    larguraDaConversa: numero(b.larguraDaConversa, 260, 760, PADRAO.larguraDaConversa),
   };
 }
 

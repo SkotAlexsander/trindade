@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { VoiceState } from '@trindade/shared';
-import type { Participante } from './sala';
+import type { EstatisticasDaTela, Participante, QualidadeDoEspectador } from './sala';
 
 /**
  * Quem está em qual chamada, e como está a minha.
@@ -23,6 +23,9 @@ export type FaseDaChamada =
 
 export type Qualidade = 'boa' | 'media' | 'ruim' | 'desconhecida';
 
+/** `mensagens` esconde a chamada; `chamada` esconde a conversa; `ambos` divide. */
+export type ModoDaSala = 'mensagens' | 'ambos' | 'chamada';
+
 interface VozState {
   /** `userId` → estado, incluindo o meu. Vem do gateway. */
   estados: Record<string, VoiceState>;
@@ -40,10 +43,26 @@ interface VozState {
   falando: ReadonlySet<string>;
   /** O navegador barrou o áudio até haver um clique na página. */
   audioBloqueado: boolean;
-  /** A grade sobreposta à conversa. Fechá-la não sai da chamada. */
-  grade: boolean;
+  /**
+   * O que ocupa a coluna da conversa durante a chamada.
+   *
+   * `ambos` é o padrão porque é o que a chamada costuma ser: gente falando e
+   * gente escrevendo ao mesmo tempo. Trocar não sai da chamada.
+   */
+  modo: ModoDaSala;
   camera: boolean;
   participantes: Participante[];
+  /** Você tem `SHARE_SCREEN`. O token já não deixaria publicar sem ela. */
+  podeCompartilhar: boolean;
+  transmitindo: boolean;
+  /** O diálogo de escolha do preset. No estado porque o atalho também o abre. */
+  escolhendoTela: boolean;
+  /** De quem é a tela que você está vendo em primeiro plano. */
+  telaEmFoco: string | null;
+  qualidadeDoEspectador: QualidadeDoEspectador;
+  estatisticas: EstatisticasDaTela | null;
+  /** Medida do WebRTC, em bits por segundo, ou nulo enquanto não há medida. */
+  bandaDeSubida: number | null;
 
   definir: (mudanca: Partial<Omit<VozState, 'definir'>>) => void;
   esquecerChamada: () => void;
@@ -58,9 +77,16 @@ const SEM_CHAMADA = {
   qualidade: 'desconhecida' as Qualidade,
   falando: new Set<string>() as ReadonlySet<string>,
   audioBloqueado: false,
-  grade: false,
+  modo: 'mensagens' as ModoDaSala,
   camera: false,
   participantes: [] as Participante[],
+  podeCompartilhar: false,
+  transmitindo: false,
+  escolhendoTela: false,
+  telaEmFoco: null,
+  qualidadeDoEspectador: 'auto' as QualidadeDoEspectador,
+  estatisticas: null,
+  bandaDeSubida: null,
 };
 
 export const useVoz = create<VozState>((set) => ({
