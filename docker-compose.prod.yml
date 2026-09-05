@@ -47,8 +47,17 @@ services:
     image: ${IMAGEM_API:-trindade/api:latest}
     restart: unless-stopped
     logging: *log
-    # Sem `ports`: só o Caddy fala com ela, pela rede interna do compose. Uma
-    # porta publicada aqui seria um caminho que ignora todos os cabeçalhos.
+    ports:
+      # **Só no loopback do host**, e por um motivo específico: o LiveKit roda
+      # com `network_mode: host` e precisa entregar o webhook de sala à API. Da
+      # rede do host, o nome `api` do compose não resolve; sem esta linha o
+      # webhook nunca chegava, e é ele que conserta o estado de voz quando
+      # alguém cai sem se despedir.
+      #
+      # `127.0.0.1:` na frente não é decoração: sem isso o Docker publica em
+      # `0.0.0.0` e abre um caminho para a API que ignora o Caddy e todos os
+      # cabeçalhos. Com isso, só quem já está dentro da máquina alcança.
+      - '127.0.0.1:3000:3000'
     env_file: .env
     environment:
       NODE_ENV: production
@@ -92,6 +101,11 @@ services:
     restart: unless-stopped
     logging: *log
     command: --config /etc/livekit.yaml
+    # O `livekit.prod.yaml` usa `${LIVEKIT_API_KEY}` e `${LIVEKIT_API_SECRET}`,
+    # e sem isto os dois chegavam **vazios**: o SFU subia sem par de chaves e
+    # recusava todo token que a API emitisse. Nenhuma chamada conectaria, e o
+    # erro apareceria como "não consegui entrar" sem dizer por quê.
+    env_file: .env
     volumes:
       - ./infra/livekit.prod.yaml:/etc/livekit.yaml:ro
     # `host` aqui, e não no desenvolvimento: a mídia usa uma faixa larga de
@@ -106,9 +120,10 @@ services:
     logging: *log
     command: -c /etc/coturn/turnserver.conf
     volumes:
-      # O arquivo de **produção**, com a lista de negados inteira e sem a
-      # exceção que o de desenvolvimento tem.
-      - ./infra/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      # O arquivo **renderizado** por `scripts/implantar.sh` a partir de
+      # `infra/turnserver.conf`, com o segredo e o domínio já substituídos. O
+      # modelo fica no git; o renderizado, não.
+      - ./infra/turnserver.rendered.conf:/etc/coturn/turnserver.conf:ro
       - ./infra/certs:/etc/coturn/certs:ro
     network_mode: host
 

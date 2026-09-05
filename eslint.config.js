@@ -2,7 +2,16 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', 'packages/api/migrations/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      'packages/api/migrations/**',
+      // Artefato do cargo: 1,5 GB, com JavaScript gerado pelo Tauri dentro. O
+      // git já o ignora; o eslint precisa ouvir a mesma coisa em separado.
+      'packages/desktop/src-tauri/target/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   // Dois ambientes que o TypeScript não cobre: o script de operação, que roda em

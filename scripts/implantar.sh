@@ -18,11 +18,28 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# O compose lê o .env sozinho; este script também precisa dele, para
+# renderizar a configuração do coturn antes de qualquer contêiner subir.
+if [ -f .env ]; then
+  set -a
+  . ./.env
+  set +a
+fi
+
 COMPOSE="docker compose -f docker-compose.prod.yml"
 IMAGEM="${IMAGEM_API:-trindade/api:latest}"
 
 passo() { printf '\n\033[36m==> %s\033[0m\n' "$*"; }
 erro() { printf '\n\033[31m!! %s\033[0m\n' "$*" >&2; }
+
+passo "configuração do coturn"
+# O coturn não lê variável de ambiente, e o segredo do TURN não pode ficar num
+# arquivo versionado. O modelo está no git; o que o contêiner monta nasce aqui.
+: "${TURN_STATIC_SECRET:?defina TURN_STATIC_SECRET no .env}"
+: "${DOMINIO_TURN:?defina DOMINIO_TURN no .env — é o realm e o nome do certificado}"
+envsubst '${TURN_STATIC_SECRET} ${DOMINIO_TURN}' \
+  < infra/turnserver.conf > infra/turnserver.rendered.conf
+chmod 600 infra/turnserver.rendered.conf
 
 passo "backup antes de mexer"
 ./scripts/backup.sh

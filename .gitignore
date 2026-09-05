@@ -22,6 +22,10 @@ e2e/__pycache__/
 # Dumps do banco. Ficam no disco e no storage, nunca no repositório.
 backups/
 
+# A configuração do coturn com o segredo já substituído. O modelo é
+# `infra/turnserver.conf`, versionado; este nasce no `implantar.sh`.
+infra/turnserver.rendered.conf
+
 # Fontes do Excalidraw, copiadas do pacote instalado por
 # packages/web/scripts/fontes-do-quadro.mjs antes de `dev` e de `build`.
 packages/web/public/excalidraw/

@@ -352,6 +352,78 @@ describe('a configuração de desenvolvimento do relay', () => {
   });
 });
 
+/**
+ * O que o compose de **produção** monta.
+ *
+ * Estes três testes existem porque os três defeitos aconteceram de verdade, e
+ * nenhum deles apareceria antes do dia da publicação: o arquivo de produção do
+ * coturn era o de desenvolvimento com outro nome, o LiveKit subia sem par de
+ * chaves, e o webhook apontava para um endereço que não existia. Um deles é
+ * pior que um erro — o segredo do TURN estava versionado.
+ */
+describe('o que o compose de produção monta', () => {
+  const compose = readFileSync(
+    new URL('../../../docker-compose.prod.yml', import.meta.url),
+    'utf8',
+  );
+
+  /** Só as diretivas. Comentário é prosa, e prosa pode citar o que já foi. */
+  const diretivas = conf
+    .split(String.fromCharCode(10))
+    .map((linha) => linha.trim())
+    .filter((linha) => linha.length > 0 && !linha.startsWith('#'));
+
+  it('o modelo do coturn não carrega segredo nem realm de desenvolvimento', () => {
+    // O coturn não lê variável de ambiente; o `implantar.sh` substitui e o
+    // renderizado fica fora do git. O que está versionado tem de ser o modelo.
+    expect(diretivas).toContain('static-auth-secret=${TURN_STATIC_SECRET}');
+    expect(diretivas).toContain('realm=${DOMINIO_TURN}');
+
+    const segredo = diretivas.find((l) => l.startsWith('static-auth-secret='));
+    expect(segredo, 'segredo literal versionado').toBe(
+      'static-auth-secret=${TURN_STATIC_SECRET}',
+    );
+    expect(diretivas, 'realm de desenvolvimento em produção').not.toContain('realm=localhost');
+  });
+
+  it('e serve a faixa de portas e os certificados que a documentação pede', () => {
+    expect(diretivas).toContain('min-port=50201');
+    expect(diretivas).toContain('max-port=50400');
+    // Comentados, o TURN sobre TLS não sobe — e é ele que passa em rede
+    // corporativa que bloqueia UDP, que é metade da razão de o relay existir.
+    expect(diretivas.some((l) => l.startsWith('cert='))).toBe(true);
+    expect(diretivas.some((l) => l.startsWith('pkey='))).toBe(true);
+  });
+
+  it('o LiveKit recebe as chaves', () => {
+    // `livekit.prod.yaml` usa ${LIVEKIT_API_KEY} e ${LIVEKIT_API_SECRET}. Sem
+    // `env_file`, os dois chegam vazios: o SFU sobe sem par de chaves e recusa
+    // todo token que a API emitir, sem dizer por quê.
+    const bloco = compose.slice(compose.indexOf('livekit:'), compose.indexOf('coturn:'));
+    expect(bloco, 'o serviço livekit ficou sem env_file').toContain('env_file: .env');
+  });
+
+  it('a API é alcançável pelo webhook, e só de dentro da máquina', () => {
+    // O LiveKit roda com `network_mode: host` e entrega o webhook em
+    // 127.0.0.1:3000. Sem publicar a porta, ele nunca chega — e é o webhook
+    // que conserta o estado de voz quando alguém cai sem se despedir.
+    const bloco = compose.slice(compose.indexOf('api:'), compose.indexOf('postgres:'));
+    expect(bloco).toContain("'127.0.0.1:3000:3000'");
+    // Publicar em 0.0.0.0 abriria um caminho para a API que ignora o Caddy e
+    // todos os cabeçalhos de segurança.
+    expect(bloco).not.toMatch(/^\s+- '?0\.0\.0\.0:/m);
+    expect(bloco).not.toMatch(/^\s+- '?3000:3000'?$/m);
+  });
+
+  it('o webhook aponta para onde a API de fato responde', () => {
+    const prod = readFileSync(
+      new URL('../../../infra/livekit.prod.yaml', import.meta.url),
+      'utf8',
+    );
+    expect(prod).toContain('http://127.0.0.1:3000/api/livekit/webhook');
+  });
+});
+
 describe('a configuração do SFU', () => {
   const yaml = readFileSync(new URL('../../../infra/livekit.yaml', import.meta.url), 'utf8');
 
