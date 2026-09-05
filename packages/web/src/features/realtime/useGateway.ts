@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { Channel, Message, Task, User } from '@trindade/shared';
+import { MENCAO_DE_TODOS, type Channel, type Message, type Task, type User } from '@trindade/shared';
 import { useToast } from '../../components';
 import { irPara } from '../../lib/navegacao';
 import * as ws from '../../lib/ws';
@@ -134,7 +134,11 @@ export function useGateway(): void {
 
         const blocos = analisarMarkdown(d.content ?? '');
         const citados = mencionados(blocos);
-        const citou = Boolean(meuUsername && citados.has(meuUsername));
+        /* `@todos` conta como menção para todo mundo — menos para quem
+           escreveu, que já saiu duas linhas acima. É a mesma conta que o
+           servidor faz no contador. */
+        const citou =
+          citados.has(MENCAO_DE_TODOS) || Boolean(meuUsername && citados.has(meuUsername));
 
         const canal = qc
           .getQueryData<Channel[]>(['channels'])

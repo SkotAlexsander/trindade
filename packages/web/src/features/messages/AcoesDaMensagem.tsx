@@ -1,5 +1,5 @@
 import { IconButton, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
-import { Mark, Notes, Pin, Reply, Smile, Tasks, Trash } from '../../components/icones';
+import { Board, Mark, Notes, Pin, Reply, Smile, Tasks, Trash } from '../../components/icones';
 import { SeletorDeEmoji } from './SeletorDeEmoji';
 import { RAPIDOS } from './emojis';
 import type { MensagemLocal } from './queries';
@@ -29,7 +29,10 @@ export interface AcoesDaMensagemProps {
   podeAnotar: boolean;
   onParaNotas: () => void;
   podeTarefa: boolean;
+  /** Só faz sentido com imagem: é ela que vai para o quadro. */
+  temImagem: boolean;
   onCriarTarefa: () => void;
+  onAbrirNoQuadro: () => void;
   onEditar: () => void;
   onApagar: () => void;
   onThread: () => void;
@@ -47,7 +50,9 @@ export function AcoesDaMensagem({
   podeAnotar,
   onParaNotas,
   podeTarefa,
+  temImagem,
   onCriarTarefa,
+  onAbrirNoQuadro,
   onEditar,
   onApagar,
   onThread,
@@ -143,6 +148,13 @@ export function AcoesDaMensagem({
         {podeTarefa ? (
           <MenuItem icon={<Tasks size={16} />} onSelect={onCriarTarefa}>
             Criar tarefa
+          </MenuItem>
+        ) : null}
+        {/* Só onde há imagem: anotar em cima de uma captura de tela é o que se
+            faz com quase toda imagem numa conversa de trabalho. */}
+        {podeAnotar && temImagem ? (
+          <MenuItem icon={<Board size={16} />} onSelect={onAbrirNoQuadro}>
+            Abrir no quadro
           </MenuItem>
         ) : null}
         {podeApagar ? (

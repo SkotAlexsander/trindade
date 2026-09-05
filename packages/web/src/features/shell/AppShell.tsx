@@ -29,6 +29,7 @@ import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { useQuadro } from '../tasks/store';
 import { Quadro } from '../boards/Quadro';
 import { useQuadroAberto } from '../boards/store';
+import { useAbrirQuadroDoCanal } from '../boards/queries';
 import { useNotificacoes } from '../notifications/useNotificacoes';
 import { definirNavegador } from '../../lib/navegacao';
 import { CommandPalette } from './CommandPalette';
@@ -171,9 +172,27 @@ export function AppShell() {
     if (canal) navigate(`/c/${canal.slug}`);
   }, [canais, canalDaChamada, navigate]);
 
-  const alternarPainel = useCallback((qual: Exclude<PainelAberto, null>) => {
-    setPainel((atual) => (atual === qual ? null : qual));
-  }, []);
+  /* O botão "Quadro" **abre o quadro**, e não a lista: quase sempre há um só, e
+     passar por uma lista de um item para chegar nele é uma parada no caminho.
+     A lista continua a um clique, dentro do próprio quadro. */
+  const abrirQuadroDoCanal = useAbrirQuadroDoCanal(canalAtual?.id);
+  const pedidoDeLista = useQuadroAberto((s) => s.pedidoDeLista);
+
+  const alternarPainel = useCallback(
+    (qual: Exclude<PainelAberto, null>) => {
+      if (qual === 'quadros') {
+        void abrirQuadroDoCanal();
+        return;
+      }
+      setPainel((atual) => (atual === qual ? null : qual));
+    },
+    [abrirQuadroDoCanal],
+  );
+
+  // "Outros quadros", de dentro do quadro: aí sim a lista.
+  useEffect(() => {
+    if (pedidoDeLista > 0) setPainel('quadros');
+  }, [pedidoDeLista]);
 
   // Abrir uma thread abre o painel dela; fechar o painel esquece a thread,
   // senão a próxima abertura mostraria a conversa de antes.

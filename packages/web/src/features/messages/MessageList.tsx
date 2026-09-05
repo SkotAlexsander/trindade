@@ -47,7 +47,8 @@ export function MessageList({ alvo, pessoas, canais }: MessageListProps) {
   const { data, isPending } = useMessages(alvo);
   const { carregar, carregando } = useCarregarAntigas(alvo);
   const { tentarDeNovo, descartar } = useEnviarMensagem();
-  const { reagir, guardar, fixar, apagar, paraNotas, virarTarefa } = useAcoesDaMensagem();
+  const { reagir, guardar, fixar, apagar, paraNotas, virarTarefa, abrirNoQuadro } =
+    useAcoesDaMensagem();
 
   const responder = useComposer((s) => s.responder);
   const editar = useComposer((s) => s.editar);
@@ -315,6 +316,7 @@ export function MessageList({ alvo, pessoas, canais }: MessageListProps) {
       onThread: (m) => abrirThread(m.id),
       onParaNotas: paraNotas,
       onCriarTarefa: virarTarefa,
+      onAbrirNoQuadro: abrirNoQuadro,
     }),
     [
       permissoes,
@@ -326,6 +328,7 @@ export function MessageList({ alvo, pessoas, canais }: MessageListProps) {
       apagar,
       paraNotas,
       virarTarefa,
+      abrirNoQuadro,
       tentarDeNovo,
       descartar,
       pular,

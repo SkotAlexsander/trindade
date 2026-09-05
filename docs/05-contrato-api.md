@@ -389,6 +389,11 @@ O `DELETE` vem sem corpo, e o schema aceita corpo `null` por isso. A resposta é
 - `PATCH /tasks/:id` — `MANAGE_TASKS`. Mover é `{ columnKey, position }`; concluir é `{ concluida }`. A coluna e `completed_at` andam juntos nos dois sentidos, e a transição para concluída posta uma mensagem `kind: 'system'` no canal
 - `DELETE /tasks/:id` — `MANAGE_TASKS`. `400 TASK_DONE` se já estiver concluída: tarefa feita é o registro do que o grupo fez
 
+`@todos` numa mensagem chama o grupo inteiro: `resolveMentions` devolve todas
+as contas ativas, e `somarMencoes` tira quem escreveu, como em qualquer menção.
+O nome é reservado no `usernameSchema` — uma conta chamada `todos` faria toda
+menção a ela chamar as cinco pessoas.
+
 `Message.kind` é `'text' | 'system' | 'poll'` e vem em toda mensagem. **Está no
 schema de resposta de propósito** — o schema é filtro, e campo ausente dele some
 da resposta sem erro nenhum.

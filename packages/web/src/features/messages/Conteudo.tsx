@@ -1,6 +1,6 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Channel, User } from '@trindade/shared';
+import { MENCAO_DE_TODOS, type Channel, type User } from '@trindade/shared';
 import { analisarMarkdown, type Bloco, type No } from './markdown';
 import { linguaConhecida, realcar, type Pedaco } from './realce';
 import styles from './messages.module.css';
@@ -133,7 +133,31 @@ function NoRender({
           <Nos nos={no.filhos} pessoas={pessoas} canais={canais} />
         </Spoiler>
       );
-    case 'link':
+    case 'link': {
+      /* Link para dentro do produto navega **aqui**, sem abrir aba nova: uma
+         aba a mais refaz o READY, reconecta o socket e derruba a chamada — e
+         quem clicou só queria ir para um canal ou abrir um quadro. É o caso
+         das linhas de sistema, que trazem o endereço completo. */
+      const daCasa = no.href.startsWith(`${location.origin}/`);
+      if (daCasa) {
+        const destino = no.href.slice(location.origin.length);
+        return (
+          <a
+            className={styles.link}
+            href={no.href}
+            onClick={(evento) => {
+              // Ctrl/⌘ e o botão do meio continuam abrindo aba nova: quem pede
+              // isso está pedindo de propósito.
+              if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.button !== 0) return;
+              evento.preventDefault();
+              navigate(destino);
+            }}
+          >
+            <Nos nos={no.filhos} pessoas={pessoas} canais={canais} />
+          </a>
+        );
+      }
+
       return (
         // `noopener` sempre: sem ele a página aberta ganha `window.opener` e
         // pode navegar a nossa aba para onde quiser.
@@ -146,7 +170,18 @@ function NoRender({
           <Nos nos={no.filhos} pessoas={pessoas} canais={canais} />
         </a>
       );
+    }
     case 'mencao': {
+      /* `@todos` não é ninguém, e é a única menção que não vira nome: ela
+         chama o grupo, e some da tela como "@todos" mesmo. */
+      if (no.username === MENCAO_DE_TODOS) {
+        return (
+          <span className={styles.mencao} data-todos="true">
+            @{MENCAO_DE_TODOS}
+          </span>
+        );
+      }
+
       const pessoa = pessoas.find((p) => p.username === no.username);
       // Menção a quem não existe é texto, não um objeto quebrado.
       if (!pessoa) return `@${no.username}`;

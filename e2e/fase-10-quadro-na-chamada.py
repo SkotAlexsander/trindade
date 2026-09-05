@@ -89,7 +89,14 @@ with sync_playwright() as p:
         ?.textContent || '').includes('Conectado')""")
 
     # --- um quadro no canal da reunião ----------------------------------------
-    quem.locator('button[aria-label="Quadros"]').first.click()
+    # O botão do cabeçalho abre o quadro do canal; a lista (onde se cria um com
+    # nome) fica no menu do próprio quadro.
+    quem.locator('button[aria-label="Quadro"]').first.click()
+    quem.wait_for_selector('canvas', timeout=25000)
+    quem.wait_for_timeout(1500)
+    quem.locator('[data-elementos] button[aria-label="Mais ações do quadro"]').click()
+    quem.wait_for_timeout(400)
+    quem.locator('[role="menuitem"]', has_text='Outros quadros').click()
     quem.wait_for_selector('aside[aria-label="Quadros"]', timeout=10000)
     quem.fill('input[aria-label="Nome do quadro novo"]', NOME)
     quem.locator('aside[aria-label="Quadros"] button[type="submit"]').click()

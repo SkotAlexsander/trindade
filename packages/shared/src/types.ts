@@ -287,3 +287,16 @@ export interface Presentation {
   userId: string;
   startedAt: string;
 }
+
+/**
+ * A menção que chama todo mundo.
+ *
+ * `@todos` não é um usuário: é a forma de dizer "isto é para o grupo, não é
+ * ruído do canal". Com cinco pessoas não existe `@here` separado — quem está
+ * fora recebe o mesmo chamado quando voltar, e duas variantes seriam uma
+ * escolha a mais para fazer no meio de uma frase.
+ *
+ * O nome é reservado: nenhuma conta pode se chamar assim, senão a menção a ela
+ * chamaria o grupo inteiro.
+ */
+export const MENCAO_DE_TODOS = 'todos';

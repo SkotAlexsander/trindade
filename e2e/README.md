@@ -404,6 +404,14 @@ bytes passaram pelo `sharp` e não pelo CRDT.
 do Excalidraw e é estável; `expect_file_chooser` em cima da ferramenta de imagem
 não dispara neste fluxo.
 
+**`fase-10-mencao-de-todos.py`** — 5 verificações do `@todos`: a sugestão vem
+na frente das pessoas, a menção sai destacada, e quem **não** escreveu recebe o
+chamado no título.
+
+**Quem recebe precisa estar em outro canal.** Com o canal aberto e a janela à
+frente, a regra de notificação não marca nada — e é o certo, porque a pessoa
+está lendo. O roteiro erra sozinho se esquecer disso.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

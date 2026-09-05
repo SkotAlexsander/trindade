@@ -30,7 +30,9 @@ const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: Re
   { id: 'fixadas', rotulo: 'Fixadas', icone: <Pin size={18} /> },
   { id: 'notas', rotulo: 'Notas', icone: <Notes size={18} /> },
   { id: 'tarefas', rotulo: 'Tarefas', icone: <Tasks size={18} /> },
-  { id: 'quadros', rotulo: 'Quadros', icone: <Board size={18} /> },
+  // Singular de propósito: o botão abre **o** quadro do canal. A lista dos
+  // outros, quando há outros, mora dentro dele.
+  { id: 'quadros', rotulo: 'Quadro', icone: <Board size={18} /> },
 ];
 
 export interface ChannelHeaderProps {

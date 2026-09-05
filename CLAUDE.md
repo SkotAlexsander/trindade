@@ -928,6 +928,45 @@ ele vem do cliente e vira chave de banco: está cercado por
 sistema não é automatizável de forma estável aqui, e colar é o gesto de
 verdade — cai no mesmo caminho do Excalidraw que arrastar do desktop.
 
+**Um quadro por canal, com a opção de criar mais** — pedido do dono do projeto
+em 5 de setembro de 2026. O botão do cabeçalho ("Quadro", singular) abre **o**
+quadro do canal e o cria na primeira vez; a lista, que era a porta de entrada,
+virou "Outros quadros" dentro do menu do próprio quadro. Passar por uma lista de
+um item para chegar ao único quadro é uma parada no caminho, e o banco continua
+guardando quantos forem precisos.
+
+**Link para dentro do produto navega aqui, sem abrir aba.** A linha de sistema
+da apresentação traz o endereço completo, e todo link virava `target="_blank"` —
+uma aba nova refaz o READY, reconecta o socket e derruba a chamada. Agora o que
+começa com a nossa origem navega pelo router; `Ctrl`/`⌘` e o botão do meio
+continuam abrindo aba, porque aí é pedido de propósito. Foi o roteiro de
+apresentação que pegou: o clique no link "abria" o quadro numa aba que ninguém
+via.
+
+**Fatia 5: `@todos` e os dois gestos entre o quadro e a conversa** — os dois
+pedidos do dono do projeto em 5 de setembro de 2026.
+
+**`@todos` chama o grupo.** O `@` com autocompletar existe desde a fase 5; o que
+faltava era dizer "isto é para todo mundo" sem citar quatro nomes. Quem resolve
+é o servidor (`resolveMentions` devolve todas as contas ativas, e `somarMencoes`
+tira quem escreveu, como em qualquer menção); o cliente conta o mesmo pela
+tabela de notificações. Não existe `@here` separado: com cinco pessoas, quem
+está fora recebe o mesmo chamado quando voltar, e duas variantes seriam uma
+escolha a mais no meio de uma frase. O nome é **reservado** no `usernameSchema`
+— uma conta chamada `todos` faria toda menção a ela chamar o grupo inteiro.
+
+**"Enviar no canal"** exporta a seleção — ou o quadro inteiro, quando não há
+seleção — e manda como anexo com o link de volta. **"Abrir no quadro"** cria um
+quadro com a imagem da mensagem dentro.
+
+**A imagem inicial entra pelo `convertToExcalidrawElements`, não por um evento
+de colar.** Colar exige foco no canvas, e no instante em que o quadro abre o
+foco está em qualquer outro lugar — o quadro abria vazio e nada explicava por
+quê. E a guarda de "já inseri" é a **identidade da API**, não um booleano: no
+StrictMode o componente monta, desmonta e remonta com os mesmos refs, e o `true`
+da primeira passagem bloqueava a segunda, que é a que está viva. A primeira
+terminava chamando `updateScene` num Excalidraw já descartado.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

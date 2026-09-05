@@ -1,4 +1,4 @@
-import type { Channel, User } from '@trindade/shared';
+import { MENCAO_DE_TODOS, type Channel, type User } from '@trindade/shared';
 import { EMOJIS, buscarEmojis } from './emojis';
 
 /**
@@ -79,15 +79,31 @@ export function sugerir(
   const termo = gatilho.termo;
 
   if (gatilho.tipo === '@') {
-    return pessoas
-      .filter((p) => combina(p.username, termo) || combina(p.displayName, termo))
-      .slice(0, MAXIMO)
-      .map((p) => ({
-        chave: p.id,
-        rotulo: p.displayName,
-        detalhe: `@${p.username}`,
-        troca: `@${p.username} `,
-      }));
+    /* `@todos` vem primeiro, e é o único item que não é uma pessoa: com cinco
+       no elenco, "isto é para o grupo" é uma escolha tão comum quanto chamar
+       alguém pelo nome. */
+    const grupo: Sugestao[] = combina(MENCAO_DE_TODOS, termo)
+      ? [
+          {
+            chave: MENCAO_DE_TODOS,
+            rotulo: `@${MENCAO_DE_TODOS}`,
+            detalhe: 'chama o grupo inteiro',
+            troca: `@${MENCAO_DE_TODOS} `,
+          },
+        ]
+      : [];
+
+    return [
+      ...grupo,
+      ...pessoas
+        .filter((p) => combina(p.username, termo) || combina(p.displayName, termo))
+        .map((p) => ({
+          chave: p.id,
+          rotulo: p.displayName,
+          detalhe: `@${p.username}`,
+          troca: `@${p.username} `,
+        })),
+    ].slice(0, MAXIMO);
   }
 
   if (gatilho.tipo === '#') {

@@ -1,11 +1,15 @@
 import { z } from 'zod';
+import { MENCAO_DE_TODOS } from './types.js';
 
 // Validação usada pelos dois lados. As regras aqui espelham os `check` do
 // schema em docs/03-modelo-de-dados.md — se um mudar, o outro muda junto.
 
 export const usernameSchema = z
   .string()
-  .regex(/^[a-z0-9_]{3,24}$/, 'usuário: 3 a 24 caracteres, minúsculas, números ou _');
+  .regex(/^[a-z0-9_]{3,24}$/, 'usuário: 3 a 24 caracteres, minúsculas, números ou _')
+  /* `todos` é a menção do grupo. Uma conta com esse nome faria toda menção a
+     ela chamar as cinco pessoas — e a dona da conta nem saberia por quê. */
+  .refine((nome) => nome !== MENCAO_DE_TODOS, 'esse nome é reservado');
 
 export const displayNameSchema = z.string().min(1).max(32);
 

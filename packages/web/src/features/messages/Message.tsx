@@ -69,6 +69,7 @@ export interface AcoesDisponiveis {
   onFixar: (mensagem: MensagemLocal) => void;
   onParaNotas: (mensagem: MensagemLocal) => void;
   onCriarTarefa: (mensagem: MensagemLocal) => void;
+  onAbrirNoQuadro: (mensagem: MensagemLocal) => void;
   onEditar: (mensagem: MensagemLocal) => void;
   onApagar: (mensagem: MensagemLocal) => void;
   onTentarDeNovo: (mensagem: MensagemLocal) => void;
@@ -405,6 +406,8 @@ export const Message = memo(function Message({
           onFixar={() => acoes.onFixar(mensagem)}
           onParaNotas={() => acoes.onParaNotas(mensagem)}
           onCriarTarefa={() => acoes.onCriarTarefa(mensagem)}
+          onAbrirNoQuadro={() => acoes.onAbrirNoQuadro(mensagem)}
+          temImagem={mensagem.attachments.some((a) => a.contentType.startsWith('image/'))}
           onEditar={() => acoes.onEditar(mensagem)}
           onApagar={() => acoes.onApagar(mensagem)}
           onThread={() => acoes.onThread(mensagem)}

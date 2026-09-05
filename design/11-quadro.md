@@ -25,6 +25,23 @@ infraestrutura existente, o modo apresentação, e o elo com a conversa.
 >   Travar o quadro inteiro seria a armadilha perfeita: um quadro cheio em que
 >   nem dá para apagar algo para caber de novo. A contagem vem do servidor,
 >   porque cada navegador vê o quadro com um atraso diferente.
+> **O botão do cabeçalho abre o quadro, não a lista** — pedido do dono do
+> projeto em 5 de setembro de 2026: "tem que ser um quadro apenas de
+> apresentação, 1 já basta... mas ponha a opção de criar mais caso necessário".
+> Quase sempre há um quadro por canal, e passar por uma lista de um item para
+> chegar nele é uma parada no caminho. O canal ganha o seu quadro na primeira
+> vez que alguém clica. Quem precisa de outro tem "Novo quadro" e "Outros
+> quadros" no menu do próprio quadro — a lista continua inteira, só deixou de
+> ser a porta de entrada.
+>
+> **Entregue na fatia 5**: os dois gestos entre o quadro e a conversa.
+> "Enviar no canal" exporta a **seleção** (ou o quadro inteiro, quando não há
+> seleção) e a manda como anexo com o link de volta; "Abrir no quadro" cria um
+> quadro com a imagem da mensagem dentro dele. A imagem entra pelo
+> `convertToExcalidrawElements` — o construtor público do Excalidraw — e não
+> por um evento de colar sintético: colar exige foco no canvas, e no instante
+> em que o quadro abre o foco está em outro lugar.
+>
 > - **A imagem entra na fatia 4**, pelo upload de sempre. O Excalidraw guarda
 >   na cena um `fileId` e os bytes num dicionário à parte; os bytes **não**
 >   entram no CRDT (seriam megabytes de base64 dentro de cada delta), sobem por

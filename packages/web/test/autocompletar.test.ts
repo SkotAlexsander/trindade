@@ -71,10 +71,23 @@ describe('gatilhoAtivo', () => {
 });
 
 describe('sugerir', () => {
-  it('`@` sozinho já lista todo o elenco', () => {
+  it('`@` sozinho já lista todo o elenco, com `@todos` na frente', () => {
     // Exigir uma letra antes de mostrar cinco nomes é cerimônia.
     const s = sugerir({ tipo: '@', termo: '', inicio: 0 }, PESSOAS, CANAIS);
-    expect(s).toHaveLength(3);
+    expect(s).toHaveLength(4);
+    // Primeiro item: "isto é para o grupo" é uma escolha tão comum quanto
+    // chamar alguém pelo nome.
+    expect(s[0]?.troca).toBe('@todos ');
+  });
+
+  it('`@todos` some quando o termo não combina com ele', () => {
+    const s = sugerir({ tipo: '@', termo: 'br', inicio: 0 }, PESSOAS, CANAIS);
+    expect(s.map((x) => x.troca)).not.toContain('@todos ');
+  });
+
+  it('e aparece sozinho quando combina', () => {
+    const s = sugerir({ tipo: '@', termo: 'tod', inicio: 0 }, PESSOAS, CANAIS);
+    expect(s.map((x) => x.troca)).toEqual(['@todos ']);
   });
 
   it('filtra por usuário e por nome de exibição', () => {

@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Message } from '@trindade/shared';
+import type { Board, Message } from '@trindade/shared';
 import { useToast } from '../../components';
 import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
 import { atualizarMensagem, mexerNaReacao, type MensagemLocal } from './queries';
 import { idDoAlvo } from './alvo';
+import { receberQuadro } from '../boards/queries';
+import { useQuadroAberto } from '../boards/store';
 
 /**
  * As ações de uma mensagem.
@@ -126,5 +128,38 @@ export function useAcoesDaMensagem() {
     [show],
   );
 
-  return { reagir, guardar, fixar, apagar, paraNotas, virarTarefa };
+  /**
+   * "Abrir no quadro".
+   *
+   * Cria um quadro no canal e cola a imagem dentro dele. Serve para anotar em
+   * cima de uma captura de tela — que é o que se faz com quase toda imagem que
+   * aparece numa conversa de trabalho. O quadro nasce com o nome do arquivo:
+   * quem for procurar depois procura por ele. Ver design/11-quadro.md.
+   */
+  const abrirNoQuadro = useCallback(
+    (mensagem: Message) => {
+      const imagem = mensagem.attachments.find((a) => a.contentType.startsWith('image/'));
+      if (!imagem || !mensagem.channelId) {
+        show('Esta mensagem não tem imagem para levar ao quadro.', 'danger');
+        return;
+      }
+
+      const nome = (imagem.filename.replace(/\.[^.]+$/, '') || 'Imagem').slice(0, 48);
+
+      void api<{ board: Board }>(`/channels/${mensagem.channelId}/boards`, {
+        method: 'POST',
+        body: { name: nome },
+      })
+        .then(({ board }) => {
+          receberQuadro(qc, board);
+          useQuadroAberto
+            .getState()
+            .abrir(board.id, board.channelId, { url: imagem.url, nome: imagem.filename });
+        })
+        .catch(() => show('Não foi possível abrir no quadro.', 'danger'));
+    },
+    [qc, show],
+  );
+
+  return { reagir, guardar, fixar, apagar, paraNotas, virarTarefa, abrirNoQuadro };
 }

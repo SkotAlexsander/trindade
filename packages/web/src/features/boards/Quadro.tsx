@@ -1,11 +1,31 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AVISO_DE_ELEMENTOS, ELEMENTOS_POR_QUADRO, type User } from '@trindade/shared';
-import { Avatar, Button, IconButton, Menu, MenuItem, Tooltip } from '../../components';
+import {
+  Avatar,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  Tooltip,
+  useToast,
+} from '../../components';
 import { ChevronLeft } from '../../components/icones';
 import { colorFromId, ensureContrast } from '../../lib/contraste';
 import { lerToken } from '../../lib/tokens';
 import { useAuth } from '../auth/store';
-import { useQuadros, mandarMiniatura, useArquivarQuadro, useRenomearQuadro } from './queries';
+import type { Attachment } from '@trindade/shared';
+import { upload } from '../../lib/http';
+import { useEnviarMensagem } from '../messages/useEnviar';
+import { canal as canalComoAlvo } from '../messages/alvo';
+import { useChannels } from '../channels/queries';
+import {
+  mandarMiniatura,
+  useArquivarQuadro,
+  useCriarQuadro,
+  useQuadros,
+  useRenomearQuadro,
+} from './queries';
 import { abrirQuadro, type ProvedorDoQuadro } from './provedor';
 import { useQuadroAberto } from './store';
 import { useApresentacoes } from './apresentacoes';
@@ -39,10 +59,12 @@ export function Quadro({ pessoas }: { pessoas: readonly User[] }) {
 function QuadroAberto({
   boardId,
   channelId,
+  imagemInicial,
   pessoas,
 }: {
   boardId: string;
   channelId: string;
+  imagemInicial?: { url: string; nome: string };
   pessoas: readonly User[];
 }) {
   const eu = useAuth((s) => s.user);
@@ -52,6 +74,9 @@ function QuadroAberto({
 
   const renomear = useRenomearQuadro();
   const arquivar = useArquivarQuadro(channelId);
+  const criar = useCriarQuadro(channelId);
+  const abrirOutro = useQuadroAberto((s) => s.abrir);
+  const verLista = useQuadroAberto((s) => s.verLista);
 
   const [provedor, setProvedor] = useState<ProvedorDoQuadro | null>(null);
   const [podeEditar, setPodeEditar] = useState(false);
@@ -100,21 +125,29 @@ function QuadroAberto({
    * cena, e perguntar a ele ali devolve zero elementos e uma miniatura em
    * branco — foi exatamente o que aconteceu na primeira versão.
    */
-  const cenaRef = useRef<{ elementos: readonly unknown[]; arquivos: unknown }>({
-    elementos: [],
-    arquivos: {},
-  });
+  const cenaRef = useRef<{
+    elementos: readonly unknown[];
+    arquivos: unknown;
+    selecionados: readonly string[];
+  }>({ elementos: [], arquivos: {}, selecionados: [] });
   const podeEditarRef = useRef(podeEditar);
   podeEditarRef.current = podeEditar;
 
-  const aoMudarCena = useCallback((cena: { elementos: readonly unknown[]; arquivos: unknown }) => {
-    cenaRef.current = cena;
-  }, []);
+  const aoMudarCena = useCallback(
+    (cena: {
+      elementos: readonly unknown[];
+      arquivos: unknown;
+      selecionados: readonly string[];
+    }) => {
+      cenaRef.current = cena;
+    },
+    [],
+  );
 
   useEffect(() => {
     return () => {
       const { elementos: cena, arquivos } = cenaRef.current;
-      cenaRef.current = { elementos: [], arquivos: {} };
+      cenaRef.current = { elementos: [], arquivos: {}, selecionados: [] };
       if (!podeEditarRef.current || cena.length === 0) return;
 
       // Assíncrono e sem `await`: o desmonte não espera ninguém, e a miniatura
@@ -136,6 +169,67 @@ function QuadroAberto({
       })();
     };
   }, [boardId]);
+
+  /**
+   * "Enviar no canal": o desenho vira anexo, com o link de volta.
+   *
+   * Manda **a seleção**, ou o quadro inteiro quando não há nada selecionado —
+   * que é o que a pessoa quer dizer nos dois casos. Serve para "aqui está o
+   * diagrama que discutimos" sem obrigar ninguém a abrir o quadro; o link fica
+   * na mensagem para quem quiser entrar. Ver design/11-quadro.md.
+   */
+  const { show } = useToast();
+  const { data: canais } = useChannels();
+  const enviarMensagem = useEnviarMensagem();
+  const [enviando, setEnviando] = useState(false);
+
+  async function enviarNoCanal(): Promise<void> {
+    const { elementos: cena, arquivos, selecionados } = cenaRef.current;
+    const escolhidos = new Set(selecionados);
+    const recorte =
+      escolhidos.size > 0
+        ? cena.filter((e) => escolhidos.has((e as { id: string }).id))
+        : cena;
+
+    if (recorte.length === 0) {
+      show('Não há nada desenhado para enviar.', 'danger');
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      const { exportToBlob } = await import('@excalidraw/excalidraw');
+      const png = await exportToBlob({
+        elements: recorte as never,
+        appState: { exportBackground: true, viewBackgroundColor: '#ffffff' },
+        files: (arquivos ?? {}) as never,
+        mimeType: 'image/png',
+        maxWidthOrHeight: 1600,
+      });
+
+      const form = new FormData();
+      form.append('file', png, `${quadro?.name ?? 'quadro'}.png`);
+      const { attachments } = await upload<{ attachments: Attachment[] }>(
+        `/channels/${channelId}/attachments`,
+        form,
+      );
+
+      const slug = canais?.find((c) => c.id === channelId)?.slug;
+      const link = slug ? `${location.origin}/c/${slug}?quadro=${boardId}` : '';
+
+      enviarMensagem.enviar({
+        alvo: canalComoAlvo(channelId),
+        content: link ? `Do quadro **${quadro?.name ?? ''}** — ${link}` : 'Do quadro',
+        anexos: attachments,
+      });
+      show('Enviado no canal.');
+      fechar();
+    } catch {
+      show('Não foi possível enviar no canal.', 'danger');
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   const outros = presentes.filter((id) => id !== eu?.id);
   const cheio = elementos >= ELEMENTOS_POR_QUADRO;
@@ -267,6 +361,12 @@ function QuadroAberto({
               </IconButton>
             }
           >
+            {/* Primeiro item: é o gesto que atravessa a fronteira, e o que
+                mais se usa depois de desenhar. */}
+            <MenuItem disabled={enviando} onSelect={() => void enviarNoCanal()}>
+              Enviar no canal
+            </MenuItem>
+
             <MenuItem
               onSelect={() => {
                 const novo = prompt('Nome do quadro', quadro?.name ?? '');
@@ -276,6 +376,25 @@ function QuadroAberto({
             >
               Renomear
             </MenuItem>
+            {/* Um quadro por canal dá conta quase sempre; quem precisa de
+                outro cria daqui, e a lista fica a um clique. */}
+            <MenuItem
+              onSelect={() => {
+                const nome = prompt('Nome do quadro novo');
+                if (nome === null || nome.trim() === '') return;
+                criar.mutate(nome.trim(), {
+                  onSuccess: ({ board }) => abrirOutro(board.id, channelId),
+                  onError: () => show('Não foi possível criar o quadro.', 'danger'),
+                });
+              }}
+            >
+              Novo quadro
+            </MenuItem>
+
+            <MenuItem onSelect={verLista}>Outros quadros</MenuItem>
+
+            <MenuSeparator />
+
             {/* Arquivar, não apagar: um quadro é o desenho de uma conversa que
                 aconteceu, e um clique errado não pode acabar com ela. */}
             <MenuItem
@@ -336,6 +455,7 @@ function QuadroAberto({
               cheio={cheio}
               pessoas={pessoas}
               aoMudarCena={aoMudarCena}
+              imagemInicial={imagemInicial}
               apresentador={apresentacao?.userId ?? null}
               euApresento={euApresento}
               seguindo={seguindo}

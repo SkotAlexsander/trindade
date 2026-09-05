@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { Board } from '@trindade/shared';
 import { api, upload } from '../../lib/http';
+import { useQuadroAberto } from './store';
 
 /**
  * Os quadros de um canal.
@@ -65,6 +67,44 @@ export function useArquivarQuadro(channelId: string) {
       );
     },
   });
+}
+
+/**
+ * O quadro do canal, criando um se ainda não houver.
+ *
+ * O botão do cabeçalho abre **o** quadro, não uma lista: quase sempre há um só,
+ * e obrigar a passar por uma lista de um item para chegar nele é uma parada no
+ * caminho. Quem precisa de outro cria pelo menu do próprio quadro — a lista
+ * continua ali, só deixou de ser a porta de entrada.
+ */
+export function useAbrirQuadroDoCanal(channelId: string | undefined) {
+  const qc = useQueryClient();
+  const abrir = useQuadroAberto((s) => s.abrir);
+
+  return useCallback(async () => {
+    if (!channelId) return;
+
+    const existentes =
+      qc.getQueryData<Board[]>(chaveDosQuadros(channelId)) ??
+      (await qc.fetchQuery({
+        queryKey: chaveDosQuadros(channelId),
+        queryFn: () =>
+          api<{ boards: Board[] }>(`/channels/${channelId}/boards`).then((r) => r.boards),
+      }));
+
+    const primeiro = (existentes ?? [])[0];
+    if (primeiro) {
+      abrir(primeiro.id, channelId);
+      return;
+    }
+
+    const { board } = await api<{ board: Board }>(`/channels/${channelId}/boards`, {
+      method: 'POST',
+      body: { name: 'Quadro' },
+    });
+    receberQuadro(qc, board);
+    abrir(board.id, channelId);
+  }, [channelId, qc, abrir]);
 }
 
 /**

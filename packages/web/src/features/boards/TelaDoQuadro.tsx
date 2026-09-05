@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Excalidraw } from '@excalidraw/excalidraw';
+import { Excalidraw, convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { User } from '@trindade/shared';
 import { useTheme } from '../../lib/tema';
@@ -53,7 +53,14 @@ export interface TelaDoQuadroProps {
    * devolve zero para quem perguntar tarde demais. Guardar o último estado
    * conhecido é o que sobrou de verdade para exportar.
    */
-  aoMudarCena: (cena: { elementos: readonly unknown[]; arquivos: unknown }) => void;
+  aoMudarCena: (cena: {
+    elementos: readonly unknown[];
+    arquivos: unknown;
+    /** Ids do que está selecionado — é o que "enviar no canal" recorta. */
+    selecionados: readonly string[];
+  }) => void;
+  /** Colada assim que a tela abre, quando o quadro nasceu de uma imagem. */
+  imagemInicial?: { url: string; nome: string };
   /** Quem está conduzindo, se alguém estiver. */
   apresentador: string | null;
   euApresento: boolean;
@@ -70,6 +77,7 @@ export function TelaDoQuadro({
   cheio,
   pessoas,
   aoMudarCena,
+  imagemInicial,
   apresentador,
   euApresento,
   seguindo,
@@ -181,8 +189,11 @@ export function TelaDoQuadro({
   cheioRef.current = cheio;
 
   const aoMudar = useCallback(
-    (elementos: readonly unknown[], _estado: unknown, arquivos: unknown) => {
-      aoMudarCena({ elementos, arquivos });
+    (elementos: readonly unknown[], estado: unknown, arquivos: unknown) => {
+      const selecionados = Object.keys(
+        (estado as { selectedElementIds?: Record<string, boolean> })?.selectedElementIds ?? {},
+      );
+      aoMudarCena({ elementos, arquivos, selecionados });
       cuidarDasImagens(arquivos);
 
       const cena = elementos as readonly ElementoDoQuadro[];
@@ -218,6 +229,83 @@ export function TelaDoQuadro({
     },
     [provedor, aoMudarCena, cuidarDasImagens],
   );
+
+  /**
+   * A imagem que abriu o quadro.
+   *
+   * Vem de "abrir no quadro" numa imagem da conversa. Ela entra como elemento
+   * montado pelo `convertToExcalidrawElements` — o construtor público do
+   * próprio Excalidraw — e não por um evento de colar sintético: colar exige o
+   * foco no canvas, e no instante em que o quadro abre o foco está em qualquer
+   * outro lugar. O quadro abria vazio e ninguém sabia por quê.
+   *
+   * O arquivo é registrado com `addFiles`; a partir daí ele é uma imagem como
+   * qualquer outra e sobe pelo caminho de sempre.
+   */
+  /* A guarda é a **identidade da API**, e não um booleano: no StrictMode o
+     componente monta, desmonta e remonta com os mesmos refs, e um `true` da
+     primeira passagem bloquearia a segunda — que é a que está viva. A primeira
+     terminava chamando `updateScene` num Excalidraw já descartado, e o React
+     avisava "can't call setState on a component that is not yet mounted"
+     enquanto o quadro abria vazio. */
+  const inseridaPara = useRef<unknown>(null);
+
+  const inserirImagemInicial = useCallback(() => {
+    const api = apiRef.current;
+    if (!imagemInicial || !api || inseridaPara.current === api) return;
+    inseridaPara.current = api;
+
+    void (async () => {
+      try {
+        const bytes = await fetch(imagemInicial.url).then((r) => r.blob());
+        const dataURL = await new Promise<string>((resolver, rejeitar) => {
+          const leitor = new FileReader();
+          leitor.onload = () => resolver(String(leitor.result));
+          leitor.onerror = () => rejeitar(new Error('não consegui ler a imagem'));
+          leitor.readAsDataURL(bytes);
+        });
+
+        // O tamanho real: sem ele a imagem entraria esticada, e "abrir no
+        // quadro" já começaria com trabalho para a pessoa.
+        const medida = await new Promise<{ largura: number; altura: number }>((resolver) => {
+          const img = new Image();
+          img.onload = () => resolver({ largura: img.naturalWidth, altura: img.naturalHeight });
+          img.onerror = () => resolver({ largura: 400, altura: 300 });
+          img.src = dataURL;
+        });
+
+        const escala = Math.min(1, 800 / Math.max(medida.largura, medida.altura));
+        const fileId = crypto.randomUUID().replace(/-/g, '');
+
+        api.addFiles([
+          {
+            id: fileId as never,
+            dataURL: dataURL as never,
+            mimeType: (bytes.type || 'image/webp') as never,
+            created: Date.now(),
+          },
+        ]);
+
+        const novo = convertToExcalidrawElements([
+          {
+            type: 'image',
+            fileId: fileId as never,
+            x: 0,
+            y: 0,
+            width: Math.round(medida.largura * escala),
+            height: Math.round(medida.altura * escala),
+          },
+        ]);
+
+        api.updateScene({
+          elements: [...api.getSceneElementsIncludingDeleted(), ...novo] as never,
+        });
+        api.scrollToContent(novo[0], { fitToContent: true });
+      } catch {
+        /* a imagem não veio: o quadro abre vazio, que é melhor que não abrir. */
+      }
+    })();
+  }, [imagemInicial]);
 
   // --- quem está junto ------------------------------------------------------
   //
@@ -349,6 +437,7 @@ export function TelaDoQuadro({
         // O documento pode já ter imagens quando esta tela abre; o observador
         // só cobre o que muda daqui para a frente.
         buscarImagens();
+        inserirImagemInicial();
       }}
       /* O fundo é branco **nos dois temas**, de propósito: no escuro o
          Excalidraw inverte o canvas inteiro por filtro, e um fundo já escuro

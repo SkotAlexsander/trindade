@@ -65,8 +65,23 @@ def entrar(b, usuario, senha='cavalo-bateria-grampo-9'):
 
 
 def abrir_painel(pg):
-    if pg.locator('aside[aria-label="Quadros"]').count() == 0:
-        pg.locator('button[aria-label="Quadros"]').first.click()
+    """A lista dos quadros, que agora mora **dentro** do quadro.
+
+    O botão do cabeçalho abre o quadro do canal (criando um se não houver);
+    quem quer a lista pede "Outros quadros" no menu dele.
+    """
+    if pg.locator('aside[aria-label="Quadros"]').count() > 0:
+        pg.wait_for_timeout(300)
+        return
+
+    if pg.locator('[data-elementos]').count() == 0:
+        pg.locator('button[aria-label="Quadro"]').first.click()
+        pg.wait_for_selector('canvas', timeout=25000)
+        pg.wait_for_timeout(1500)
+
+    pg.locator('[data-elementos] button[aria-label="Mais ações do quadro"]').click()
+    pg.wait_for_timeout(400)
+    pg.locator('[role="menuitem"]', has_text='Outros quadros').click()
     pg.wait_for_selector('aside[aria-label="Quadros"]', timeout=10000)
     pg.wait_for_timeout(400)
 

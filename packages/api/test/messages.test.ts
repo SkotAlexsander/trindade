@@ -329,6 +329,26 @@ describe('menções e leitura', () => {
     expect(dele[0]?.mentionCount).toBe(1);
   });
 
+  it('`@todos` chama o grupo inteiro, menos quem escreveu', async () => {
+    client = createClient(app);
+    const ana = await entrar('ana');
+    await createUser({ username: 'bruno' });
+    await createUser({ username: 'carla' });
+
+    const citados = await messagesDb.resolveMentions('decidido, @todos');
+    // Todo mundo, inclusive quem escreveu — quem tira o autor é `somarMencoes`,
+    // e é lá que a regra vale para menção nominal também.
+    expect(citados).toHaveLength(3);
+
+    await messagesDb.somarMencoes({ channelId: canalId }, citados, ana.id);
+
+    const meus = await messagesDb.listReadState(ana.id);
+    expect(meus.find((e) => e.channelId === canalId)?.mentionCount ?? 0).toBe(0);
+
+    const [bruno] = await sql<{ id: string }[]>`select id from users where username = 'bruno'`;
+    expect((await messagesDb.listReadState(bruno?.id ?? ''))[0]?.mentionCount).toBe(1);
+  });
+
   it('marcar como lido zera as menções', async () => {
     client = createClient(app);
     const { access, id } = await entrar('ana');

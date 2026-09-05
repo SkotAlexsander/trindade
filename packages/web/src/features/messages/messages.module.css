@@ -1130,3 +1130,10 @@ button.mencao:hover {
     padding: 0 var(--s-3) 2px;
   }
 }
+
+/* `@todos` chama o grupo: a mesma marca das outras menções, com a cor da
+   presença ao vivo, porque é a única que interrompe todo mundo de uma vez. */
+.mencao[data-todos='true'] {
+  background: var(--magenta-wash);
+  color: var(--text-primary);
+}

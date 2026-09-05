@@ -124,7 +124,14 @@ with sync_playwright() as p:
     ctxB, outro, errosB, servidasB = entrar(OUTRO)
 
     # --- um quadro novo -------------------------------------------------------
-    quem.locator('button[aria-label="Quadros"]').first.click()
+    # O botão do cabeçalho abre o quadro do canal; a lista (onde se cria um com
+    # nome) fica no menu do próprio quadro.
+    quem.locator('button[aria-label="Quadro"]').first.click()
+    quem.wait_for_selector('canvas', timeout=25000)
+    quem.wait_for_timeout(1500)
+    quem.locator('[data-elementos] button[aria-label="Mais ações do quadro"]').click()
+    quem.wait_for_timeout(400)
+    quem.locator('[role="menuitem"]', has_text='Outros quadros').click()
     quem.wait_for_selector('aside[aria-label="Quadros"]', timeout=10000)
     quem.fill('input[aria-label="Nome do quadro novo"]', NOME)
     quem.locator('aside[aria-label="Quadros"] button[type="submit"]').click()
@@ -151,7 +158,12 @@ with sync_playwright() as p:
     quem.screenshot(path=str(SHOTS / 'i1-com-imagem.png'))
 
     # --- o outro lado ---------------------------------------------------------
-    outro.locator('button[aria-label="Quadros"]').first.click()
+    outro.locator('button[aria-label="Quadro"]').first.click()
+    outro.wait_for_selector('canvas', timeout=25000)
+    outro.wait_for_timeout(1500)
+    outro.locator('[data-elementos] button[aria-label="Mais ações do quadro"]').click()
+    outro.wait_for_timeout(400)
+    outro.locator('[role="menuitem"]', has_text='Outros quadros').click()
     outro.wait_for_selector('aside[aria-label="Quadros"]', timeout=10000)
     outro.locator('aside[aria-label="Quadros"] button', has_text=NOME).first.click()
     outro.wait_for_selector('canvas', timeout=25000)
@@ -169,6 +181,47 @@ with sync_playwright() as p:
     check('a imagem veio servida pelo nosso storage, já re-encodada',
           any(status == 200 and 'image/webp' in tipo for _, status, tipo in servidas),
           '; '.join(f'{st} {tp}' for _, st, tp in servidas[:2]) or 'nenhuma resposta')
+
+    # --- do quadro para a conversa -------------------------------------------
+    #
+    # "Enviar no canal": o desenho vira anexo com o link de volta, para quem
+    # não quer abrir o quadro só para ver o diagrama.
+    quem.locator('[data-elementos] button[aria-label="Mais ações do quadro"]').click()
+    quem.wait_for_timeout(400)
+    quem.locator('[role="menuitem"]', has_text='Enviar no canal').click()
+    quem.wait_for_timeout(4000)
+
+    check('"enviar no canal" volta para a conversa com o desenho anexado',
+          espera(quem, """() => {
+              const texto = document.body.innerText || '';
+              return texto.includes('Do quadro') && document.querySelectorAll(
+                  'main img, [class*="anexo"] img, img[src^="/api/files/"]').length > 0;
+          }"""),
+          quem.evaluate("""() => (document.body.innerText || '')
+              .split('\\n').filter((l) => l.includes('Do quadro'))[0] ?? 'sem a linha'"""))
+    quem.screenshot(path=str(SHOTS / 'i3-no-canal.png'))
+
+    # --- e da conversa de volta para o quadro ---------------------------------
+    # A barra de ações aparece no hover da mensagem, e só a da mensagem sob o
+    # ponteiro fica visível — daí o `:visible`.
+    quem.get_by_text('Do quadro').last.hover()
+    quem.wait_for_timeout(600)
+    quem.locator('button[aria-label="Mais ações"]:visible').first.click()
+    quem.wait_for_timeout(500)
+
+    check('a imagem da conversa oferece "abrir no quadro"',
+          quem.locator('[role="menuitem"]', has_text='Abrir no quadro').count() == 1)
+
+    quem.locator('[role="menuitem"]', has_text='Abrir no quadro').click()
+    quem.wait_for_selector('canvas', timeout=25000)
+    quem.wait_for_timeout(4000)
+
+    check('e o quadro novo nasce com a imagem dentro',
+          espera(quem, """() => Number(document.querySelector('[data-elementos]')
+              ?.getAttribute('data-elementos') ?? 0) >= 1"""),
+          quem.evaluate("""() => document.querySelector('[data-elementos]')
+              ?.getAttribute('data-elementos')"""))
+    quem.screenshot(path=str(SHOTS / 'i4-de-volta-ao-quadro.png'))
 
     check('nenhum erro de página', not errosA and not errosB,
           '; '.join((errosA + errosB)[:2]))

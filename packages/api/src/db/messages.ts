@@ -1,3 +1,4 @@
+import { MENCAO_DE_TODOS } from '@trindade/shared';
 import { sql } from './index.js';
 
 export interface MessageRow {
@@ -332,6 +333,15 @@ export async function search(input: Alvo & {
 export async function resolveMentions(content: string): Promise<string[]> {
   const nomes = [...content.matchAll(/@([a-z0-9_]{3,24})/g)].map((m) => m[1]).filter(Boolean);
   if (nomes.length === 0) return [];
+
+  /* `@todos` chama o grupo inteiro. Quem soma as menções já tira quem escreveu,
+     então não há o caso de alguém se chamar sozinho. Contas desativadas ficam
+     de fora: chamar quem não pode mais entrar é contar para ninguém. */
+  if (nomes.includes(MENCAO_DE_TODOS)) {
+    const todos = await sql<{ id: string }[]>`select id from users where disabled_at is null`;
+    return todos.map((l) => l.id);
+  }
+
   const linhas = await sql<{ id: string }[]>`
     select id from users where username in ${sql([...new Set(nomes)] as string[])}
   `;
