@@ -25,6 +25,7 @@ import { toApiUser } from '../services/user-view.js';
 import * as gw from './gateway.js';
 import { mensagensCriadas } from '../lib/metricas.js';
 import * as notas from '../services/notas.js';
+import * as quadros from '../services/quadro-branco.js';
 
 const REVALIDACAO_MS = 60_000;
 
@@ -70,6 +71,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       permissions: effectivePermissions(cargos),
       subscribed: new Set(),
       notas: new Set(),
+      quadros: new Set(),
       lastHeartbeat: Date.now(),
       status: linha.status === 'offline' ? 'online' : linha.status,
       customStatus: linha.custom_status,
@@ -125,6 +127,13 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       for (const channelId of [...conn.notas]) {
         void fecharPainelDeNotas(conn, channelId).catch((err: unknown) => {
           app.log.error({ err, channelId }, 'não consegui fechar a nota ao desconectar');
+        });
+      }
+      // O mesmo para o quadro, e aqui pesa mais: o último traço costuma ser o
+      // que a pessoa acabou de explicar em voz alta.
+      for (const boardId of [...conn.quadros]) {
+        void fecharQuadro(conn, boardId).catch((err: unknown) => {
+          app.log.error({ err, boardId }, 'não consegui fechar o quadro ao desconectar');
         });
       }
 
@@ -281,6 +290,121 @@ async function tratar(conn: gw.Connection, bruto: Buffer, app: FastifyInstance):
         });
       }
       return;
+
+    case 'BOARD_OPEN':
+      await abrirQuadro(conn, evento.d.boardId);
+      return;
+
+    case 'BOARD_CLOSE':
+      await fecharQuadro(conn, evento.d.boardId);
+      return;
+
+    case 'BOARD_UPDATE': {
+      // A mesma linha da nota, pelo mesmo motivo: esconder as ferramentas na
+      // tela não é controle de acesso, e um delta mandado à mão entraria.
+      if (!can(conn.permissions, Perm.MANAGE_NOTES)) {
+        gw.send(conn, {
+          op: 'ERROR',
+          d: { code: 'MISSING_PERMISSION', message: 'você não pode desenhar neste quadro' },
+        });
+        return;
+      }
+
+      const quadro = await quadros.abrirQuadro(evento.d.boardId, conn.userId);
+      quadros.aplicar(
+        evento.d.boardId,
+        quadro,
+        Buffer.from(evento.d.update, 'base64'),
+        conn.userId,
+        app.log,
+      );
+
+      for (const outra of gw.comQuadroAberto(evento.d.boardId)) {
+        if (outra.sessionId === conn.sessionId) continue;
+        gw.send(outra, {
+          op: 'BOARD_UPDATE',
+          d: { boardId: evento.d.boardId, update: evento.d.update, de: conn.userId },
+        });
+      }
+
+      anunciarContagem(evento.d.boardId, quadros.contarElementos(quadro));
+      return;
+    }
+
+    case 'BOARD_AWARENESS':
+      // Cursor e apontador de quem está olhando. Não exige permissão: quem só
+      // vê também aponta, e é para isso que o apontador existe.
+      for (const outra of gw.comQuadroAberto(evento.d.boardId)) {
+        if (outra.sessionId === conn.sessionId) continue;
+        gw.send(outra, {
+          op: 'BOARD_AWARENESS',
+          d: { boardId: evento.d.boardId, estado: evento.d.estado, de: conn.userId },
+        });
+      }
+      return;
+  }
+}
+
+/**
+ * Abre um quadro: manda o desenho inteiro e avisa quem já está lá.
+ *
+ * Sem `MANAGE_NOTES` o quadro abre **em leitura**, como a nota: quem não
+ * desenha ainda precisa ver o que foi desenhado.
+ */
+async function abrirQuadro(conn: gw.Connection, boardId: string): Promise<void> {
+  const quadro = await quadros.abrirQuadro(boardId, conn.userId);
+  conn.quadros.add(boardId);
+
+  gw.send(conn, {
+    op: 'BOARD_STATE',
+    d: {
+      boardId,
+      update: Buffer.from(quadros.estadoDoQuadro(quadro)).toString('base64'),
+      podeEditar: can(conn.permissions, Perm.MANAGE_NOTES),
+      elementos: quadros.contarElementos(quadro),
+    },
+  });
+
+  avisarPresencaDoQuadro(boardId);
+}
+
+async function fecharQuadro(conn: gw.Connection, boardId: string): Promise<void> {
+  conn.quadros.delete(boardId);
+  // O serviço só solta o quadro da memória quando ninguém mais o tem aberto —
+  // e aí grava na hora, sem esperar o debounce.
+  if (!gw.comQuadroAberto(boardId).some((c) => c.userId === conn.userId)) {
+    await quadros.fecharQuadro(boardId, conn.userId);
+  }
+  // Sem ninguém dentro, a contagem lembrada não vale mais: o quadro sai da
+  // memória e volta do banco na próxima abertura.
+  if (gw.comQuadroAberto(boardId).length === 0) contagens.delete(boardId);
+  avisarPresencaDoQuadro(boardId);
+}
+
+/**
+ * Quantos elementos o quadro tem, quando o número muda.
+ *
+ * A contagem sai do servidor e não de cada navegador: os dois enxergam o
+ * quadro com atrasos diferentes, e dois desenhando ao mesmo tempo chegariam a
+ * dois números para o mesmo limite. Só sai quando muda — um traço arrastado são
+ * dezenas de deltas com a mesma contagem, e mandar todos seria dobrar o tráfego
+ * do desenho para dizer a mesma coisa.
+ */
+const contagens = new Map<string, number>();
+
+function anunciarContagem(boardId: string, elementos: number): void {
+  if (contagens.get(boardId) === elementos) return;
+  contagens.set(boardId, elementos);
+  for (const outra of gw.comQuadroAberto(boardId)) {
+    gw.send(outra, { op: 'BOARD_COUNT', d: { boardId, elementos } });
+  }
+}
+
+function avisarPresencaDoQuadro(boardId: string): void {
+  const abertos = gw.comQuadroAberto(boardId);
+  const userIds = [...new Set(abertos.map((c) => c.userId))];
+  for (const outra of abertos) {
+    gw.send(outra, { op: 'BOARD_PRESENCE', d: { boardId, userIds } });
   }
 }
 

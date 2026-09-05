@@ -5,6 +5,7 @@ import { garantirBalde, storageConfigurado } from './lib/storage.js';
 import { agendarFaxina } from './services/faxina.js';
 import { agendarLembretes } from './services/lembretes.js';
 import { gravarTudo } from './services/notas.js';
+import { gravarTudo as gravarQuadros } from './services/quadro-branco.js';
 
 const app = await buildApp();
 
@@ -44,10 +45,11 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
         pararFaxina();
         pararLembretes();
         await app.close();
-        // As notas em memória vão para o banco antes do processo morrer: o
-        // debounce de 2s não sobrevive a um `docker compose up -d` no meio de
-        // uma frase.
+        // As notas e os quadros em memória vão para o banco antes do processo
+        // morrer: o debounce de 2s não sobrevive a um `docker compose up -d` no
+        // meio de uma frase — nem no meio de um traço.
         await gravarTudo();
+        await gravarQuadros();
         await closePool();
         process.exit(0);
       } catch (err) {

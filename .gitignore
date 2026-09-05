@@ -16,3 +16,7 @@ e2e/__pycache__/
 
 # Dumps do banco. Ficam no disco e no storage, nunca no repositório.
 backups/
+
+# Fontes do Excalidraw, copiadas do pacote instalado por
+# packages/web/scripts/fontes-do-quadro.mjs antes de `dev` e de `build`.
+packages/web/public/excalidraw/

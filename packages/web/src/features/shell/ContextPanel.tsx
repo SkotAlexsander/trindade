@@ -9,6 +9,7 @@ import type { PainelAberto } from './ChannelHeader';
 import styles from './shell.module.css';
 import { PainelDeNotas } from '../notes/PainelDeNotas';
 import { PainelDeTarefas } from '../tasks/PainelDeTarefas';
+import { PainelDeQuadros } from '../boards/PainelDeQuadros';
 
 const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
   busca: 'Buscar',
@@ -17,6 +18,7 @@ const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
   thread: 'Thread',
   notas: 'Notas',
   tarefas: 'Tarefas',
+  quadros: 'Quadros',
 };
 
 /**
@@ -26,6 +28,7 @@ const TITULOS: Record<Exclude<PainelAberto, null>, string> = {
  */
 const SUBTITULOS: Partial<Record<Exclude<PainelAberto, null>, string>> = {
   guardadas: 'todas as conversas',
+  quadros: 'abrem em tela cheia',
   fixadas: 'neste canal',
   thread: 'fora da linha principal',
 };
@@ -70,6 +73,9 @@ export const ContextPanel = forwardRef<HTMLDivElement, ContextPanelProps>(functi
           ) : null}
           {aberto === 'tarefas' && canal ? (
             <PainelDeTarefas channelId={canal.id} pessoas={pessoas} />
+          ) : null}
+          {aberto === 'quadros' && canal ? (
+            <PainelDeQuadros channelId={canal.id} pessoas={pessoas} />
           ) : null}
         </div>
       </aside>

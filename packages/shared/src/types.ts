@@ -240,3 +240,34 @@ export const NOME_DA_COLUNA: Record<ColunaDoQuadro, string> = {
   doing: 'Fazendo',
   done: 'Feito',
 };
+
+/**
+ * Um quadro branco do canal.
+ *
+ * Vários por canal, ao contrário da nota: "Fluxo de onboarding" e "Arquitetura
+ * v2" são dois desenhos, e misturá-los num só não ajuda ninguém. O conteúdo
+ * não vem por aqui — ele é o CRDT que chega pelo WebSocket. Isto é o cartão da
+ * lista. Ver design/11-quadro.md.
+ */
+export interface Board {
+  id: string;
+  channelId: string;
+  name: string;
+  /** Gerada no cliente ao fechar e re-encodada pelo `sharp`, como toda imagem. */
+  thumbnailUrl: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  /** Quem mexeu por último — é o que a linha "Ana · há 2 h" quer dizer. */
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
+/**
+ * O teto de elementos por quadro, e o aviso antes dele.
+ *
+ * Acima de dois mil o Yjs e o navegador começam a sofrer, e um quadro desse
+ * tamanho deveria ser dois. O aviso sai em 90% porque um limite que só aparece
+ * quando já bateu é uma parede, não um aviso.
+ */
+export const ELEMENTOS_POR_QUADRO = 2000;
+export const AVISO_DE_ELEMENTOS = Math.floor(ELEMENTOS_POR_QUADRO * 0.9);

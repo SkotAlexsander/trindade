@@ -9,6 +9,7 @@ import * as storage from '../lib/storage.js';
 import * as attachmentsDb from '../db/attachments.js';
 import * as channelsDb from '../db/channels.js';
 import * as usersDb from '../db/users.js';
+import * as boardsDb from '../db/boards.js';
 import { toApiAttachment } from '../services/attachment-view.js';
 import { previaDeLink, thumbEmCache } from '../services/link-preview.js';
 import { RecusadoNaBusca } from '../lib/busca-externa.js';
@@ -72,19 +73,25 @@ export const fileRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       const chave = req.params['*'];
 
-      // Duas coisas moram aqui: anexo de mensagem e avatar. A consulta é o que
-      // impede que a rota vire um leitor genérico do bucket — só se serve o
-      // que alguma linha do banco reconhece como arquivo nosso.
+      // Três coisas moram aqui: anexo de mensagem, avatar e miniatura de
+      // quadro. A consulta é o que impede que a rota vire um leitor genérico
+      // do bucket — só se serve o que alguma linha do banco reconhece como
+      // arquivo nosso.
       const anexo = await attachmentsDb.findByStorageKey(chave);
       const dono = anexo ? null : await usersDb.findUserByAvatarKey(chave);
-      if (!anexo && !dono) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
+      const quadro = anexo || dono ? null : await boardsDb.porChaveDeMiniatura(chave);
+      if (!anexo && !dono && !quadro) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
 
       const objeto = await storage.buscar(chave);
       if (!objeto) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
 
-      // Avatar sempre saiu do `sharp` e é sempre WebP.
+      // Avatar e miniatura saíram os dois do `sharp`, e são sempre WebP.
       const contentType = anexo ? anexo.content_type : 'image/webp';
-      const nomeParaBaixar = anexo ? anexo.filename : `avatar-${dono?.username ?? 'pessoa'}.webp`;
+      const nomeParaBaixar = anexo
+        ? anexo.filename
+        : quadro
+          ? `quadro-${quadro.id}.webp`
+          : `avatar-${dono?.username ?? 'pessoa'}.webp`;
       const imagem = contentType.startsWith('image/');
       return reply
         .header('content-type', contentType)

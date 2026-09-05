@@ -8,7 +8,7 @@ export default tseslint.config(
   // Dois ambientes que o TypeScript não cobre: o script de operação, que roda em
   // Node solto, e o carimbo de tema, que roda no navegador antes de tudo.
   {
-    files: ['packages/api/scripts/**/*.mjs'],
+    files: ['packages/api/scripts/**/*.mjs', 'packages/web/scripts/**/*.mjs'],
     languageOptions: {
       globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
     },

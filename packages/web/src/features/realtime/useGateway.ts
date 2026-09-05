@@ -23,6 +23,7 @@ import { avisar } from '../notifications/motor';
 import type { Motivo } from '../notifications/regras';
 import { receberEnquete } from '../polls/queries';
 import { receberTarefa } from '../tasks/queries';
+import { receberQuadro } from '../boards/queries';
 import { useVoz } from '../voice/store';
 import { tocar } from '../voice/sons';
 import { ATRASO_DA_FAIXA_MS, useConexao, useDigitando, usePresenca } from './store';
@@ -238,6 +239,10 @@ export function useGateway(): void {
 
       ws.on('CONVERSATION_UPDATE', (d) => {
         receberConversa(qc, d.conversation);
+      }),
+
+      ws.on('BOARD_LIST_UPDATE', (d) => {
+        receberQuadro(qc, d.board, d.removido ?? false);
       }),
 
       ws.on('POLL_UPDATE', (d) => {

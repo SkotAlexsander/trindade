@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "dev": "node scripts/fontes-do-quadro.mjs && vite",
+    "build": "node scripts/fontes-do-quadro.mjs && tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@floating-ui/react": "^0.27.20",
     "@tanstack/react-query": "^5.62.7",
     "@tiptap/core": "^3.31.2",

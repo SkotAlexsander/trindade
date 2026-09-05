@@ -131,13 +131,26 @@ export async function apagar(id: string): Promise<boolean> {
   return linhas.length > 0;
 }
 
-/** As tarefas com dono que vencem hoje — o lembrete das 9h. */
-export async function vencendoHoje(): Promise<TaskRow[]> {
+/**
+ * As tarefas com dono que vencem hoje — o lembrete das 9h.
+ *
+ * O dia é o **do servidor**, calculado aqui e passado como intervalo. A versão
+ * anterior comparava `due_at::date = current_date`, que é o dia do banco: com o
+ * Postgres em UTC e o time no fuso de Brasília, das 21h à meia-noite "hoje" já
+ * era amanhã para a consulta e o lembrete sairia com um dia de erro. E é o
+ * mesmo dia que `ateAsNove` usa para agendar — as duas contas precisam falar do
+ * mesmo dia.
+ */
+export async function vencendoHoje(agora = new Date()): Promise<TaskRow[]> {
+  const inicio = new Date(agora);
+  inicio.setHours(0, 0, 0, 0);
+  const fim = new Date(inicio.getTime() + 24 * 60 * 60 * 1000);
+
   return sql<TaskRow[]>`
     select ${CAMPOS} from tasks
      where completed_at is null
        and assignee_id is not null
-       and due_at::date = current_date
+       and due_at >= ${inicio} and due_at < ${fim}
      order by due_at
   `;
 }

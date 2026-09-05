@@ -347,6 +347,34 @@ resposta crua — na tela só se vê o que foi desenhado, e o que vaza vaza no J
 mensagens e não há mais antigas; o vazio de verdade diz "Nenhuma mensagem
 ainda". Trocar os dois fez o roteiro acusar uma regra que estava certa.
 
+**`fase-10-quadro.py`** — 15 verificações do quadro branco, com dois
+navegadores: criar e abrir em tela cheia, desenhar, o outro receber o desenho
+inteiro ao abrir depois, os dois desenhando sem perder traço, dois quadros do
+mesmo canal não se misturarem, e a miniatura aparecer na lista ao fechar.
+
+```bash
+python e2e/fase-10-quadro.py e2e/.tmp/quadro carla daniel
+```
+
+**Duas contagens, e elas medem coisas diferentes.** `data-elementos` na tela
+cheia é a contagem **do servidor** — prova que o traço chegou. A contagem de
+pixels do canvas (`tinta()`) prova que ele foi **desenhado**. A primeira versão
+só olhava a primeira, e passou verde enquanto o retângulo aparecia como um ponto
+do outro lado.
+
+**O atalho da ferramenta precisa de foco no canvas**, e o clique que dá foco não
+pode cair no canto superior esquerdo: ali mora o menu do Excalidraw, e o
+Playwright acusa "subtree intercepts pointer events".
+
+**O botão do painel alterna.** O painel de quadros continua aberto atrás da tela
+cheia, então voltar de um quadro e clicar "Quadros" de novo o **fecha**.
+
+**O quadro não entra em `fase-08-csp.py`**, e a razão é do roteiro: aquele
+servidor de teste não faz upgrade para WebSocket, e sem gateway o quadro nunca
+recebe o `BOARD_STATE` que o faz montar. Quem confere o quadro sob as mesmas
+origens é este roteiro, com a API de verdade. O mesmo vale para qualquer coisa
+que dependa do gateway — notas, presença, digitando.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

@@ -397,6 +397,46 @@ create index tasks_board on tasks (channel_id, column_key, position);
 create index tasks_prazo on tasks (assignee_id, due_at) where completed_at is null;
 ```
 
+O "hoje" do lembrete é o **dia do servidor**, e a consulta o recebe como
+intervalo em vez de comparar `due_at::date = current_date`. Com o Postgres em
+UTC e o time no fuso de Brasília, das 21h à meia-noite o dia do banco já é o
+seguinte, e o lembrete sairia um dia errado.
+
+### Quadros
+
+```sql
+create table boards (
+  id            uuid primary key default gen_random_uuid(),
+  channel_id    uuid not null references channels(id) on delete cascade,
+  name          text not null check (char_length(name) between 1 and 48),
+  ydoc          bytea,
+  thumbnail_key text,
+  created_by    uuid references users(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  updated_by    uuid references users(id) on delete set null,
+  updated_at    timestamptz not null default now(),
+  archived_at   timestamptz
+);
+
+create index boards_channel on boards (channel_id, updated_at desc)
+ where archived_at is null;
+```
+
+Vários por canal, ao contrário da nota. `ydoc` é o mesmo CRDT das notas e é o
+estado de verdade; aqui **não** existe cópia achatada ao lado dele, porque um
+desenho não entra na busca e duas verdades para o mesmo quadro divergiriam.
+
+`updated_by` não estava no design (que previa só `created_by`): a lista mostra
+"Ana · há 2 h", e quem interessa ali é quem mexeu por último. `updated_at` só
+anda quando o **desenho** muda — renomear não faz o quadro pular para o topo.
+
+`thumbnail_key` aponta para o mesmo storage dos anexos e do avatar, e a rota
+`GET /files/*` reconhece as três origens. A miniatura nasce no navegador e
+mesmo assim passa pelo `sharp`: nenhum byte de upload chega ao disco sem
+re-encode, sem exceção para rota nenhuma.
+
+Arquivar é `archived_at`; não existe rota que apague um quadro.
+
 ### Enquetes
 
 A enquete **é** uma mensagem: `messages.kind = 'poll'`, e `content` guarda a
@@ -511,6 +551,7 @@ Retenção de 180 dias, apagado por tarefa periódica.
 020_enquetes                -- era 011_polls no pacote; ver CLAUDE.md
 021_conversas               -- era 012_conversations no pacote
 022_anexo_em_conversa       -- não previsto; ver CLAUDE.md
+023_quadros                 -- era 013_boards no pacote
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

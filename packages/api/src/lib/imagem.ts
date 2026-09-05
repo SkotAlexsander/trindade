@@ -133,3 +133,32 @@ export async function reencodarAvatar(bruto: Buffer): Promise<ImagemProcessada> 
     blurhash: await calcularBlurhash(saida.data),
   };
 }
+
+/** A miniatura do quadro, do tamanho do cartão do painel. */
+const LARGURA_DA_MINIATURA = 400;
+const ALTURA_DA_MINIATURA = 300;
+
+/**
+ * A miniatura de um quadro: 400×300, cortada pelo centro.
+ *
+ * Ela nasce no navegador, pelo `exportToBlob` do Excalidraw, e mesmo assim
+ * passa por aqui. Não é desconfiança do desenho: é que **nenhum byte de upload
+ * chega ao disco sem re-encode**, e uma exceção "só para esta rota" é como a
+ * regra deixa de valer. De quebra, o PNG de saída do Excalidraw vira um WebP
+ * cinco vezes menor.
+ */
+export async function reencodarMiniatura(bruto: Buffer): Promise<ImagemProcessada> {
+  const saida = await sharp(bruto, { limitInputPixels: PIXELS_MAXIMOS })
+    .rotate()
+    .resize(LARGURA_DA_MINIATURA, ALTURA_DA_MINIATURA, { fit: 'cover' })
+    .webp({ quality: 78 })
+    .toBuffer({ resolveWithObject: true });
+
+  return {
+    buffer: saida.data,
+    contentType: 'image/webp',
+    width: saida.info.width,
+    height: saida.info.height,
+    blurhash: null,
+  };
+}

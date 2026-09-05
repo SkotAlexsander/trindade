@@ -4,7 +4,7 @@ import { Avatar, IconButton, Tooltip } from '../../components';
 import { FaixaConexao } from '../realtime/FaixaConexao';
 import { MenuDeSilenciar } from '../notifications/MenuDeSilenciar';
 import { MenuDaConversa } from '../conversations/MenuDaConversa';
-import { ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
+import { Board, ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
 import { canal as canalComoAlvo, conversa as conversaComoAlvo } from '../messages/alvo';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
@@ -22,6 +22,7 @@ export type PainelAberto =
   | 'thread'
   | 'notas'
   | 'tarefas'
+  | 'quadros'
   | null;
 
 const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: ReactNode }> = [
@@ -29,6 +30,7 @@ const BOTOES: Array<{ id: Exclude<PainelAberto, null>; rotulo: string; icone: Re
   { id: 'fixadas', rotulo: 'Fixadas', icone: <Pin size={18} /> },
   { id: 'notas', rotulo: 'Notas', icone: <Notes size={18} /> },
   { id: 'tarefas', rotulo: 'Tarefas', icone: <Tasks size={18} /> },
+  { id: 'quadros', rotulo: 'Quadros', icone: <Board size={18} /> },
 ];
 
 export interface ChannelHeaderProps {
@@ -194,8 +196,8 @@ export function ChannelHeader({
               alvo={conversa ? conversaComoAlvo(conversa.id) : canalComoAlvo(canal?.id ?? '')}
             />
           ) : null}
-          {/* Numa conversa privada, só busca e thread: fixadas, notas e
-              tarefas são do canal. Ver design/10-conversas-privadas.md. */}
+          {/* Numa conversa privada, só busca e thread: fixadas, notas, tarefas
+              e quadros são do canal. Ver design/10-conversas-privadas.md. */}
           {(conversa ? BOTOES.filter((b) => b.id === 'busca') : BOTOES).map((botao) => (
             <Tooltip key={botao.id} label={botao.rotulo}>
               <IconButton

@@ -1,0 +1,192 @@
+/* O painel de quadros e o quadro em tela cheia. Ver design/11-quadro.md. */
+
+.painel {
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+  padding: var(--s-3) 0;
+}
+
+.novo {
+  display: flex;
+  gap: var(--s-2);
+  padding: 0 var(--s-1);
+}
+
+.novo input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-control);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: var(--text-ui) var(--font-ui);
+}
+
+.vazio {
+  margin: 0;
+  padding: 0 var(--s-1);
+  max-width: var(--measure);
+  color: var(--text-tertiary);
+  font: var(--text-label) / var(--leading-ui) var(--font-ui);
+}
+
+.lista {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O cartão é um botão inteiro, e não um cartão com um botão dentro: a área de
+   clique é a mesma coisa que a área desenhada, e o foco do teclado cai onde a
+   pessoa está olhando. */
+.cartao {
+  display: grid;
+  gap: var(--s-1);
+  width: 100%;
+  padding: var(--s-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font: var(--text-ui) var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cartao:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.miniatura {
+  display: block;
+  overflow: hidden;
+  /* A miniatura chega em 400×300 do servidor. A proporção fica no CSS para o
+     espaço não pular quando ela ainda não carregou. */
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-control);
+  background: var(--bg-panel);
+}
+
+.miniatura img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Quadro sem miniatura ainda: um retângulo neutro, nunca um ícone de "quebrado".
+   O quadro existe e está vazio, que é diferente de ter dado errado. */
+.semMiniatura {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tituloDoCartao {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--weight-medium);
+}
+
+.meta {
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+}
+
+/* --- o quadro em tela cheia ------------------------------------------------ */
+
+/*
+ * Tela cheia de verdade, e não a coluna da conversa: o canvas ocupa o que
+ * houver. Fica abaixo de menu e tooltip na escala de camadas — o "⋯" da própria
+ * barra precisa abrir por cima dele.
+ */
+/* Coluna flexível, e não grade de três linhas: o aviso do limite e a faixa de
+   somente-leitura aparecem ou não, e com linhas fixas o palco caía numa linha
+   `auto` — 1500 por zero pixels de canvas, sem erro nenhum. */
+.telaCheia {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+}
+
+.barra {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 48px;
+  padding: 0 var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-raised);
+}
+
+.nome {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--weight-semi) var(--text-ui) / 1 var(--font-ui);
+  color: var(--text-primary);
+}
+
+.avatares {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.aviso {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--mark-wash);
+  color: var(--text-secondary);
+  font: var(--text-label) / var(--leading-ui) var(--font-ui);
+}
+
+/* Cheio não é aviso, é parede: a cor muda para dizer que já aconteceu. */
+.aviso[data-cheio='true'] {
+  background: var(--crimson-wash);
+  color: var(--text-primary);
+}
+
+.somenteLeitura {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-tertiary);
+  font: var(--text-label) / var(--leading-ui) var(--font-ui);
+}
+
+/* O Excalidraw mede o próprio contêiner: sem altura definida aqui, ele nasce
+   com zero e o canvas fica invisível sem erro nenhum. */
+.palco {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.palco > :global(.excalidraw-container),
+.palco > :global(.excalidraw) {
+  height: 100%;
+}
+
+.carregando {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: var(--text-tertiary);
+  font: var(--text-label) var(--font-ui);
+}

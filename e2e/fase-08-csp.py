@@ -123,8 +123,15 @@ class Servidor(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(dados)
 
 
-socketserver.TCPServer.allow_reuse_address = True
-servidor = socketserver.TCPServer(('127.0.0.1', PORTA), Servidor)
+# Com fila de um, uma requisição pendurada trava as seguintes — e o navegador
+# tem sempre alguma pendurada (a tentativa de WebSocket, por exemplo). Foi o que
+# deixou o pedaço do quadro esperando para sempre, sem erro nenhum na tela.
+class ServidorEmParalelo(socketserver.ThreadingTCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+servidor = ServidorEmParalelo(('127.0.0.1', PORTA), Servidor)
 threading.Thread(target=servidor.serve_forever, daemon=True).start()
 
 violacoes = []
@@ -196,6 +203,11 @@ with sync_playwright() as p:
     check('e a aplicação inteira carrega com a política ativa',
           pg.locator('nav[aria-label="Canais"]').count() == 1)
     pg.screenshot(path=str(SHOTS / '99-csp.png'))
+
+    # O quadro **não** entra aqui, e a razão é do roteiro e não do produto: este
+    # servidor de teste não faz o upgrade para WebSocket, e sem gateway o quadro
+    # nunca recebe o `BOARD_STATE` que o faz montar. Quem confere o quadro sob
+    # as mesmas origens é `fase-10-quadro.py`, que roda com a API de verdade.
 
     violacoes = pg.evaluate('() => window.__violacoes')
     check('nenhuma violação de CSP', not violacoes,

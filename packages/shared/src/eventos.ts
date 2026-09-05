@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type {
+  Board,
   Channel,
   Conversation,
   Message,
@@ -107,6 +108,30 @@ export const clientEventSchema = z.discriminatedUnion('op', [
     op: z.literal('NOTE_AWARENESS'),
     d: z.object({ channelId: z.string().uuid(), estado: z.string().max(8_192) }),
   }),
+  /**
+   * Quadro branco.
+   *
+   * O mesmo desenho das notas, com dois nomes diferentes: `BOARD_OPEN` assina
+   * um quadro e recebe o estado inteiro, `BOARD_UPDATE` leva o delta do Yjs.
+   * O alvo aqui é o **quadro**, não o canal: um canal tem vários, e dois
+   * quadros abertos ao mesmo tempo não podem receber o traço um do outro.
+   */
+  z.object({ op: z.literal('BOARD_OPEN'), d: z.object({ boardId: z.string().uuid() }) }),
+  z.object({ op: z.literal('BOARD_CLOSE'), d: z.object({ boardId: z.string().uuid() }) }),
+  z.object({
+    op: z.literal('BOARD_UPDATE'),
+    d: z.object({
+      boardId: z.string().uuid(),
+      // 512 KB, o dobro do teto da nota: um traço são centenas de bytes, mas
+      // colar uma seleção inteira de um diagrama chega a dezenas de KB de uma
+      // vez, e o estado inicial de um quadro cheio passa dos 256 KB da nota.
+      update: z.string().max(524_288),
+    }),
+  }),
+  z.object({
+    op: z.literal('BOARD_AWARENESS'),
+    d: z.object({ boardId: z.string().uuid(), estado: z.string().max(8_192) }),
+  }),
   z.object({ op: z.literal('HEARTBEAT'), d: z.object({}).passthrough().optional() }),
 ]);
 
@@ -192,6 +217,36 @@ export type ServerEvent =
   | { op: 'NOTE_AWARENESS'; d: { channelId: string; estado: string; de: string } }
   /** Quem está com a nota aberta. A faixa "fulano e beltrano editando". */
   | { op: 'NOTE_PRESENCE'; d: { channelId: string; userIds: string[] } }
+  /**
+   * O quadro inteiro, ao abrir. Só vai para quem pediu.
+   *
+   * `elementos` vem junto porque o cliente precisa do número **antes** de
+   * desenhar o primeiro traço para saber se já está no teto — contar depois
+   * seria avisar do limite quando ele já foi passado.
+   */
+  | {
+      op: 'BOARD_STATE';
+      d: { boardId: string; update: string; podeEditar: boolean; elementos: number };
+    }
+  | { op: 'BOARD_UPDATE'; d: { boardId: string; update: string; de: string } }
+  /**
+   * Quantos elementos o quadro tem — só quando o número muda.
+   *
+   * Vem do servidor porque cada navegador enxerga o quadro com um atraso
+   * diferente: contando cada um por si, dois desenhando ao mesmo tempo
+   * chegariam a dois números para o mesmo limite.
+   */
+  | { op: 'BOARD_COUNT'; d: { boardId: string; elementos: number } }
+  | { op: 'BOARD_AWARENESS'; d: { boardId: string; estado: string; de: string } }
+  /** Quem está com este quadro aberto — os avatares da barra. */
+  | { op: 'BOARD_PRESENCE'; d: { boardId: string; userIds: string[] } }
+  /**
+   * O cartão da lista mudou: nasceu, foi renomeado, ganhou miniatura ou foi
+   * arquivado. É outro evento que o `BOARD_UPDATE` de propósito — aquele é o
+   * desenho, e vai só para quem está com o quadro aberto; este é a lista do
+   * painel, e vai para todo mundo.
+   */
+  | { op: 'BOARD_LIST_UPDATE'; d: { board: Board; removido?: boolean } }
   /**
    * Uma tarefa nasceu, mudou de coluna, de dono ou de prazo.
    *

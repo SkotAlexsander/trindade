@@ -131,7 +131,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
 - [x] Fase 9 — ferramentas de projeto e notificações
-- [ ] Fase 10 — conversas privadas e quadro (conversas prontas; quadro em aberto)
+- [ ] Fase 10 — conversas privadas e quadro (falta o modo apresentação e as permissões do navegador)
 
 ---
 
@@ -825,6 +825,51 @@ primária não aceita coluna nula, e o `on conflict` precisa nomear qual dos doi
 sem ela, não dá para mandar uma captura de tela numa direta, e uma conversa
 privada em que não dá para mandar imagem não é a mesma coisa que um canal.
 
+**Fatia 2: o quadro branco.** Excalidraw como componente, colaboração pelo
+mesmo Yjs das notas e pelo mesmo WebSocket. A chave do documento é o **quadro**,
+não o canal: um canal tem vários, e dois abertos ao mesmo tempo não podem
+receber o traço um do outro — foi o critério de aceite que ditou a chave.
+
+**O `Y.Map` guardava a referência, e o traço chegava do outro lado como um
+ponto.** O Excalidraw altera os elementos no lugar; guardar o objeto sem copiar
+faz as duas pontas apontarem para o mesmo objeto, e a comparação seguinte
+compara o elemento com ele mesmo — conclusão: "nada mudou". O retângulo saía
+daqui com 0×0 (o instante da criação) e nunca mais era atualizado. `structuredClone`
+nos dois sentidos, e há teste que exige a cópia. Nenhum teste de unidade pegaria
+isso sem o navegador: era preciso ver o desenho **do outro lado**.
+
+**O teto de 2 000 elementos barra o novo, não o que já existe.** Recusar metade
+de um delta de CRDT é como se perde a convergência, então o servidor sempre
+aplica, conta, e diz a contagem a todo mundo (`BOARD_COUNT`, só quando muda). O
+cliente é quem impede o elemento novo de nascer. Travar a tela inteira seria a
+armadilha perfeita: um quadro cheio em que nem dá para apagar algo para caber.
+
+**As fontes do Excalidraw são nossas.** Sem `window.EXCALIDRAW_ASSET_PATH` ele
+as busca em `esm.sh`, do navegador de cada pessoa — requisição externa, que a
+CSP recusa e que este produto não faz em lugar nenhum.
+`packages/web/scripts/fontes-do-quadro.mjs` copia oito famílias (Xiaolai, a CJK
+de 13 MB, fica de fora) do pacote instalado antes de `dev` e de `build`, e **só
+quando a versão muda**: apagar e recopiar a cada vez derruba o servidor de
+desenvolvimento no Windows com `EBUSY`, porque o watcher do Vite está com os
+arquivos abertos.
+
+**A miniatura sai do último estado conhecido, não do Excalidraw.** No instante
+do desmonte ele já esvaziou a própria cena, e `getSceneElements()` devolve zero
+— a primeira versão gerava uma miniatura em branco e ninguém saberia por quê.
+
+`.telaCheia` é coluna flexível e não grade de três linhas: com linhas fixas, o
+palco caía numa linha `auto` quando o aviso do limite não estava na tela, e o
+canvas nascia com 1500 por **zero** pixels, sem erro nenhum.
+
+O fundo do canvas é branco nos dois temas: no escuro o Excalidraw inverte o
+canvas por filtro, e um fundo já escuro chega invertido do outro lado.
+
+**Achado fora do escopo, corrigido junto:** `vencendoHoje()` comparava
+`due_at::date = current_date`, que é o dia do **banco**. Com o Postgres em UTC e
+o time no fuso de Brasília, das 21h à meia-noite o lembrete das 9h sairia com um
+dia de erro. Agora o dia é o do servidor, o mesmo que `ateAsNove` usa. O teste
+falhava só nesse intervalo de três horas — foi rodá-lo às 21h para ele aparecer.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -852,5 +897,5 @@ Com isso, `polls` virou **020** (aplicada como `020_enquetes`) e
 `conversations` virou **021** (`021_conversas`). A fase 10 gastou mais um
 número com `022_anexo_em_conversa` — a 014 deu a `attachments` um `channel_id
 not null`, e conversa privada precisa do mesmo lugar para o anexo nascer —,
-então `boards` vira **023**.
+então `boards` virou **023** (aplicada como `023_quadros`).
 Migration aplicada não se edita; se algo estiver errado, crie a próxima.

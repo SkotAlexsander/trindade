@@ -27,6 +27,7 @@ import { primeiroDestino, withReadState } from '../channels/canais';
 import { useLeitura } from '../messages/leitura';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { useQuadro } from '../tasks/store';
+import { Quadro } from '../boards/Quadro';
 import { useNotificacoes } from '../notifications/useNotificacoes';
 import { definirNavegador } from '../../lib/navegacao';
 import { CommandPalette } from './CommandPalette';
@@ -372,6 +373,11 @@ export function AppShell() {
       {/* Fica por cima de tudo e fora das colunas: a chamada não pertence a
           nenhuma delas quando você saiu da sala. */}
       <JanelaFlutuante canais={canais} pessoas={pessoas} />
+
+      {/* O quadro cobre tudo quando está aberto, e some quando não está. Fica
+          aqui, e não na coluna da conversa, porque desenhar precisa da tela
+          inteira. Ver design/11-quadro.md. */}
+      <Quadro pessoas={pessoas} />
 
       <DialogoDePerfil />
       <DialogoDeConvite aberto={conviteAberto} onFechar={fecharConvite} />

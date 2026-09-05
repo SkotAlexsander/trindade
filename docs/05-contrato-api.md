@@ -395,6 +395,23 @@ da resposta sem erro nenhum.
 
 ---
 
+## Quadros
+
+Estas rotas cuidam do **cartão**; o desenho não passa por HTTP nenhum — ele é o
+CRDT que viaja pelo WebSocket, como o das notas.
+
+- `GET /channels/:id/boards` → `200 { boards: Board[] }` — os não arquivados, do mais recente para o mais antigo. Ver não exige permissão, como o quadro de tarefas
+- `POST /channels/:id/boards` `{ name }` → `200 { board }` — `MANAGE_NOTES`
+- `PATCH /boards/:id` `{ name }` → `200 { board }` — `MANAGE_NOTES`. Renomear **não** mexe em `updatedAt`
+- `POST /boards/:id/archive` → `200 { ok }` — `MANAGE_NOTES`. Não existe apagar quadro
+- `POST /boards/:id/thumbnail` — multipart, um arquivo, 8 MB, `MANAGE_NOTES`. Gerada no navegador ao fechar e re-encodada aqui para WebP 400×300; a URL sai em `board.thumbnailUrl` e é servida por `GET /files/*`
+
+A permissão é `MANAGE_NOTES`, a mesma da nota: quadro e nota são o mesmo tipo de
+artefato, e duas permissões para "registrar o que o grupo decidiu" seriam duas
+coisas a manter em dia sem diferença nenhuma.
+
+---
+
 ## Conversas privadas
 
 - `GET /conversations` → `200 { conversations: Conversation[] }` — as suas, com última mensagem e não lidos
@@ -495,6 +512,16 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `POLL_UPDATE` | alguém votou, ou a enquete fechou | `{ poll: Poll }` — **um payload por pessoa**, porque `myVotes` e `voters` dependem de quem recebe |
 | `TASK_REMINDER` | às 9h, o que vence hoje | `{ tasks: Task[] }` — só para quem tem tarefa vencendo, e numa lista só |
 | `PERMISSIONS_UPDATE` | cargo mudou | `{ permissions: string }` |
+| `NOTE_STATE` | ao abrir o painel de notas | `{ channelId, update, podeEditar }` — o documento inteiro, em base64, só para quem pediu |
+| `NOTE_UPDATE` | alguém escreveu | `{ channelId, update, de }` — só para quem está com a nota aberta |
+| `NOTE_AWARENESS` | cursor e seleção | `{ channelId, estado, de }` — efêmero, não passa pelo banco |
+| `NOTE_PRESENCE` | quem está com a nota aberta | `{ channelId, userIds }` |
+| `BOARD_STATE` | ao abrir um quadro | `{ boardId, update, podeEditar, elementos }` — o desenho inteiro e a contagem, só para quem pediu |
+| `BOARD_UPDATE` | alguém desenhou | `{ boardId, update, de }` — só para quem está com **aquele** quadro aberto |
+| `BOARD_COUNT` | a contagem mudou | `{ boardId, elementos }` — do servidor, e só quando muda: cada navegador vê o quadro com um atraso diferente, e contando por si chegariam a números diferentes para o mesmo limite |
+| `BOARD_AWARENESS` | cursor e apontador | `{ boardId, estado, de }` |
+| `BOARD_PRESENCE` | quem está com o quadro aberto | `{ boardId, userIds }` |
+| `BOARD_LIST_UPDATE` | quadro nasceu, renomeou, ganhou miniatura ou foi arquivado | `{ board: Board, removido?: true }` — vai para todo mundo; é a lista do painel, não o desenho |
 | `ERROR` | operação falhou | `{ code, message }` |
 
 ### Cliente → servidor
@@ -506,7 +533,17 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `VOICE_STATE` | `{ channelId, muted, deafened }` |
 | `PRESENCE_UPDATE` | `{ status, customStatus }` |
 | `SUBSCRIBE` | `{ channelIds }` |
+| `NOTE_OPEN` / `NOTE_CLOSE` | `{ channelId }` |
+| `NOTE_UPDATE` | `{ channelId, update }` — delta do Yjs em base64, até 256 KB |
+| `NOTE_AWARENESS` | `{ channelId, estado }` |
+| `BOARD_OPEN` / `BOARD_CLOSE` | `{ boardId }` — o alvo é o **quadro**, não o canal: um canal tem vários, e dois abertos não podem trocar traço |
+| `BOARD_UPDATE` | `{ boardId, update }` — até 512 KB, o dobro da nota: colar uma seleção inteira chega a dezenas de KB de uma vez |
+| `BOARD_AWARENESS` | `{ boardId, estado }` |
 | `HEARTBEAT` | `{}` |
+
+`NOTE_UPDATE` e `BOARD_UPDATE` exigem `MANAGE_NOTES` **no servidor**; a
+awareness não exige nada, porque quem só olha também aparece — e é assim que se
+sabe que alguém está do outro lado.
 
 `content` aceita string vazia **quando há `attachmentIds`**: uma foto sem
 legenda é uma mensagem inteira. Sem uma coisa nem outra, o evento é recusado.
@@ -577,7 +614,23 @@ export interface Message {
   createdAt: string;
   clientNonce?: string;
 }
+
+export interface Board {
+  id: string;
+  channelId: string;
+  name: string;
+  /** Já vem como URL de arquivo; nula até alguém fechar o quadro com desenho. */
+  thumbnailUrl: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  /** Quem mexeu por último — é o que a linha "Ana · há 2 h" quer dizer. */
+  updatedBy: string | null;
+  updatedAt: string;
+}
 ```
+
+O conteúdo do quadro **não** está aqui de propósito: ele é binário, é o CRDT, e
+chega pelo WebSocket. `Board` é o cartão da lista.
 
 Datas são sempre ISO 8601 em UTC. A formatação para o fuso local acontece só na
 renderização.

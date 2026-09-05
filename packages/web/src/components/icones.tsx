@@ -163,6 +163,15 @@ export const Tasks = (p: IconeProps) => (
   </Base>
 );
 
+/* Quadro branco: a moldura e um traço de caneta dentro. Um ícone de "prancheta"
+   seria o das tarefas de novo, e os dois vivem lado a lado no cabeçalho. */
+export const Board = (p: IconeProps) => (
+  <Base {...p}>
+    <rect x="3" y="4" width="18" height="14" rx="2" />
+    <path d="M12 18v3M7 14c1.5-4 3-4 4.5-2s3 2 4.5-3" />
+  </Base>
+);
+
 export const Plus = (p: IconeProps) => (
   <Base {...p}>
     <path d="M12 5v14M5 12h14" />

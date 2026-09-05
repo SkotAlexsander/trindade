@@ -8,6 +8,31 @@ O que o pacote acrescenta é a integração: colaboração em tempo real pela
 infraestrutura existente, o modo apresentação, e o elo com a conversa.
 
 > Revisão de 4 de setembro de 2026: `--ember` virou `--live`.
+>
+> **Entregue em 4 de setembro de 2026** (fase 10, fatia 2): o quadro, a
+> colaboração, a lista e a miniatura. O **modo apresentação** e os dois gestos
+> para a conversa ("enviar no canal" e "abrir no quadro") ficaram para a fatia
+> seguinte. O que mudou em relação ao que está escrito abaixo:
+>
+> - **Tela cheia é a tela toda**, e não só a coluna da conversa. Sair é o "‹" da
+>   barra. Cobrir metade da tela com um canvas seria repetir os 320px do painel
+>   com outro número.
+> - **A miniatura é WebP**, não PNG: ela nasce no navegador como PNG e é
+>   re-encodada no servidor como toda imagem do produto. Nenhum byte de upload
+>   chega ao disco sem passar pelo `sharp` — nem o que a própria aplicação
+>   gerou.
+> - **O teto de 2 000 elementos barra o que é novo, não o que já existe.**
+>   Travar o quadro inteiro seria a armadilha perfeita: um quadro cheio em que
+>   nem dá para apagar algo para caber de novo. A contagem vem do servidor,
+>   porque cada navegador vê o quadro com um atraso diferente.
+> - **A ferramenta de imagem está desligada** nesta fatia. Uma imagem colada
+>   vira arquivo local do Excalidraw e não viaja pelo CRDT: apareceria quebrada
+>   para todo mundo menos para quem colou. Ela volta junto com o upload pelo
+>   `sharp`.
+> - **As fontes do Excalidraw são servidas por nós** (`/excalidraw/fonts/`,
+>   copiadas do pacote instalado antes de `dev` e de `build`). Sem isso ele as
+>   busca em `esm.sh` — requisição externa, do navegador de cada pessoa, que a
+>   CSP recusa e que este produto não faz em lugar nenhum.
 
 ---
 

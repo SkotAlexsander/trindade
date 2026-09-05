@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from 'y-protocols/awareness';
 import * as ws from '../../lib/ws';
+import { deBase64, paraBase64 } from '../../lib/base64';
 
 /**
  * O provedor de sincronização das notas.
@@ -13,19 +14,6 @@ import * as ws from '../../lib/ws';
  * O que trafega são deltas binários do Yjs em base64. O servidor não arbitra
  * nada: aplica, guarda e repassa.
  */
-
-const paraBase64 = (bytes: Uint8Array): string => {
-  let texto = '';
-  // Em blocos: `String.fromCharCode(...bytes)` com um documento grande estoura
-  // o limite de argumentos da função.
-  for (let i = 0; i < bytes.length; i += 8192) {
-    texto += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  }
-  return btoa(texto);
-};
-
-const deBase64 = (texto: string): Uint8Array =>
-  Uint8Array.from(atob(texto), (c) => c.charCodeAt(0));
 
 export interface Provedor {
   /** Identidade da instância: o editor é refeito quando ela troca. */

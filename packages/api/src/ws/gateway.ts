@@ -28,6 +28,9 @@ export interface Connection {
   customStatus: string | null;
   /** Notas que esta conexão tem abertas — o painel, não o canal. */
   notas: Set<string>;
+  /** Quadros que esta conexão tem abertos. A chave é o quadro, não o canal:
+      um canal tem vários, e dois abertos não podem trocar traço. */
+  quadros: Set<string>;
   timers: NodeJS.Timeout[];
 }
 
@@ -48,6 +51,11 @@ export function register(conn: Connection): void {
 /** As conexões que estão com a nota de um canal aberta. */
 export function comNotaAberta(channelId: string): Connection[] {
   return [...connections.values()].filter((c) => c.notas.has(channelId));
+}
+
+/** As conexões que estão com um quadro aberto. */
+export function comQuadroAberto(boardId: string): Connection[] {
+  return [...connections.values()].filter((c) => c.quadros.has(boardId));
 }
 
 /** Devolve `true` se esta era a última conexão da pessoa. */
