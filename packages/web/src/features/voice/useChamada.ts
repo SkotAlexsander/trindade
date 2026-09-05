@@ -4,6 +4,7 @@ import { api, HttpError } from '../../lib/http';
 import * as ws from '../../lib/ws';
 import {
   CadeiaDeEntrada,
+  estadoDaPermissao,
   explicarErroDeMidia,
   listarDispositivos,
   paraSalvar,
@@ -144,6 +145,19 @@ export function useChamada(): Chamada {
       if (voz.channelId === channelId && voz.fase !== 'fora' && voz.fase !== 'falhou') return;
       if (voz.fase !== 'fora') await sairDaChamada();
 
+      /* Perguntar antes de pedir: com o microfone bloqueado, `getUserMedia`
+         não abre caixa nenhuma — ele falha em silêncio, e quem clicou fica
+         olhando um "conectando" que nunca sai. `permissions.query` responde
+         sem pedir nada, e a mensagem já traz onde clicar.
+         Ver docs/07-permissoes-do-navegador.md. */
+      if ((await estadoDaPermissao('microfone')) === 'negada') {
+        show(
+          'O navegador bloqueou o microfone. Clique no cadeado ao lado do endereço e permita o acesso.',
+          'danger',
+        );
+        return;
+      }
+
       voz.definir({ fase: 'conectando', channelId, erro: null });
 
       try {
@@ -258,16 +272,39 @@ export function useChamada(): Chamada {
     const voz = useVoz.getState();
     if (voz.fase !== 'conectado') return;
     const ligar = !voz.camera;
-    if (ligar) mostrarAChamada();
-    // O estado só muda quando a trilha existe de verdade: botão aceso sem
-    // imagem é a mesma mentira que botão aceso com imagem congelada.
-    void sala
-      .definirCamera(ligar, retornosDaSala(show))
-      .then(() => useVoz.getState().definir({ camera: sala.cameraLigada() }))
-      .catch((erro: unknown) => {
-        useVoz.getState().definir({ camera: sala.cameraLigada() });
-        show(explicarErroDeMidia(erro, 'camera') ?? 'Não consegui abrir a câmera.', 'danger');
-      });
+
+    const trocar = () => {
+      if (ligar) mostrarAChamada();
+      // O estado só muda quando a trilha existe de verdade: botão aceso sem
+      // imagem é a mesma mentira que botão aceso com imagem congelada.
+      void sala
+        .definirCamera(ligar, retornosDaSala(show))
+        .then(() => useVoz.getState().definir({ camera: sala.cameraLigada() }))
+        .catch((erro: unknown) => {
+          useVoz.getState().definir({ camera: sala.cameraLigada() });
+          show(explicarErroDeMidia(erro, 'camera') ?? 'Não consegui abrir a câmera.', 'danger');
+        });
+    };
+
+    // Desligar não pede permissão nenhuma.
+    if (!ligar) {
+      trocar();
+      return;
+    }
+
+    /* Perguntar antes de pedir: com a câmera bloqueada o navegador não abre
+       caixa nenhuma, e o botão acenderia e apagaria sem explicação. Ver
+       docs/07-permissoes-do-navegador.md. */
+    void estadoDaPermissao('camera').then((estado) => {
+      if (estado === 'negada') {
+        show(
+          'O navegador bloqueou a câmera. Clique no cadeado ao lado do endereço e permita o acesso.',
+          'danger',
+        );
+        return;
+      }
+      trocar();
+    });
   }, [show, mostrarAChamada]);
 
   const definirModo = useCallback((modo: ModoDaSala) => {

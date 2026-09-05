@@ -176,6 +176,36 @@ export async function aplicarSaida(elemento: HTMLMediaElement, deviceId: string)
  * aparelho sem chamada nenhuma. É exatamente o tipo de coisa que faz alguém
  * revogar a permissão e não devolver.
  */
+export type EstadoDePermissao = 'concedida' | 'negada' | 'perguntar' | 'desconhecido';
+
+/**
+ * O estado da permissão **sem** pedi-la.
+ *
+ * `permissions.query` responde sem abrir caixa nenhuma, e é o que deixa avisar
+ * "o microfone está bloqueado" antes de a pessoa clicar em entrar e ser
+ * surpreendida por nada acontecer. Ver docs/07-permissoes-do-navegador.md.
+ *
+ * Nem todo navegador responde por `camera` e `microphone` — o Firefox lança —,
+ * e `display-capture` não é consultável em lugar nenhum. Por isso existe
+ * `desconhecido`: **não saber é diferente de estar negado**, e tratar os dois
+ * como a mesma coisa mostraria "bloqueado" para quem nunca foi perguntado.
+ */
+export async function estadoDaPermissao(
+  tipo: 'microfone' | 'camera',
+): Promise<EstadoDePermissao> {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) return 'desconhecido';
+
+  try {
+    const nome = (tipo === 'microfone' ? 'microphone' : 'camera') as PermissionName;
+    const resposta = await navigator.permissions.query({ name: nome });
+    if (resposta.state === 'granted') return 'concedida';
+    if (resposta.state === 'denied') return 'negada';
+    return 'perguntar';
+  } catch {
+    return 'desconhecido';
+  }
+}
+
 export async function sondarPermissao(tipo: 'microfone' | 'camera'): Promise<ListaDeDispositivos> {
   if (!temMidia()) return VAZIA;
   const trilha = await navigator.mediaDevices.getUserMedia(

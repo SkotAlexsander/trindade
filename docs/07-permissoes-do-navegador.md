@@ -50,12 +50,19 @@ morre quando ele fecha.
 Bloqueado no servidor, não só ausente no código:
 
 ```
-Permissions-Policy: geolocation=(), payment=(), usb=(), bluetooth=(),
-  camera=(self), microphone=(self), display-capture=(self)
+Permissions-Policy: geolocation=(), payment=(), usb=(), bluetooth=(), midi=(),
+  serial=(), hid=(), idle-detection=(), camera=(self), microphone=(self),
+  display-capture=(self)
 ```
 
 Se um dia alguém escrever `navigator.geolocation` por engano, o navegador recusa.
 É a diferença entre "não usamos" e "não podemos usar".
+
+> Onde isso vive: `infra/cabecalhos.caddy`, o mesmo arquivo que o Caddy importa
+> e que o roteiro `e2e/fase-08-csp.py` lê. O roteiro serve o `dist` com esses
+> cabeçalhos e **chama `getCurrentPosition`**: se a política afrouxar, ele
+> falha. Política e verificação saem da mesma fonte, senão uma envelhece sem a
+> outra.
 
 ## Quando é negado
 
@@ -80,6 +87,17 @@ chamada **antes** de a pessoa clicar e ser surpreendida.
 
 Não é suportado para `display-capture` em todos os navegadores; nesse caso,
 trate o erro do `getDisplayMedia`.
+
+> Onde isso vive: `estadoDaPermissao()` em `packages/web/src/lib/midia.ts`,
+> chamada por `useChamada` antes de entrar numa chamada e antes de ligar a
+> câmera. Ela devolve quatro estados, e o quarto é o que importa:
+> **`desconhecido` não é `negada`**. O Firefox lança para `camera` e
+> `microphone`, e tratar isso como recusa mostraria "bloqueado" para quem nunca
+> foi perguntado.
+>
+> Com o aparelho bloqueado, `getUserMedia` **não abre caixa nenhuma** — falha
+> em silêncio, e quem clicou fica olhando um "conectando" que nunca sai. Por
+> isso a consulta vem antes, e a mensagem já traz onde clicar.
 
 ## Desktop (Tauri)
 

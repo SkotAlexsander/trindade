@@ -209,6 +209,30 @@ with sync_playwright() as p:
     # nunca recebe o `BOARD_STATE` que o faz montar. Quem confere o quadro sob
     # as mesmas origens é `fase-10-quadro.py`, que roda com a API de verdade.
 
+    # O aceite da fase 10: `navigator.geolocation` é recusado **pela política**,
+    # e não por não estar no código. É a diferença entre "não usamos" e "não
+    # podemos usar" — e é o que impede alguém de escrever isso por engano
+    # amanhã.
+    geo = pg.evaluate("""async () => {
+        if (!navigator.geolocation) return 'sem api';
+        return await new Promise((resolver) => {
+            let respondeu = false;
+            const terminar = (r) => { if (!respondeu) { respondeu = true; resolver(r); } };
+            setTimeout(() => terminar('sem resposta'), 3000);
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    () => terminar('permitido'),
+                    (erro) => terminar(erro.code === 1 ? 'recusado' : `erro ${erro.code}`),
+                    { timeout: 2000 },
+                );
+            } catch (erro) {
+                terminar('lançou');
+            }
+        });
+    }""")
+    check('a Permissions-Policy recusa a geolocalização de verdade',
+          geo in ('recusado', 'lançou', 'sem api'), str(geo))
+
     violacoes = pg.evaluate('() => window.__violacoes')
     check('nenhuma violação de CSP', not violacoes,
           '; '.join(f"{v['diretiva']} <- {v['alvo']}" for v in violacoes[:3]))

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CHAVE,
   DBFS_MINIMO,
@@ -18,6 +18,7 @@ import {
   constraintsDeCamera,
   constraintsDeEntrada,
   dbfsDeRms,
+  estadoDaPermissao,
   decidirTroca,
   devePortaoAbrir,
   ehDoSistema,
@@ -291,6 +292,43 @@ describe('o texto de cada recusa', () => {
 
   it('aparelho ocupado por outro programa não vira "erro desconhecido"', () => {
     expect(explicarErroDeMidia({ name: 'NotReadableError' }, 'camera')).toContain('Outro programa');
+  });
+});
+
+describe('perguntar antes de pedir', () => {
+  const original = globalThis.navigator;
+
+  function comPermissoes(query: unknown): void {
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { permissions: query ? { query } : undefined },
+      configurable: true,
+    });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'navigator', { value: original, configurable: true });
+  });
+
+  it('traduz os três estados do navegador', async () => {
+    comPermissoes(() => Promise.resolve({ state: 'granted' }));
+    expect(await estadoDaPermissao('microfone')).toBe('concedida');
+
+    comPermissoes(() => Promise.resolve({ state: 'denied' }));
+    expect(await estadoDaPermissao('microfone')).toBe('negada');
+
+    comPermissoes(() => Promise.resolve({ state: 'prompt' }));
+    expect(await estadoDaPermissao('camera')).toBe('perguntar');
+  });
+
+  it('não saber é diferente de estar negado', async () => {
+    // O Firefox lança para `camera` e `microphone`; navegador sem a API
+    // simplesmente não responde. Tratar isso como "negada" mostraria
+    // "bloqueado" para quem nunca foi perguntado.
+    comPermissoes(() => Promise.reject(new Error('sem suporte')));
+    expect(await estadoDaPermissao('camera')).toBe('desconhecido');
+
+    comPermissoes(null);
+    expect(await estadoDaPermissao('microfone')).toBe('desconhecido');
   });
 });
 

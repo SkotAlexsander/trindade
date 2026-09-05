@@ -131,7 +131,7 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 7 — voz e tela
 - [ ] Fase 8 — endurecimento
 - [x] Fase 9 — ferramentas de projeto e notificações
-- [ ] Fase 10 — conversas privadas e quadro (falta o modo apresentação e as permissões do navegador)
+- [x] Fase 10 — conversas privadas e quadro
 
 ---
 
@@ -966,6 +966,25 @@ quê. E a guarda de "já inseri" é a **identidade da API**, não um booleano: n
 StrictMode o componente monta, desmonta e remonta com os mesmos refs, e o `true`
 da primeira passagem bloqueava a segunda, que é a que está viva. A primeira
 terminava chamando `updateScene` num Excalidraw já descartado.
+
+**Fatia 6: permissões do navegador — fecha a fase 10.**
+
+Quase tudo de `docs/07-permissoes-do-navegador.md` já estava de pé desde as
+fases 7 e 8: os textos de recusa com a instrução real, o pedido no momento do
+uso, a permissão de notificação só na primeira menção, e o `Permissions-Policy`
+completo em `infra/cabecalhos.caddy`. Faltava o "perguntar antes de pedir".
+
+**`estadoDaPermissao()` responde sem abrir caixa nenhuma.** Com o microfone
+bloqueado, `getUserMedia` falha em silêncio: quem clicou fica olhando um
+"conectando" que nunca sai. Agora a consulta vem antes, e a mensagem diz onde
+clicar. O quarto estado é o que importa: **`desconhecido` não é `negada`** — o
+Firefox lança para `camera` e `microphone`, e tratar isso como recusa mostraria
+"bloqueado" para quem nunca foi perguntado.
+
+**O aceite virou verificação.** `e2e/fase-08-csp.py` chama
+`getCurrentPosition()` com os cabeçalhos de produção e exige a recusa. Se a
+política afrouxar num refactor, o roteiro falha — que é o único jeito de um
+cabeçalho não envelhecer sozinho.
 
 ### Numeração das migrations
 
