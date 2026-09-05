@@ -437,6 +437,29 @@ re-encode, sem exceção para rota nenhuma.
 
 Arquivar é `archived_at`; não existe rota que apague um quadro.
 
+```sql
+create table board_files (
+  board_id     uuid not null references boards(id) on delete cascade,
+  file_id      text not null check (char_length(file_id) between 1 and 64),
+  storage_key  text not null,
+  content_type text not null,
+  byte_size    integer not null,
+  created_by   uuid references users(id) on delete set null,
+  created_at   timestamptz not null default now(),
+  primary key (board_id, file_id)
+);
+
+create unique index board_files_chave on board_files (storage_key);
+```
+
+As imagens coladas dentro do quadro. O `file_id` vem do Excalidraw e é o hash do
+conteúdo — a mesma imagem colada duas vezes cai na mesma linha, e a segunda
+reaproveita o arquivo em vez de gravar um gêmeo no storage.
+
+**Tabela própria, e não `attachments`**: a varredura de órfãos apaga anexo sem
+mensagem depois de uma hora, e imagem de quadro nunca tem mensagem — seria
+varrida no meio da reunião.
+
 ### Enquetes
 
 A enquete **é** uma mensagem: `messages.kind = 'poll'`, e `content` guarda a
@@ -552,6 +575,7 @@ Retenção de 180 dias, apagado por tarefa periódica.
 021_conversas               -- era 012_conversations no pacote
 022_anexo_em_conversa       -- não previsto; ver CLAUDE.md
 023_quadros                 -- era 013_boards no pacote
+024_imagens_do_quadro       -- não previsto; ver CLAUDE.md
 ```
 
 Migration aplicada não se edita. Se algo está errado, cria-se a próxima.

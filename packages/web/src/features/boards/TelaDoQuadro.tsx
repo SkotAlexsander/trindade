@@ -3,7 +3,8 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { User } from '@trindade/shared';
 import { useTheme } from '../../lib/tema';
-import type { ProvedorDoQuadro } from './provedor';
+import type { ArquivoDoQuadro, ProvedorDoQuadro } from './provedor';
+import { baixarImagemDoQuadro, mandarImagemDoQuadro } from './queries';
 import { cenaDoMapa, mudancasParaOMapa, type ElementoDoQuadro } from './sincronia';
 import '@excalidraw/excalidraw/index.css';
 
@@ -37,6 +38,8 @@ interface EstadoDeAlguem {
 
 export interface TelaDoQuadroProps {
   provedor: ProvedorDoQuadro;
+  /** Para onde as imagens coladas sobem. */
+  boardId: string;
   podeEditar: boolean;
   /** No teto de elementos: o que já está desenhado continua editável. */
   cheio: boolean;
@@ -62,6 +65,7 @@ export interface TelaDoQuadroProps {
 
 export function TelaDoQuadro({
   provedor,
+  boardId,
   podeEditar,
   cheio,
   pessoas,
@@ -92,6 +96,83 @@ export function TelaDoQuadro({
     return () => provedor.elementos.unobserve(aplicar);
   }, [provedor]);
 
+  /* --- imagens -------------------------------------------------------------
+   *
+   * O Excalidraw guarda na cena um `fileId` e os bytes num dicionário à parte.
+   * Os bytes **não** entram no CRDT: uma foto vira megabytes de base64 dentro
+   * de cada delta, e dois desenhos com imagem acabariam com o quadro. Eles
+   * sobem pelo caminho de todo upload — multipart, `sharp`, storage — e o que
+   * atravessa o documento é o par `fileId` → URL.
+   */
+  const subindo = useRef(new Set<string>());
+  const baixando = useRef(new Set<string>());
+
+  const cuidarDasImagens = useCallback(
+    (arquivos: unknown) => {
+      const dicionario = (arquivos ?? {}) as Record<
+        string,
+        { dataURL?: string; mimeType?: string }
+      >;
+
+      for (const [id, arquivo] of Object.entries(dicionario)) {
+        if (!arquivo?.dataURL) continue;
+        // Já está no documento, ou já está subindo: o `onChange` dispara a cada
+        // movimento do mouse, e sem esta guarda a mesma foto subiria cem vezes.
+        if (provedor.arquivos.has(id) || subindo.current.has(id)) continue;
+        if (!arquivo.dataURL.startsWith('data:')) continue;
+
+        subindo.current.add(id);
+        void mandarImagemDoQuadro(boardId, id, arquivo.dataURL).then((guardado) => {
+          if (!guardado) {
+            // Deixa tentar de novo no próximo `onChange`: a imagem continua na
+            // tela de quem colou, e o que falhou foi a viagem.
+            subindo.current.delete(id);
+            return;
+          }
+          provedor.doc.transact(() => {
+            provedor.arquivos.set(id, guardado);
+          }, ORIGEM_LOCAL);
+        });
+      }
+    },
+    [provedor, boardId],
+  );
+
+  /** Traz para esta tela as imagens que já estão no documento. */
+  const buscarImagens = useCallback(() => {
+    const api = apiRef.current;
+    if (!api) return;
+
+    const jaTenho = new Set(Object.keys(api.getFiles() ?? {}));
+    for (const [id, valor] of provedor.arquivos.entries()) {
+      if (jaTenho.has(id) || baixando.current.has(id)) continue;
+      const arquivo = valor as ArquivoDoQuadro;
+      if (!arquivo?.url) continue;
+
+      baixando.current.add(id);
+      void baixarImagemDoQuadro(arquivo.url).then((dataURL) => {
+        if (!dataURL) {
+          baixando.current.delete(id);
+          return;
+        }
+        apiRef.current?.addFiles([
+          {
+            id: id as never,
+            dataURL: dataURL as never,
+            mimeType: (arquivo.contentType ?? 'image/webp') as never,
+            created: Date.now(),
+          },
+        ]);
+      });
+    }
+  }, [provedor]);
+
+  useEffect(() => {
+    provedor.arquivos.observe(buscarImagens);
+    buscarImagens();
+    return () => provedor.arquivos.unobserve(buscarImagens);
+  }, [provedor, buscarImagens]);
+
   // --- da tela para o mapa --------------------------------------------------
   //
   // Num ref, e não na dependência do callback: o teto muda a cada elemento, e
@@ -102,6 +183,7 @@ export function TelaDoQuadro({
   const aoMudar = useCallback(
     (elementos: readonly unknown[], _estado: unknown, arquivos: unknown) => {
       aoMudarCena({ elementos, arquivos });
+      cuidarDasImagens(arquivos);
 
       const cena = elementos as readonly ElementoDoQuadro[];
       let mudou = mudancasParaOMapa(cena, (id) =>
@@ -134,7 +216,7 @@ export function TelaDoQuadro({
         for (const elemento of mudou) provedor.elementos.set(elemento.id, elemento);
       }, ORIGEM_LOCAL);
     },
-    [provedor, aoMudarCena],
+    [provedor, aoMudarCena, cuidarDasImagens],
   );
 
   // --- quem está junto ------------------------------------------------------
@@ -264,6 +346,9 @@ export function TelaDoQuadro({
     <Excalidraw
       excalidrawAPI={(api) => {
         apiRef.current = api;
+        // O documento pode já ter imagens quando esta tela abre; o observador
+        // só cobre o que muda daqui para a frente.
+        buscarImagens();
       }}
       /* O fundo é branco **nos dois temas**, de propósito: no escuro o
          Excalidraw inverte o canvas inteiro por filtro, e um fundo já escuro
@@ -293,11 +378,9 @@ export function TelaDoQuadro({
           // a barra clara sobre o aplicativo escuro.
           toggleTheme: false,
         },
-        /* A ferramenta de imagem sai nesta fatia: uma imagem colada vira um
-           arquivo local do Excalidraw, e ele não viaja pelo CRDT — apareceria
-           quebrada para todo mundo menos para quem colou. Ela volta com o
-           upload pelo `sharp`, junto de "enviar no canal". */
-        tools: { image: false },
+        /* A imagem entra: os bytes sobem pelo upload de sempre e o documento
+           carrega só o endereço. Ver `cuidarDasImagens`. */
+        tools: { image: true },
       }}
     />
   );

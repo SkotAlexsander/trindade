@@ -68,6 +68,50 @@ export function useArquivarQuadro(channelId: string) {
 }
 
 /**
+ * Uma imagem colada no quadro.
+ *
+ * O Excalidraw dá um `fileId` (hash do conteúdo) e os bytes como `dataURL`. Os
+ * bytes vão por aqui — multipart, `sharp`, storage —, e o que entra no documento
+ * compartilhado é a URL. Mandar a imagem pelo CRDT seria mandar megabytes de
+ * base64 dentro de cada delta.
+ */
+export async function mandarImagemDoQuadro(
+  boardId: string,
+  fileId: string,
+  dataURL: string,
+): Promise<{ url: string; contentType: string } | null> {
+  try {
+    const bytes = await fetch(dataURL).then((r) => r.blob());
+    const form = new FormData();
+    form.append('file', bytes, `${fileId}.png`);
+    const resposta = await upload<{ fileId: string; url: string; contentType: string }>(
+      `/boards/${boardId}/files/${fileId}`,
+      form,
+    );
+    return { url: resposta.url, contentType: resposta.contentType };
+  } catch {
+    // A imagem fica na tela de quem colou e não chega aos outros. É melhor que
+    // derrubar o quadro inteiro por causa de um upload.
+    return null;
+  }
+}
+
+/** O caminho de volta: a URL guardada vira o `dataURL` que o Excalidraw pede. */
+export async function baixarImagemDoQuadro(url: string): Promise<string | null> {
+  try {
+    const bytes = await fetch(url).then((r) => r.blob());
+    return await new Promise<string>((resolver, rejeitar) => {
+      const leitor = new FileReader();
+      leitor.onload = () => resolver(String(leitor.result));
+      leitor.onerror = () => rejeitar(new Error('não consegui ler a imagem'));
+      leitor.readAsDataURL(bytes);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * A miniatura, gerada no navegador ao fechar o quadro.
  *
  * Não é `useMutation`: quem chama é o desmonte do quadro em tela cheia, que

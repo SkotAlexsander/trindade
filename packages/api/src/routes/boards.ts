@@ -4,9 +4,10 @@ import { Perm, can } from '@trindade/shared';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { requireUser } from '../plugins/auth.js';
 import { userKey } from '../lib/client-key.js';
-import { reencodarMiniatura, sniffImagem } from '../lib/imagem.js';
+import { reencodar, reencodarMiniatura, sniffImagem } from '../lib/imagem.js';
 import * as storage from '../lib/storage.js';
 import * as boardsDb from '../db/boards.js';
+import * as boardFilesDb from '../db/board-files.js';
 import * as channelsDb from '../db/channels.js';
 import { toApiBoard } from '../services/board-view.js';
 import { gateway } from '../ws/index.js';
@@ -135,6 +136,92 @@ export const boardRoutes: FastifyPluginAsyncZod = async (app) => {
       if (!linha) throw notFound('BOARD_NOT_FOUND', 'este quadro não existe');
       anunciar(linha, true);
       return { ok: true };
+    },
+  );
+
+  /**
+   * Uma imagem colada dentro do quadro.
+   *
+   * O Excalidraw guarda na cena um `fileId` e os bytes num dicionário à parte.
+   * Os bytes **não** passam pelo CRDT — seriam megabytes de base64 dentro de
+   * cada delta, e dois desenhos com foto acabariam com o quadro. Eles sobem por
+   * aqui, passam pelo `sharp` como toda imagem do produto, e o que viaja pelo
+   * documento é o par `fileId` → URL.
+   *
+   * O `fileId` é o hash do conteúdo, feito pelo próprio Excalidraw: a mesma
+   * imagem colada duas vezes reaproveita o arquivo em vez de gravar um gêmeo.
+   */
+  app.post(
+    '/boards/:id/files/:fileId',
+    {
+      config: { rateLimit: { max: 200, timeWindow: '1 hour', keyGenerator: userKey } },
+      schema: {
+        params: z.object({
+          id: z.string().uuid(),
+          // O id vem do cliente: sem esta cerca ele entraria numa chave de
+          // banco e num nome de arquivo com o que quisesse dentro.
+          fileId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+        }),
+        response: {
+          200: z.object({
+            fileId: z.string(),
+            url: z.string(),
+            contentType: z.string(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const me = requireUser(req);
+      if (!can(me.permissions, Perm.MANAGE_NOTES)) {
+        throw forbidden('MISSING_PERMISSION', 'você não pode desenhar neste quadro');
+      }
+      if (!storage.storageConfigurado()) {
+        throw badRequest('STORAGE_OFF', 'o armazenamento de arquivos não está configurado');
+      }
+
+      const quadro = await boardsDb.porId(req.params.id);
+      if (!quadro || quadro.archived_at) throw notFound('BOARD_NOT_FOUND', 'este quadro não existe');
+
+      const parte = await req.file({ limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
+      if (!parte) throw badRequest('NO_FILE', 'nenhum arquivo veio no formulário');
+
+      const bruto = await parte.toBuffer();
+      if (parte.file.truncated) throw badRequest('FILE_TOO_LARGE', 'a imagem passa de 8 MB');
+      if (bruto.length === 0) throw badRequest('EMPTY_FILE', 'arquivo vazio');
+
+      const tipo = sniffImagem(bruto);
+      if (!tipo) throw badRequest('UNSUPPORTED_MEDIA_TYPE', 'isso não é uma imagem');
+
+      let processada;
+      try {
+        processada = await reencodar(bruto, tipo === 'gif');
+      } catch (err) {
+        req.log.warn({ err }, 'imagem de quadro recusada pelo re-encode');
+        throw badRequest('INVALID_IMAGE', 'não consegui ler essa imagem');
+      }
+
+      const chave = storage.novaChave('quadros');
+      await storage.guardar(chave, processada.buffer, processada.contentType);
+
+      const { linha, novo } = await boardFilesDb.guardar({
+        boardId: quadro.id,
+        fileId: req.params.fileId,
+        storageKey: chave,
+        contentType: processada.contentType,
+        byteSize: processada.buffer.byteLength,
+        createdBy: me.id,
+      });
+
+      // Outra pessoa colou a mesma imagem primeiro: o arquivo que acabou de
+      // subir não serve para nada, e ficar no storage seria lixo permanente.
+      if (!novo) await storage.apagar(chave);
+
+      return {
+        fileId: linha.file_id,
+        url: `/api/files/${linha.storage_key}`,
+        contentType: linha.content_type,
+      };
     },
   );
 

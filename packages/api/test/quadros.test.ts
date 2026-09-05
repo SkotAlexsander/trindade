@@ -283,6 +283,67 @@ describe('quadros', () => {
     expect(bytes.includes(Buffer.from('descricao-secreta'))).toBe(false);
   });
 
+  it('a imagem colada no quadro passa pelo sharp e some o EXIF', async () => {
+    const quadro = await criar('Com imagem');
+    const { payload, contentType } = multipart('foto.jpg', await desenhoComExif(), 'image/jpeg');
+
+    const res = await cliente.inject({
+      method: 'POST',
+      url: `/api/boards/${quadro.id}/files/abc123`,
+      headers: { ...cab(), 'content-type': contentType },
+      payload,
+    });
+    expect(res.statusCode, res.body).toBe(200);
+
+    const { url } = res.json() as { fileId: string; url: string; contentType: string };
+    expect(url).toMatch(/^\/api\/files\/quadros\//);
+
+    const arquivo = await cliente.inject({ method: 'GET', url });
+    expect(arquivo.statusCode).toBe(200);
+    expect(arquivo.headers['content-type']).toBe('image/webp');
+
+    const meta = await sharp(arquivo.rawPayload).metadata();
+    expect(meta.format).toBe('webp');
+    expect(meta.exif).toBeUndefined();
+    expect(arquivo.rawPayload.includes(Buffer.from('descricao-secreta'))).toBe(false);
+  });
+
+  it('a mesma imagem duas vezes reaproveita o arquivo', async () => {
+    const quadro = await criar('Repetida');
+    const bytes = await desenhoComExif();
+
+    const subir = async () => {
+      const { payload, contentType } = multipart('foto.jpg', bytes, 'image/jpeg');
+      const res = await cliente.inject({
+        method: 'POST',
+        url: `/api/boards/${quadro.id}/files/mesmo-id`,
+        headers: { ...cab(), 'content-type': contentType },
+        payload,
+      });
+      expect(res.statusCode, res.body).toBe(200);
+      return (res.json() as { url: string }).url;
+    };
+
+    // O `fileId` é o hash do conteúdo: duas pessoas colando a mesma imagem
+    // chegam ao mesmo id, e a segunda não pode gravar um gêmeo no storage.
+    expect(await subir()).toBe(await subir());
+  });
+
+  it('o id do arquivo não aceita qualquer coisa', async () => {
+    const quadro = await criar('Cercada');
+    const { payload, contentType } = multipart('foto.jpg', await desenhoComExif(), 'image/jpeg');
+
+    // Ele vem do cliente e vira chave de banco: sem a cerca, entraria com o
+    // que quisessem dentro.
+    const res = await cliente.inject({
+      method: 'POST',
+      url: `/api/boards/${quadro.id}/files/${encodeURIComponent('../../etc/passwd')}`,
+      headers: { ...cab(), 'content-type': contentType },
+      payload,
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('recusa como miniatura o que não é imagem', async () => {
     const quadro = await criar('Sem miniatura');
     const { payload, contentType } = multipart(

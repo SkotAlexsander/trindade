@@ -19,11 +19,27 @@ import * as ws from '../../lib/ws';
 /** O nome do mapa tem de casar com o do servidor. */
 export const MAPA = 'elementos';
 
+/**
+ * O segundo mapa: `fileId` → URL da imagem.
+ *
+ * Os **bytes** não entram aqui. Uma foto vira megabytes de base64 dentro de
+ * cada delta, e dois desenhos com imagem acabariam com o quadro. O que viaja é
+ * o endereço; os bytes sobem pelo mesmo caminho de todo upload e voltam pelo
+ * `/api/files/...`, como qualquer anexo.
+ */
+export const MAPA_DE_ARQUIVOS = 'arquivos';
+
+export interface ArquivoDoQuadro {
+  url: string;
+  contentType: string;
+}
+
 export interface ProvedorDoQuadro {
   /** Identidade da instância: a tela é refeita quando ela troca. */
   id: number;
   doc: Y.Doc;
   elementos: Y.Map<unknown>;
+  arquivos: Y.Map<unknown>;
   awareness: Awareness;
   /** O que sai daqui é marcado como local — o que chega da rede, não. */
   origemRemota: symbol;
@@ -43,6 +59,7 @@ export interface AberturaDoQuadro {
 export function abrirQuadro(entrada: AberturaDoQuadro): ProvedorDoQuadro {
   const doc = new Y.Doc();
   const elementos = doc.getMap<unknown>(MAPA);
+  const arquivos = doc.getMap<unknown>(MAPA_DE_ARQUIVOS);
   const awareness = new Awareness(doc);
   const origemRemota = Symbol('remoto');
 
@@ -120,6 +137,7 @@ export function abrirQuadro(entrada: AberturaDoQuadro): ProvedorDoQuadro {
     id: ++contador,
     doc,
     elementos,
+    arquivos,
     awareness,
     origemRemota,
     destruir: () => {

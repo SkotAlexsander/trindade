@@ -328,6 +328,7 @@ function QuadroAberto({
             <TelaDoQuadro
               key={provedor.id}
               provedor={provedor}
+              boardId={boardId}
               /* Na plateia, desenhar depende da caneta. Não é permissão — o
                  servidor continua exigindo `MANAGE_NOTES` de quem manda um
                  traço — é a combinação de quem está conduzindo. */

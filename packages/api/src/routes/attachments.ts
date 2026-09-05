@@ -10,6 +10,7 @@ import * as attachmentsDb from '../db/attachments.js';
 import * as channelsDb from '../db/channels.js';
 import * as usersDb from '../db/users.js';
 import * as boardsDb from '../db/boards.js';
+import * as boardFilesDb from '../db/board-files.js';
 import { toApiAttachment } from '../services/attachment-view.js';
 import { previaDeLink, thumbEmCache } from '../services/link-preview.js';
 import { RecusadoNaBusca } from '../lib/busca-externa.js';
@@ -80,18 +81,26 @@ export const fileRoutes: FastifyPluginAsyncZod = async (app) => {
       const anexo = await attachmentsDb.findByStorageKey(chave);
       const dono = anexo ? null : await usersDb.findUserByAvatarKey(chave);
       const quadro = anexo || dono ? null : await boardsDb.porChaveDeMiniatura(chave);
-      if (!anexo && !dono && !quadro) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
+      const doQuadro =
+        anexo || dono || quadro ? null : await boardFilesDb.porChave(chave);
+      if (!anexo && !dono && !quadro && !doQuadro) {
+        throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
+      }
 
       const objeto = await storage.buscar(chave);
       if (!objeto) throw notFound('FILE_NOT_FOUND', 'este arquivo não existe');
 
-      // Avatar e miniatura saíram os dois do `sharp`, e são sempre WebP.
-      const contentType = anexo ? anexo.content_type : 'image/webp';
+      // Avatar, miniatura e imagem de quadro saíram todos do `sharp`.
+      const contentType = anexo
+        ? anexo.content_type
+        : (doQuadro?.content_type ?? 'image/webp');
       const nomeParaBaixar = anexo
         ? anexo.filename
         : quadro
           ? `quadro-${quadro.id}.webp`
-          : `avatar-${dono?.username ?? 'pessoa'}.webp`;
+          : doQuadro
+            ? `imagem-${doQuadro.file_id}.webp`
+            : `avatar-${dono?.username ?? 'pessoa'}.webp`;
       const imagem = contentType.startsWith('image/');
       return reply
         .header('content-type', contentType)

@@ -25,10 +25,12 @@ infraestrutura existente, o modo apresentação, e o elo com a conversa.
 >   Travar o quadro inteiro seria a armadilha perfeita: um quadro cheio em que
 >   nem dá para apagar algo para caber de novo. A contagem vem do servidor,
 >   porque cada navegador vê o quadro com um atraso diferente.
-> - **A ferramenta de imagem está desligada** nesta fatia. Uma imagem colada
->   vira arquivo local do Excalidraw e não viaja pelo CRDT: apareceria quebrada
->   para todo mundo menos para quem colou. Ela volta junto com o upload pelo
->   `sharp`.
+> - **A imagem entra na fatia 4**, pelo upload de sempre. O Excalidraw guarda
+>   na cena um `fileId` e os bytes num dicionário à parte; os bytes **não**
+>   entram no CRDT (seriam megabytes de base64 dentro de cada delta), sobem por
+>   `POST /boards/:id/files/:fileId` e o documento carrega só o par `fileId` →
+>   URL. O `fileId` é o hash do conteúdo, então a mesma imagem colada duas vezes
+>   reaproveita o arquivo.
 > **Entregue na fatia 3**: o modo apresentação, e o encontro com a chamada.
 > O que mudou em relação ao que está escrito abaixo:
 >

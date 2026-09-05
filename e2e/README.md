@@ -395,6 +395,15 @@ falsa, como os roteiros da fase 7.
 aparece quando o canal **da chamada** tem quadro — criar um em `#geral` e
 esperá-lo no canal de voz `sala` é o erro que este roteiro cometeu primeiro.
 
+**`fase-10-imagem-no-quadro.py`** — 5 verificações da imagem dentro do quadro:
+colar insere, o outro lado recebe **desenhado** (contagem de pixels do canvas),
+e a imagem volta servida pelo nosso storage já como WebP — a prova de que os
+bytes passaram pelo `sharp` e não pelo CRDT.
+
+**O seletor de arquivos do sistema não entra aqui.** Colar cai no mesmo caminho
+do Excalidraw e é estável; `expect_file_chooser` em cima da ferramenta de imagem
+não dispara neste fluxo.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

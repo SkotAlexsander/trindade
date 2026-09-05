@@ -405,6 +405,7 @@ CRDT que viaja pelo WebSocket, como o das notas.
 - `PATCH /boards/:id` `{ name }` → `200 { board }` — `MANAGE_NOTES`. Renomear **não** mexe em `updatedAt`
 - `POST /boards/:id/archive` → `200 { ok }` — `MANAGE_NOTES`. Não existe apagar quadro
 - `POST /boards/:id/thumbnail` — multipart, um arquivo, 8 MB, `MANAGE_NOTES`. Gerada no navegador ao fechar e re-encodada aqui para WebP 400×300; a URL sai em `board.thumbnailUrl` e é servida por `GET /files/*`
+- `POST /boards/:id/files/:fileId` → `200 { fileId, url, contentType }` — multipart, 8 MB, `MANAGE_NOTES`. Uma imagem colada dentro do quadro: os bytes **não** viajam pelo CRDT, sobem por aqui e o documento carrega só o par `fileId` → URL. O `fileId` é o hash do conteúdo feito pelo Excalidraw, e vem cercado por `^[A-Za-z0-9_-]{1,64}$` porque vira chave de banco
 
 A permissão é `MANAGE_NOTES`, a mesma da nota: quadro e nota são o mesmo tipo de
 artefato, e duas permissões para "registrar o que o grupo decidiu" seriam duas

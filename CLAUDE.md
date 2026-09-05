@@ -904,6 +904,30 @@ quadro" e "Voltar para a conversa", cada um com um nome só.
 escrito na tela — o "100%" do rodapé do Excalidraw. Rolagem seguiria pelo mesmo
 caminho e não teria como ser lida sem inventar uma sonda.
 
+**Fatia 4: imagem no quadro** — pedido do dono do projeto em 5 de setembro de
+2026, junto com o quadro em tela cheia e a chamada minimizada.
+
+**Os bytes não entram no CRDT.** O Excalidraw guarda na cena um `fileId` e a
+imagem num dicionário à parte; enfiar isso no documento seria mandar megabytes
+de base64 dentro de **cada** delta, e dois desenhos com foto acabariam com o
+quadro. Os bytes sobem pelo caminho de todo upload — multipart, `sharp`,
+storage — e o que atravessa o documento é o par `fileId` → URL, num segundo
+`Y.Map`.
+
+**`board_files` é tabela própria, e não `attachments`** (migration 024): a
+varredura de órfãos apaga anexo sem mensagem depois de uma hora, e imagem de
+quadro nunca tem mensagem — seria varrida no meio da reunião.
+
+O `fileId` é o hash do conteúdo, então a mesma imagem colada duas vezes cai na
+mesma linha; o `on conflict do nothing` faz a segunda reaproveitar o arquivo, e
+o que acabou de subir é apagado do storage em vez de virar lixo permanente. E
+ele vem do cliente e vira chave de banco: está cercado por
+`^[A-Za-z0-9_-]{1,64}$`, com teste que tenta `../../etc/passwd`.
+
+**O roteiro cola a imagem em vez de usar o seletor de arquivos.** O diálogo do
+sistema não é automatizável de forma estável aqui, e colar é o gesto de
+verdade — cai no mesmo caminho do Excalidraw que arrastar do desktop.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`
@@ -931,5 +955,6 @@ Com isso, `polls` virou **020** (aplicada como `020_enquetes`) e
 `conversations` virou **021** (`021_conversas`). A fase 10 gastou mais um
 número com `022_anexo_em_conversa` — a 014 deu a `attachments` um `channel_id
 not null`, e conversa privada precisa do mesmo lugar para o anexo nascer —,
-então `boards` virou **023** (aplicada como `023_quadros`).
+então `boards` virou **023** (aplicada como `023_quadros`), e a fatia das
+imagens no quadro gastou mais um número com `024_imagens_do_quadro`.
 Migration aplicada não se edita; se algo estiver errado, crie a próxima.
