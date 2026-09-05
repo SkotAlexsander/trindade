@@ -197,9 +197,11 @@ chunk sob demanda: são 523 kB gzip que não podem descer na tela de entrar.
 `ADMINISTRATOR` **não** isenta da hierarquia de cargos. Isentar deixaria a regra
 inócua justamente para a conta que causa mais estrago se for tomada.
 
-Não verificado por mim, por falta de navegador: renovação silenciosa do access
-token, sessão sobrevivendo ao recarregar a página, e o comportamento das seis
-caixas de código (colar, backspace, envio automático, balanço no erro).
+Os três itens que ficaram sem navegador no fim da fase 2 foram verificados
+depois, quando o Playwright entrou: a renovação pelo cookie e o reuso de token
+(`e2e/fase-02-autenticacao.py`), a sessão sobrevivendo ao recarregar, e as seis
+caixas de código inteiras — colar, backspace, setas, envio automático e o erro
+que limpa e devolve o foco (`e2e/fase-02-dois-fatores.py`).
 
 ### Fase 3 — concluída
 
