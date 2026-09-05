@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import type { User } from '@trindade/shared';
 import { api, HttpError } from '../../lib/http';
 import { useAuth } from './store';
@@ -12,6 +12,7 @@ import {
   buttonClass,
   footerClass,
   formClass,
+  linkClass,
   inputClass,
   titleClass,
 } from './components';
@@ -139,7 +140,11 @@ export function Entrar() {
 
       {/* Sem link: não existe criar conta sem um código, e apontar para esta
           mesma página seria um botão falso. Ver design/06-autenticacao.md. */}
-      <p className={footerClass}>Tem um convite? Abra o link que te mandaram.</p>
+      <p className={footerClass}>
+        Ainda não tem conta? <Link className={linkClass} to="/criar-conta">Criar uma</Link>.
+        <br />
+        Tem um convite? Abra o link que te mandaram.
+      </p>
     </AuthScreen>
   );
 }

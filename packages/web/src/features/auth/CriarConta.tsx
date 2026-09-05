@@ -84,11 +84,16 @@ function usePasswordStrength(
 }
 
 export function CriarConta() {
-  const { codigo } = useParams<{ codigo: string }>();
+  // Sem `:codigo` na rota, o cadastro é aberto — nome e senha, e nada mais.
+  const { codigo } = useParams<{ codigo?: string }>();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  /* O nome de exibição não é pedido aqui: são duas versões do mesmo nome numa
+     tela que precisa de dois campos. O servidor usa o nome de usuário, e quem
+     quiser outro troca no perfil. Ele continua alimentando o medidor de força
+     da senha — uma senha que contém o próprio nome é fraca de qualquer jeito. */
+  const displayName = username;
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
@@ -118,9 +123,11 @@ export function CriarConta() {
       await api<{ user: User }>('/auth/register', {
         method: 'POST',
         body: {
+          /* Sem convite na URL, cadastro aberto. As duas portas coexistem:
+             abrir o produto para o grupo entrar, e convidar alguém
+             pontualmente depois que as vagas fecharam. */
           code: codigo,
           username: username.trim().toLowerCase(),
-          displayName: displayName.trim(),
           password,
         },
         auth: false,
@@ -139,6 +146,10 @@ export function CriarConta() {
         setError('Esta senha apareceu em vazamentos públicos. Escolha outra.');
       } else if (err instanceof HttpError && err.code.startsWith('INVITE_')) {
         setError('Este convite não vale mais.');
+      } else if (err instanceof HttpError && err.code === 'SEM_VAGAS') {
+        setError('As vagas deste espaço acabaram. Peça um convite a quem já está dentro.');
+      } else if (err instanceof HttpError && err.code === 'CADASTRO_FECHADO') {
+        setError('O cadastro está fechado. Peça um convite a quem já está dentro.');
       } else if (err instanceof HttpError && err.code === 'NETWORK') {
         setError('Sem conexão com o servidor. Verifique sua internet.');
       } else {
@@ -149,8 +160,7 @@ export function CriarConta() {
     }
   }
 
-  const canSubmit =
-    availability === 'free' && displayName.trim().length > 0 && password.length >= 12;
+  const canSubmit = availability === 'free' && password.length >= 12;
 
   return (
     <AuthScreen>
@@ -191,18 +201,6 @@ export function CriarConta() {
               autoFocus
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               onBlur={() => setTouched((t) => ({ ...t, username: true }))}
-            />
-          )}
-        </Field>
-
-        <Field label="Como quer aparecer">
-          {(id) => (
-            <input
-              id={id}
-              className={inputClass}
-              value={displayName}
-              autoComplete="nickname"
-              onChange={(e) => setDisplayName(e.target.value)}
             />
           )}
         </Field>

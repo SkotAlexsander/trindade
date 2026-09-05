@@ -478,8 +478,8 @@
   padding: var(--s-6) var(--s-3) var(--s-2);
   background: linear-gradient(
     to top,
-    rgb(0 0 0 / 0.85),
-    rgb(0 0 0 / 0.6) 45%,
+    var(--media-scrim-forte),
+    var(--media-scrim) 45%,
     transparent
   );
   text-align: left;

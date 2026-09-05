@@ -593,3 +593,15 @@ meu: a primeira versão conferia `clientWidth > 100` e **passou com o player
 recusado**, porque a tela de "Erro 153" do YouTube também é larga. O sinal que
 distingue o vídeo tocando da desculpa é o player **pedir o vídeo** —
 `googlevideo.com` ou `/youtubei/v1/player`. Quando ele recusa, não pede nada.
+
+**`fase-12-cadastro.py`** — 9 verificações do cadastro aberto: a tela de entrar
+oferece criar conta, o formulário pede duas coisas e só, a conta é criada, nada
+de credencial no `localStorage`, a senha recém-criada entra, e o mesmo nome não
+entra duas vezes.
+
+    python e2e/fase-12-cadastro.py .capturas
+
+O nome de usuário é sorteado a cada execução: cadastro é irreversível, e um
+roteiro que só passa da primeira vez não é um roteiro. Se as vagas do banco de
+desenvolvimento já acabaram, suba a API com `VAGAS=20` para exercitar o caminho
+feliz — o caminho de recusa você vê sem mexer em nada.

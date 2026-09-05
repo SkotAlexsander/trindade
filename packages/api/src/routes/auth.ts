@@ -9,7 +9,8 @@ import {
   passwordSchema,
   userSchema,
 } from '@trindade/shared';
-import { badRequest, conflict, unauthorized } from '../lib/errors.js';
+import { config } from '../config.js';
+import { badRequest, conflict, forbidden, unauthorized } from '../lib/errors.js';
 import { hashPassword, verifyPassword, burnPasswordTime } from '../lib/auth/password.js';
 import { isPasswordBreached } from '../lib/auth/breached.js';
 import {
@@ -66,25 +67,53 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/register',
     {
-      config: { rateLimit: { max: 3, timeWindow: '1 hour' } },
+      /*
+       * Dez por hora, e não três.
+       *
+       * Cinco pessoas cadastrando da mesma casa ou do mesmo escritório dividem
+       * um IP, e com três o terceiro amigo batia no limite no meio da tarde de
+       * estreia. Quem defende de verdade aqui é o limite de **vagas**: um
+       * flood não consegue passar de `VAGAS` contas de jeito nenhum. Dez ainda
+       * segura a enxurrada e não atrapalha quem tem o direito de entrar.
+       */
+      config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
       schema: {
         body: z.object({
-          code: inviteCodeSchema,
+          /**
+           * O convite é **opcional**.
+           *
+           * Com ele, o caminho antigo: o convite é consumido e quem convidou
+           * fica registrado. Sem ele, cadastro aberto — nome e senha, e nada
+           * mais. As duas portas coexistem porque servem a momentos
+           * diferentes: abrir o produto para o grupo entrar, e depois convidar
+           * alguém pontualmente com as vagas já fechadas.
+           */
+          code: inviteCodeSchema.optional(),
           username: usernameSchema,
-          displayName: displayNameSchema,
+          /* Ausente, vira o próprio nome de usuário: pedir duas versões do
+             nome numa tela de cadastro é uma pergunta a mais para uma resposta
+             que a pessoa muda depois no perfil, se quiser. */
+          displayName: displayNameSchema.optional(),
           password: passwordSchema,
         }),
         response: { 201: z.object({ user: userSchema }) },
       },
     },
     async (req, reply) => {
-      const { code, username, displayName, password } = req.body;
+      const { code, username, password } = req.body;
+      const displayName = req.body.displayName?.trim() || username;
 
-      const invite = await invitesDb.findInvite(code);
-      if (!invite) throw badRequest('INVITE_INVALID', 'este convite não vale mais');
-      if (invite.used_by) throw conflict('INVITE_USED', 'este convite não vale mais');
-      if (invite.expires_at <= new Date()) {
-        throw badRequest('INVITE_EXPIRED', 'este convite não vale mais');
+      if (code) {
+        const invite = await invitesDb.findInvite(code);
+        if (!invite) throw badRequest('INVITE_INVALID', 'este convite não vale mais');
+        if (invite.used_by) throw conflict('INVITE_USED', 'este convite não vale mais');
+        if (invite.expires_at <= new Date()) {
+          throw badRequest('INVITE_EXPIRED', 'este convite não vale mais');
+        }
+      } else if (config.VAGAS === 0) {
+        // Distinto de "as vagas acabaram": aqui a porta foi fechada de
+        // propósito, e a resposta não conta quantas contas existem.
+        throw forbidden('CADASTRO_FECHADO', 'o cadastro está fechado');
       }
 
       if (await isPasswordBreached(password)) {
@@ -96,16 +125,21 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       const passwordHash = await hashPassword(password);
-      const result = await usersDb.createUserFromInvite({
-        code,
-        username,
-        displayName,
-        passwordHash,
-      });
+      const result = code
+        ? await usersDb.createUserFromInvite({ code, username, displayName, passwordHash })
+        : await usersDb.createUser({
+            username,
+            displayName,
+            passwordHash,
+            vagas: config.VAGAS,
+          });
 
       if ('error' in result) {
         if (result.error === 'USERNAME_TAKEN') {
           throw conflict('USERNAME_TAKEN', 'este nome já está sendo usado');
+        }
+        if (result.error === 'SEM_VAGAS') {
+          throw forbidden('SEM_VAGAS', 'as vagas deste espaço acabaram');
         }
         throw conflict('INVITE_USED', 'este convite não vale mais');
       }

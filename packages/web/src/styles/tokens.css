@@ -122,6 +122,9 @@
   --media-ink: #ffffff;
   /* Véu curto no pé da imagem, para a legenda ter contraste. */
   --media-scrim: rgba(0, 0, 0, 0.6);
+  /* O véu forte, para texto sobre miniatura clara: o de 0.6 sozinho deixava o
+     título do vídeo brigar com a parte iluminada da capa. */
+  --media-scrim-forte: rgba(0, 0, 0, 0.85);
   /* O fundo do visualizador em tela cheia: quase opaco, para a imagem ser a
      única coisa na tela. */
   --media-veil: rgba(0, 0, 0, 0.86);

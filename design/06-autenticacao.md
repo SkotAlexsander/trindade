@@ -240,3 +240,46 @@ entre telas.
 
 Nenhum pede desculpa. Erro explica o que aconteceu e o que fazer; "Ops! Algo deu
 errado" não faz nem uma coisa nem outra.
+
+---
+
+## Cadastro aberto
+
+> 5 de setembro de 2026. Pedido do dono do projeto, ao publicar: "por o modo
+> cadastro, apenas criar um nome de usuário e uma senha, nada demais".
+
+Duas portas, e elas servem a momentos diferentes: **abrir** o produto para o
+grupo entrar, e **convidar** alguém pontualmente depois. O convite continua
+inteiro — o que mudou é que ele passou a ser opcional.
+
+**Só nome e senha.** O nome de exibição saiu do formulário: são duas versões do
+mesmo nome numa tela que precisa de dois campos. Sem ele, o servidor usa o nome
+de usuário, e quem quiser outro troca no perfil.
+
+**A primeira conta é Admin.** Sem isso, com cadastro aberto ninguém
+administraria nada — todos entrariam como Membro e não haveria quem criasse
+canal, cargo ou convite. O `scripts/bootstrap.ts` continua existindo para o
+disaster recovery, mas quem sobe o produto e abre o site não deveria precisar de
+um segundo caminho para virar dono dele.
+
+**O cadastro tem vagas.** `VAGAS`, cinco por padrão — o mesmo número de espaços
+que o painel do elenco reserva. Sem limite, qualquer um que descubra o endereço
+entra na conversa de todo mundo; com ele, a porta se fecha sozinha quando o
+grupo termina de entrar, sem ninguém precisar lembrar de fechá-la. `VAGAS=0`
+fecha na hora, e o convite continua funcionando.
+
+A contagem é do espaço inteiro, não só de quem se cadastrou: quem entrou por
+convite ou pelo bootstrap ocupa uma vaga. E ela roda sob
+`pg_advisory_xact_lock` — sem isso, duas pessoas cadastrando ao mesmo tempo leem
+a mesma contagem e as duas passam, que é como um limite de vagas vira um limite
+de vagas mais uma.
+
+**O limite de registro subiu de 3 para 10 por hora.** Cinco pessoas cadastrando
+da mesma casa dividem um IP, e com três o terceiro amigo batia no limite na
+tarde de estreia. Quem defende de verdade aqui é o limite de vagas: um flood não
+passa de `VAGAS` contas de jeito nenhum.
+
+**Em produção não existe conta fictícia.** O `dev-seed` cria o elenco de
+desenvolvimento e **recusa rodar com `NODE_ENV=production`**; o `implantar.sh`
+não o chama. Um servidor recém-publicado começa vazio, e a primeira pessoa que
+se cadastrar é a dona dele.

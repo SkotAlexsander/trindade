@@ -150,6 +150,74 @@ export async function createUserFromInvite(input: {
   });
 }
 
+/**
+ * Cadastro aberto: sem convite, só nome e senha.
+ *
+ * O produto tem um elenco fixo — `ESPACOS = 5` no painel — e por isso o
+ * cadastro tem **vagas**. Sem limite, qualquer um que descubra o endereço entra
+ * na conversa de todo mundo; com ele, a porta se fecha sozinha quando o grupo
+ * termina de entrar, sem ninguém precisar lembrar de fechá-la. Ver
+ * `docs/06-autenticacao.md`.
+ *
+ * O `pg_advisory_xact_lock` serializa as chamadas concorrentes: sem ele, duas
+ * pessoas cadastrando ao mesmo tempo leem a mesma contagem e as duas passam —
+ * é como um limite de vagas vira um limite de vagas mais uma.
+ */
+export async function createUser(input: {
+  username: string;
+  displayName: string;
+  passwordHash: string;
+  vagas: number;
+}): Promise<
+  { user: UserRow; roles: RoleRow[] } | { error: 'USERNAME_TAKEN' | 'SEM_VAGAS' }
+> {
+  return sql.begin(async (tx) => {
+    // Um número qualquer, constante: o que importa é que toda tentativa de
+    // cadastro espere pela anterior.
+    await tx`select pg_advisory_xact_lock(4021977)`;
+
+    const contagem = await tx<{ n: number }[]>`select count(*)::int as n from users`;
+    const quantos = contagem[0]?.n ?? 0;
+    if (quantos >= input.vagas) return { error: 'SEM_VAGAS' as const };
+
+    /*
+     * A primeira conta é **Admin**.
+     *
+     * Com cadastro aberto, sem isto ninguém administraria nada: todo mundo
+     * entraria como Membro e não haveria quem criasse canal, cargo ou convite.
+     * O `scripts/bootstrap.ts` já resolvia isso pelo terminal, e continua
+     * existindo para o disaster recovery — mas quem sobe o produto e abre o
+     * site não deveria precisar de um segundo caminho para virar dono dele.
+     */
+    const primeira = quantos === 0;
+
+    const taken = await tx<{ exists: boolean }[]>`
+      select exists (select 1 from users where username = ${input.username}) as exists
+    `;
+    if (taken[0]?.exists) return { error: 'USERNAME_TAKEN' as const };
+
+    const inserted = await tx<UserRow[]>`
+      insert into users (username, display_name, password_hash)
+      values (${input.username}, ${input.displayName}, ${input.passwordHash})
+      returning ${USER_COLUMNS}
+    `;
+    const user = inserted[0];
+    if (!user) throw new Error('insert de usuário não devolveu linha');
+
+    const cargos = await tx<RoleRow[]>`
+      select id, name, color, position, permissions::text as permissions, is_default
+      from roles
+      where ${primeira ? tx`name = 'Admin'` : tx`is_default`}
+      limit 1
+    `;
+    const role = cargos[0];
+    if (!role) throw new Error('não existe cargo para atribuir — rode as migrations');
+
+    await tx`insert into user_roles (user_id, role_id) values (${user.id}, ${role.id})`;
+    return { user, roles: [role] };
+  });
+}
+
 export async function createUserWithRole(input: {
   username: string;
   displayName: string;

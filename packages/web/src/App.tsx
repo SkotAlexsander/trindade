@@ -17,6 +17,7 @@ export function App() {
       <Route path="/entrar" element={<Entrar />} />
       <Route path="/entrar/verificacao" element={<Verificacao />} />
       <Route path="/entrar/:codigo" element={<AceitarConvite />} />
+      <Route path="/criar-conta" element={<CriarConta />} />
       <Route path="/criar-conta/:codigo" element={<CriarConta />} />
 
       {/* Tudo o que exige sessão vive dentro do shell. */}

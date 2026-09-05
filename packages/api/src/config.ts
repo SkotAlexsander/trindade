@@ -75,6 +75,17 @@ const envSchema = z.object({
   METRICS_TOKEN: z.string().optional(),
 
   /**
+   * Quantas contas o cadastro aberto aceita.
+   *
+   * O produto tem um elenco fixo de cinco, e o painel reserva exatamente cinco
+   * espaços. A porta se fecha sozinha quando o grupo termina de entrar — sem
+   * isso, quem descobrir o endereço entra na conversa de todo mundo. Para
+   * fechar antes da hora, `0`; para abrir para mais alguém, suba o número e
+   * volte a descer.
+   */
+  VAGAS: z.coerce.number().int().min(0).max(50).default(5),
+
+  /**
    * Para onde vão os três alertas: disco cheio, 5xx em série e API fora.
    *
    * Vazia desliga a vigilância inteira — nada é medido para não ser contado a

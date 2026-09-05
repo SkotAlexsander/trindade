@@ -94,7 +94,10 @@ with sync_playwright() as p:
 
     campos = page.locator('input')
     page.fill('input[autocomplete="username"]', USUARIO)
-    page.fill('input[autocomplete="nickname"]', 'Teste UI')
+    # O nome de exibição saiu do formulário quando o cadastro aberto entrou: são
+    # duas versões do mesmo nome numa tela que precisa de dois campos. O
+    # servidor usa o nome de usuário, e quem quiser outro troca no perfil.
+    # Ver docs/06-autenticacao.md.
 
     # medidor de senha: fraca → forte
     page.fill('input[autocomplete="new-password"]', 'senha1234567')
