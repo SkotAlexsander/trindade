@@ -583,6 +583,21 @@ button.citacaoTexto:hover > span:last-child {
 /* A mesma folga da rolagem: o compositor é o pé da mesma coluna. */
 .compositorArea {
   padding: 0 calc(var(--folga) + var(--s-4)) var(--s-3);
+  min-width: 0;
+}
+
+/*
+ * Faixa estreita: o seletor de emoji sai.
+ *
+ * Com 260px — o mínimo que a alça da chamada permite — o campo de escrever
+ * ficava com pouco mais de cem pixels. O emoji é o único dos quatro controles
+ * que tem outro caminho (`Ctrl/⌘ E`, e o teclado do sistema no celular); o
+ * clipe, o enviar e o próprio campo não têm.
+ */
+@container canal (max-width: 340px) {
+  .emojiBotao {
+    display: none;
+  }
 }
 
 .barraContexto {

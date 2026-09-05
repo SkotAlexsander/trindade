@@ -181,13 +181,80 @@
 
 /* --- a sua faixa --------------------------------------------------------- */
 
+/*
+ * A sua faixa, no pé da coluna.
+ *
+ * Tinha 32px de altura com três botões de 28 dentro: os alvos encostavam na
+ * borda em cima e embaixo, e o nome ficava espremido entre o avatar e eles.
+ * 48px é o que dá para os botões respirarem e ainda vira alvo de toque de
+ * verdade no telefone.
+ */
 .voce {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  height: var(--rail-item);
-  padding: 0 var(--s-2);
+  height: 48px;
+  padding: 0 var(--s-2) 0 var(--s-3);
   border-top: 1px solid var(--border-soft);
+}
+
+/*
+ * A luz que atravessa a borda de cima.
+ *
+ * Luz de **borda**, não de área: a direção visual diz que brilho aqui é de
+ * contorno, e uma mancha andando atrás do seu nome seria decoração de fundo —
+ * que é justamente o que o documento proíbe.
+ *
+ * Ela diz em que estado o painel está. Ciano e lenta com a conexão aberta;
+ * magenta e mais rápida numa chamada, que é presença ao vivo. Caído, não há
+ * luz — um painel que brilha igual estando desconectado mente.
+ *
+ * `transform` só: o compositor anima sozinho e nada recalcula layout. Com
+ * `prefers-reduced-motion` a regra global de `tokens.css` zera a duração e a
+ * luz simplesmente para, sem sumir.
+ */
+.voce::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  /* Larga e de 1px: um segmento curto e alto lê como um retângulo perdido na
+     borda — foi a primeira versão, e parecia defeito. Uma faixa larga e fina,
+     com as pontas dissolvidas, lê como luz passando. */
+  width: 70%;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--cor-da-luz, var(--cyan-glow)) 45%,
+    var(--cor-da-luz, var(--cyan-glow)) 55%,
+    transparent
+  );
+}
+
+.painel[data-vivo='conectado'] .voce::before,
+.painel[data-vivo='chamada'] .voce::before {
+  opacity: 1;
+  animation: atravessar var(--tempo-da-luz, 9s) var(--ease-in-out) infinite;
+}
+
+.painel[data-vivo='chamada'] .voce::before {
+  --cor-da-luz: var(--magenta-glow);
+  --tempo-da-luz: 5s;
+}
+
+@keyframes atravessar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    /* 145% e não 100%: a luz tem 70% da largura da barra, e precisa sair
+       inteira do outro lado antes de recomeçar. */
+    transform: translateX(145%);
+  }
 }
 
 .voceNome {

@@ -580,3 +580,16 @@ Os roteiros da fase 4 em diante reaproveitam o cookie `rt` entre janelas em vez
 de logar de novo, justamente para gastar o mínimo. Cada retomada rotaciona o
 token, então o estado tem de ser encadeado: reapresentar o anterior é o que a
 detecção de reuso derruba.
+
+**`fase-12-video.py`** — 14 verificações do vídeo do YouTube dentro do app: o
+link vira capa, a miniatura vem do nosso domínio, **nada sai daqui antes do
+play**, e só depois do clique existe o quadro — no domínio sem cookie e com os
+parâmetros de "apenas o vídeo".
+
+    python e2e/fase-12-video.py .capturas [conta]
+
+A verificação mais importante deste roteiro é a última, e ela nasceu de um erro
+meu: a primeira versão conferia `clientWidth > 100` e **passou com o player
+recusado**, porque a tela de "Erro 153" do YouTube também é larga. O sinal que
+distingue o vídeo tocando da desculpa é o player **pedir o vídeo** —
+`googlevideo.com` ou `/youtubei/v1/player`. Quando ele recusa, não pede nada.

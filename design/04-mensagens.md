@@ -555,3 +555,54 @@ número, e **não pintava a mensagem** quando você finalmente chegava nela.
 
 Virou uma função só, `citaVoce`, com a regra do servidor: cita quem for
 nomeado, e cita todo mundo quando o nome é `todos` — menos quem escreveu.
+
+---
+
+## Vídeo
+
+> 5 de setembro de 2026. Pedido do dono do projeto: "ver vídeo do YouTube porém
+> no app, apenas o vídeo, não a navegação".
+
+**Nada do YouTube é carregado até alguém apertar o play.** O que aparece de
+início é a nossa miniatura, servida do nosso domínio, buscada e re-encodada pelo
+servidor como a de qualquer outro cartão de link. É o mesmo motivo de a prévia
+ser buscada no servidor desde a fase 5: se o navegador de quem lê fosse até o
+Google só por abrir a conversa, quem manda o link colheria o IP de todo mundo
+que passou por ali.
+
+Apertar o play é a permissão. A partir dali o quadro é do YouTube e o IP vai
+junto — não há como pedir o vídeo sem pedir ao dono dele. O que dá para fazer é
+que isso aconteça **por um gesto**, e não por rolar a conversa. O cartão diz
+isso em uma linha, em letra pequena, e não num diálogo de consentimento: quem
+clicou já decidiu.
+
+`youtube-nocookie.com` em vez de `youtube.com` — o domínio sem cookie não grava
+a visita no perfil de quem assiste.
+
+**"Apenas o vídeo, não a navegação"** vira parâmetros: `rel=0` (sem sugestões de
+outros canais no fim), `modestbranding=1` (marca do player reduzida),
+`iv_load_policy=3` (sem anotações sobrepostas), `playsinline=1` (no celular,
+toca dentro da caixa em vez de tomar a tela). E o `?t=` do link vira `start=`:
+quem cola um link com tempo quer aquele trecho.
+
+### O que a implementação ensinou
+
+**O cartão sai do oEmbed, não da página.** A página de assistir tem mais de um
+megabyte e o teto da busca externa é de 512 KB — legítimo, e é o que impede um
+site hostil de nos fazer baixar um arquivo enorme. O resultado era que todo link
+do YouTube caía sem cartão. O oEmbed devolve título, autor e miniatura em
+algumas centenas de bytes.
+
+**`referrerpolicy="no-referrer"` faz o player recusar** — "Erro de configuração
+do player de vídeo, Erro 153". O YouTube exige um referrer para validar de onde
+o embed está sendo servido. `strict-origin-when-cross-origin` manda só a origem,
+nunca o caminho: ele fica sabendo que existe um embed no nosso domínio, e não em
+qual conversa.
+
+**O identificador é validado por forma, não por tentativa** — onze caracteres do
+alfabeto do YouTube, e nada mais passa. Ele vira `src` de um iframe, e sai da
+**URL**, não do HTML: o que a página diz sobre si mesma é metadado de terceiro.
+
+**A CSP ganhou `frame-src https://www.youtube-nocookie.com`**, e só isso.
+`e2e/fase-08-csp.py` continua exigindo zero violações com a aplicação inteira
+carregada.

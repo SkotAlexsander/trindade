@@ -62,6 +62,17 @@ export interface LinkPreview {
   thumbUrl: string | null;
   thumbWidth: number | null;
   thumbHeight: number | null;
+  /**
+   * Quando o link é um vídeo que dá para assistir aqui dentro.
+   *
+   * O servidor devolve **só o identificador**, nunca uma URL de embed pronta:
+   * quem monta o endereço do iframe é o cliente, com o domínio e os parâmetros
+   * que ele escolhe. Uma URL vinda de fora entrando direto num `src` de iframe
+   * é o tipo de confiança que não se dá a metadado de terceiro.
+   *
+   * Ver design/04-mensagens.md, "Vídeo".
+   */
+  video: { provider: 'youtube'; id: string; startAt: number | null } | null;
 }
 
 export interface Reaction {

@@ -119,6 +119,35 @@ export const fileRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
+  /**
+   * A miniatura da prévia de link, servida dos nossos bytes e do nosso
+   * domínio.
+   *
+   * **Sem sessão, pelo mesmo motivo do arquivo acima**: um `<img src>` não tem
+   * como mandar o token de acesso, que vive só na memória do JavaScript. Ela
+   * estava no escopo autenticado e devolvia 401 para toda imagem — o cliente
+   * tem um `onError` que esconde a imagem que não carrega, e por isso **nenhum
+   * cartão de link jamais mostrou miniatura**, com um comentário no cliente
+   * culpando o cache em memória. O cache era inocente.
+   *
+   * O controle de acesso é o mesmo: um endereço de 24 bytes aleatórios que só
+   * existe para quem recebeu o cartão. Ver `idDaMiniatura` no serviço.
+   */
+  app.get(
+    '/link-preview/thumb/:id',
+    { schema: { params: z.object({ id: z.string().min(8).max(64) }) } },
+    async (req, reply) => {
+      const thumb = thumbEmCache(req.params.id);
+      // O cache mora na memória: reiniciar a API derruba a miniatura antes do
+      // cartão. O cliente esconde a imagem que não carrega, e o cartão fica.
+      if (!thumb) throw notFound('THUMB_NOT_FOUND', 'miniatura fora do cache');
+      return reply
+        .header('content-type', thumb.contentType)
+        .header('x-content-type-options', 'nosniff')
+        .header('cache-control', 'private, max-age=21600')
+        .send(thumb.bytes);
+    },
+  );
 };
 
 export const attachmentRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -247,6 +276,13 @@ export const attachmentRoutes: FastifyPluginAsyncZod = async (app) => {
                 thumbUrl: z.string().nullable(),
                 thumbWidth: z.number().nullable(),
                 thumbHeight: z.number().nullable(),
+                video: z
+                  .object({
+                    provider: z.literal('youtube'),
+                    id: z.string(),
+                    startAt: z.number().nullable(),
+                  })
+                  .nullable(),
               })
               .nullable(),
           }),
@@ -269,20 +305,4 @@ export const attachmentRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  /** A miniatura da prévia, servida dos nossos bytes e do nosso domínio. */
-  app.get(
-    '/link-preview/thumb/:id',
-    { schema: { params: z.object({ id: z.string().min(8).max(64) }) } },
-    async (req, reply) => {
-      const thumb = thumbEmCache(req.params.id);
-      // O cache mora na memória: reiniciar a API derruba a miniatura antes do
-      // cartão. O cliente esconde a imagem que não carrega, e o cartão fica.
-      if (!thumb) throw notFound('THUMB_NOT_FOUND', 'miniatura fora do cache');
-      return reply
-        .header('content-type', thumb.contentType)
-        .header('x-content-type-options', 'nosniff')
-        .header('cache-control', 'private, max-age=21600')
-        .send(thumb.bytes);
-    },
-  );
 };

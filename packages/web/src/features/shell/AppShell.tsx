@@ -163,6 +163,7 @@ export function AppShell() {
     focar: focarTela,
     sair: sairDaChamada,
   } = useChamada();
+  const naChamada = useVoz((state) => state.fase === 'conectado');
   const transmitindo = useVoz((state) => state.transmitindo);
   const telaEmFoco = useVoz((state) => state.telaEmFoco);
   const modoDaSala = useVoz((state) => (state.fase === 'fora' ? 'mensagens' : state.modo));
@@ -293,7 +294,14 @@ export function AppShell() {
   ]);
 
   return (
-    <div className={styles.shell} data-gaveta={gaveta}>
+    <div
+      className={styles.shell}
+      data-gaveta={gaveta}
+      /* O fundo do produto acompanha o estado dele: apagado enquanto a conexão
+         não abriu, aceso quando abriu, e com uma segunda luz — magenta —
+         enquanto há gente numa chamada. Ver `shell.module.css`. */
+      data-vivo={conectado ? (naChamada ? 'chamada' : 'sim') : 'nao'}
+    >
       <a className={styles.pular} href="#compositor">
         Pular para o compositor
       </a>

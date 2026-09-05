@@ -27,7 +27,7 @@
 		#
 		# `worker-src blob:` porque o bundler e o SDK de mídia criam worker a
 		# partir de blob. Sem isto, a chamada quebra em silêncio.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' {$DOMINIO_MIDIA} data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' wss://{$DOMINIO} https://{$DOMINIO} wss://livekit.{$DOMINIO} https://livekit.{$DOMINIO}; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' {$DOMINIO_MIDIA} data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' wss://{$DOMINIO} https://{$DOMINIO} wss://livekit.{$DOMINIO} https://livekit.{$DOMINIO}; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
 
 		# Dois anos, subdomínios incluídos, e pronto para a lista de pré-carga.
 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"

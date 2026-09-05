@@ -44,6 +44,14 @@ export const Reticencias = (p: IconeProps) => (
   </Base>
 );
 
+/* Triângulo cheio: um play contornado de 1,5px some sobre uma miniatura, que é
+   justamente onde ele precisa aparecer. */
+export const Play = (p: IconeProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <path d="M8 5.5v13a1 1 0 0 0 1.53.85l10.4-6.5a1 1 0 0 0 0-1.7L9.53 4.65A1 1 0 0 0 8 5.5Z" />
+  </Base>
+);
+
 export const Check = (p: IconeProps) => (
   <Base {...p}>
     <path d="m20 6-11 11-5-5" />

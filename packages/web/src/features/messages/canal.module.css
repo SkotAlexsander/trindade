@@ -5,6 +5,25 @@
   grid-template-rows: minmax(0, 1fr) auto auto;
   min-height: 0;
   min-width: 0;
+  /* A faixa fica estreita quando há chamada ao lado, e o mínimo que a alça
+     permite é 260px. Sem isto a lista e o compositor não cabiam nela. */
+  container: canal / inline-size;
+}
+
+/*
+ * O `min-width: 0` **nos filhos**, não só na grade.
+ *
+ * Item de grade nasce com `min-width: auto`, que quer dizer "não encolha
+ * abaixo do seu conteúdo". A grade tinha o `min-width: 0` dela, e os filhos
+ * não tinham o deles: com a conversa em 260px ao lado de uma chamada, o
+ * compositor inflava para os 325px de que precisava e **escapava da tela** —
+ * o botão de enviar ficava fora da janela.
+ *
+ * `.canal` já é a coluna inteira; quem manda na largura é a faixa, não o que
+ * está dentro dela.
+ */
+.canal > * {
+  min-width: 0;
 }
 
 .semCanal {

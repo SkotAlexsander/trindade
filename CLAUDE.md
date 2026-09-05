@@ -826,6 +826,72 @@ antes destas mudanças:
   desenho ele não busca nenhuma. Agora pede o arquivo e confere de onde ele
   veio, que é a propriedade que importa.
 
+### Vídeo do YouTube dentro do app — 5 de setembro de 2026
+
+Pedido do dono do projeto. A parte difícil não é o iframe: é que abrir a
+conversa **não** pode entregar o IP de quem lê ao Google. A capa é nossa —
+miniatura buscada pelo servidor e re-encodada pelo `sharp` —, e o quadro do
+YouTube só nasce quando alguém aperta o play. Ver `design/04-mensagens.md`.
+
+**Dois defeitos velhos que este trabalho desenterrou:**
+
+**A rota da miniatura da prévia estava no escopo autenticado**, e devolvia 401
+para todo `<img>` — o token de acesso vive só na memória do JavaScript e uma tag
+de imagem não tem como mandá-lo. O cliente tem um `onError` que esconde a imagem
+que não carrega, com um comentário culpando o cache em memória, e por isso
+**nenhum cartão de link jamais mostrou miniatura** desde a fase 5. O cache era
+inocente. A rota mudou para o mesmo escopo público de `/files/*`, que já tinha a
+decisão escrita e o motivo certo.
+
+**E o endereço da miniatura era `sha256(url)`**, o que transformava a rota num
+oráculo: quem suspeitasse de um link podia calcular o mesmo hash e perguntar ao
+servidor se aquela URL tinha sido compartilhada aqui. Agora são 24 bytes
+aleatórios, como já valia para anexo e avatar.
+
+**O roteiro passou com o player quebrado**, e isso é o mais instrutivo:
+`referrerpolicy="no-referrer"` fazia o YouTube recusar o embed com "Erro 153", e
+a verificação era `clientWidth > 100` — a tela de erro também é larga. Agora o
+roteiro exige que o player **peça o vídeo**: quando ele recusa, não pede nada.
+Verificação que só olha tamanho não distingue conteúdo de desculpa.
+
+### Efeitos e responsividade — 5 de setembro de 2026
+
+**Três larguras, com nome e com teste.** Havia seis media queries no produto
+inteiro, e três com valores que ninguém tinha decidido — 760px, 640px, 900px.
+Agora as larguras moram em `lib/telas.ts` e `test/telas.test.ts` falha se
+aparecer uma quarta. O `900px` da grade da chamada era um pixel fora do `899px`
+da gaveta: na largura exata de 900px a chamada empilhava enquanto as colunas
+ainda estavam abertas. E duas telas usavam media query para uma pergunta que não
+é sobre o monitor — viraram `@container`. Ver `design/02-shell-principal.md`.
+
+**A conversa ficava encostada na esquerda numa tela grande**, apontado pelo dono
+do projeto com um retrato de uma tela muito grande. A colisão de nome que fez a
+coluna sair com um terço da largura está documentada no design.
+
+**A faixa estreita da conversa escapava da tela.** Item de grade nasce com
+`min-width: auto` — "não encolha abaixo do seu conteúdo". `.canal` tinha o
+`min-width: 0` dela e os filhos não tinham o deles: com a conversa em 260px ao
+lado de uma chamada, o compositor inflava para os 325px de que precisava e o
+botão de enviar ficava fora da janela.
+
+**O `.shell > *` que quase quebrou o produto.** Para pôr as colunas acima da luz
+de fundo eu carimbei `z-index: 1` em todo filho direto do shell — e a janela
+flutuante da chamada (40) e o quadro (50) também são filhos diretos. Achatar a
+pilha inverte a regra da fase 10, em que a janela tem de ficar **sobre** o
+quadro. Pior: `.shell > *` e `.janela` têm a mesma especificidade, então quem
+ganha dependeria da ordem de injeção das folhas — um defeito que aparece ou não
+conforme o bundler. As colunas passaram a ser nomeadas uma a uma.
+
+**Menu, popover e dica apareciam secos.** O diálogo e o toast já entravam
+animados desde a fase 3; estes três, que são os que mais aparecem por minuto,
+tinham ficado de fora.
+
+**E o menu do canal cobria o que estava no fim da linha** — o contador de
+menções, o sino de silenciado e, num canal de voz, os avatares de quem está na
+chamada. Perder de vista quem está lá porque o mouse passou por ali é o oposto
+do que a faixa de presença existe para fazer. Agora o conteúdo desliza para o
+lado em vez de ficar coberto.
+
 ### Fase 9 — concluída
 
 **Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte

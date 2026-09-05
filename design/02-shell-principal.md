@@ -371,3 +371,78 @@ descobre errando.
 - Um link "pular para o compositor" como primeiro elemento focável.
 - Nome de canal não usa só cor para indicar não lido; usa peso 600 e o ponto.
 - Contraste mínimo AA na interface, AAA no corpo das mensagens.
+
+---
+
+## As larguras em que a interface muda
+
+> 5 de setembro de 2026.
+
+Três, e cada uma existe por um motivo que se vê na tela. Elas moram em
+`packages/web/src/lib/telas.ts`, com nome, e `packages/web/test/telas.test.ts`
+falha se aparecer um `@media` com uma quarta largura.
+
+| Até | O que muda |
+|---|---|
+| 599px | o cabeçalho recolhe os painéis num menu, a linha de pessoa empilha |
+| 899px | o rail e a coluna de canais viram gaveta, e o elenco vira faixa no topo dela |
+| 1279px | o painel de contexto deixa de dividir espaço e passa a sobrepor |
+| acima | as quatro colunas, e a conversa para de crescer |
+
+**Media query não aceita `var()`** — os números precisam estar escritos em cada
+folha. O que o arquivo e o teste dão é um lugar onde eles têm nome, e a certeza
+de que ninguém inventou um quarto sem decidir que ele existe. Um
+`@media (max-width: 760px)` solto é como a interface passa a mudar de forma num
+lugar que ninguém documentou, e a quebra fica entre dois breakpoints onde
+ninguém olha.
+
+**`@container` não é breakpoint.** A grade da chamada muda de arranjo conforme o
+espaço que sobrou para ela; a página de cargos e as de ajustes empilham conforme
+a largura da coluna em que estão, que depende de o painel de contexto estar
+aberto — não do tamanho do monitor. Estas usam `@container`, e o teste não as
+conta.
+
+### A conversa tem largura, e é centralizada
+
+Numa tela de 2560px a conversa ficava encostada na coluna de canais com mil e
+setecentos pixels de vazio ao lado, e o compositor atravessava a janela inteira
+sob mensagens que paravam em 850px — duas coisas que não pareciam a mesma
+conversa.
+
+A medida é gutter + 72ch + folga + a tira das ações, e mora em `--leitura-w`, na
+coluna da conversa. A centralização é **do container**: uma folga lateral igual
+dos dois lados, aplicada uma vez, que mensagem, linha de sistema, divisor de dia
+e compositor herdam por estarem dentro dela.
+
+Centralizar peça por peça foi a primeira tentativa e produziu algo pior — as
+mensagens no meio, as linhas de sistema na esquerda e o compositor num terceiro
+lugar. É assim que um bloco deixa de ser um bloco.
+
+**A tira das ações** é a diferença entre onde a tinta da linha para e onde a
+linha para. Ela existe porque a barra de ações da mensagem não tinha lugar: na
+borda da linha cheia aparecia a quinhentos pixels da mensagem; dentro da coluna
+de leitura, cobria o fim da mensagem de cima. Reservar 232px resolve as duas
+coisas, e onde a janela não tem essa folga o comportamento antigo volta — num
+telefone não há vazio para ocupar de qualquer jeito.
+
+**`--leitura-w`, e não `--conversa-w`.** Este último já existia e é outra coisa:
+a largura da faixa de conversa quando há chamada ao lado, escrita *inline* pela
+alça de arrastar do cabeçalho, com padrão de 380px. Inline ganha de folha, e
+reaproveitar o nome fez a coluna inteira herdar 380px sem que nada parecesse
+errado no CSS.
+
+### O fundo vivo
+
+Duas luzes muito lentas e muito fracas atravessam o fundo do shell. Elas dizem
+em que estado o produto está: apagadas enquanto a conexão não abriu, acesas
+quando abriu, e a segunda — magenta — só enquanto há gente numa chamada. Magenta
+continua sendo presença ao vivo e só isso.
+
+Três regras para não virar decoração, que a direção visual proíbe: **ela diz
+alguma coisa**, **ela é fraca** (8% e 6% sobre um fundo quase preto) e **ela é
+lenta** (noventa segundos por volta). Movimento que se percebe é movimento que
+distrai.
+
+A sua faixa no pé da coluna segue a mesma regra, com uma luz que atravessa a
+borda de cima — luz de **borda**, não de área, que é a linguagem do resto do
+produto.

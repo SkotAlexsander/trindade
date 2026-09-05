@@ -226,6 +226,25 @@
 
 /* --- os avatares no canal da lista, para quem está fora ------------------- */
 
+/*
+ * Os avatares saem da frente do botão de ações da linha.
+ *
+ * O `···` do menu do canal é absoluto na borda direita da linha, e caía em
+ * cima de quem está na chamada. Perder de vista quem está lá porque o mouse
+ * passou por ali é o oposto do que a faixa de presença existe para fazer.
+ *
+ * `[data-linha]` e não a classe: o invólucro mora em `channels.module.css`, e
+ * nome de classe de módulo tem escopo — daqui ele não existe.
+ */
+.noCanal {
+  transition: padding-right var(--dur-quick) var(--ease-out);
+}
+
+[data-linha]:hover .noCanal,
+[data-linha]:focus-within .noCanal {
+  padding-right: calc(var(--control-h-sm) + var(--s-2) + var(--s-1));
+}
+
 .noCanal {
   display: flex;
   align-items: center;

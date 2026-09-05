@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import type { LinkPreview } from '@trindade/shared';
 import { RecusadoNaBusca, buscarExterno, validarUrl } from '../lib/busca-externa.js';
 import { reencodar, sniffImagem } from '../lib/imagem.js';
+import { idDoYoutube, segundosDoYoutube } from '../lib/youtube.js';
 
 /**
  * A prévia de link, buscada pelo servidor.
@@ -28,6 +29,8 @@ interface Entrada {
   ate: number;
   previa: LinkPreview | null;
   thumb: { bytes: Buffer; contentType: string } | null;
+  /** O endereço público da miniatura. Aleatório — ver `idDaMiniatura`. */
+  idDoThumb: string | null;
 }
 
 const cache = new Map<string, Entrada>();
@@ -44,15 +47,25 @@ function guardar(chave: string, entrada: Entrada): void {
   }
 }
 
-function idDaUrl(url: string): string {
-  return createHash('sha256').update(url).digest('base64url').slice(0, 22);
+/**
+ * O endereço da miniatura é **aleatório**, não derivado da URL.
+ *
+ * Era `sha256(url)` cortado em 22 caracteres, e isso transformava a rota num
+ * oráculo: quem suspeitasse de um link podia calcular o mesmo hash e perguntar
+ * ao servidor se aquela URL já tinha sido compartilhada aqui. A resposta —
+ * 200 ou 404 — contava.
+ *
+ * 24 bytes aleatórios não se adivinham, e é a mesma regra que já vale para
+ * anexo e avatar em `lib/storage.ts`: quem tem a URL tem o arquivo, e a URL só
+ * existe para quem recebeu o cartão.
+ */
+function idDaMiniatura(): string {
+  return randomBytes(24).toString('base64url');
 }
 
 export function thumbEmCache(id: string): { bytes: Buffer; contentType: string } | null {
   for (const entrada of cache.values()) {
-    if (entrada.thumb && entrada.previa && idDaUrl(entrada.previa.url) === id) {
-      return entrada.thumb;
-    }
+    if (entrada.thumb && entrada.idDoThumb === id) return entrada.thumb;
   }
   return null;
 }
@@ -76,7 +89,72 @@ export async function previaDeLink(bruto: string): Promise<LinkPreview | null> {
   return promessa;
 }
 
+/** O oEmbed do YouTube cabe em meio quilobyte; a página de assistir, não. */
+const OEMBED_MAXIMO = 16 * 1024;
+
+/**
+ * Vídeo do YouTube: o cartão sai do **oEmbed**, não da página.
+ *
+ * A página de assistir tem mais de um megabyte e o teto da busca externa é de
+ * 512 KB — legítimo, e é o que impede um site hostil de nos fazer baixar um
+ * arquivo enorme. O resultado era que todo link do YouTube caía sem cartão.
+ *
+ * O oEmbed é a porta que o próprio YouTube abre para isto: devolve título,
+ * autor e a miniatura em algumas centenas de bytes, num formato estável. A
+ * miniatura continua passando pelo `sharp` e sendo servida do nosso domínio,
+ * como a de qualquer outro cartão — quem lê não toca no Google até apertar o
+ * play. Ver `features/messages/Video.tsx`.
+ */
+async function montarVideo(url: string, id: string): Promise<LinkPreview | null> {
+  const oembed = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+
+  let dados: { title?: string; author_name?: string; thumbnail_url?: string };
+  try {
+    const resposta = await buscarExterno(oembed, {
+      maxBytes: OEMBED_MAXIMO,
+      aceita: (ct) => ct === 'application/json' || ct === 'text/javascript',
+    });
+    dados = JSON.parse(resposta.corpo.toString('utf8')) as typeof dados;
+  } catch {
+    // Vídeo privado, removido, ou o YouTube fora do ar: cai no caminho comum,
+    // que tenta a página e provavelmente também não dá em nada. Um link sem
+    // cartão continua sendo um link que funciona.
+    return null;
+  }
+
+  if (!dados.title) return null;
+
+  const thumb = await miniatura(dados.thumbnail_url, oembed);
+  const idDoThumb = thumb ? idDaMiniatura() : null;
+  const previa: LinkPreview = {
+    url,
+    title: cortar(dados.title, 160),
+    // O canal no lugar da descrição: é o que diz de quem é o vídeo, e o
+    // oEmbed não devolve descrição nenhuma.
+    description: dados.author_name ? cortar(dados.author_name, 120) : null,
+    siteName: 'YouTube',
+    thumbUrl: idDoThumb ? `/api/link-preview/thumb/${idDoThumb}` : null,
+    thumbWidth: thumb?.width ?? null,
+    thumbHeight: thumb?.height ?? null,
+    video: { provider: 'youtube', id, startAt: segundosDoYoutube(url) },
+  };
+
+  guardar(url, {
+    ate: Date.now() + VIDA_MS,
+    previa,
+    thumb: thumb ? { bytes: thumb.bytes, contentType: thumb.contentType } : null,
+    idDoThumb,
+  });
+  return previa;
+}
+
 async function montar(url: string): Promise<LinkPreview | null> {
+  const idDeVideo = idDoYoutube(url);
+  if (idDeVideo) {
+    const video = await montarVideo(url, idDeVideo);
+    if (video) return video;
+  }
+
   let pagina: Awaited<ReturnType<typeof buscarExterno>>;
   try {
     pagina = await buscarExterno(url, {
@@ -85,7 +163,7 @@ async function montar(url: string): Promise<LinkPreview | null> {
     });
   } catch (err) {
     if (!(err instanceof RecusadoNaBusca)) throw err;
-    guardar(url, { ate: Date.now() + VIDA_DA_FALHA_MS, previa: null, thumb: null });
+    guardar(url, { ate: Date.now() + VIDA_DA_FALHA_MS, previa: null, thumb: null, idDoThumb: null });
     return null;
   }
 
@@ -96,26 +174,33 @@ async function montar(url: string): Promise<LinkPreview | null> {
 
   // Sem título não há cartão: um retângulo com só o domínio dentro é ruído.
   if (!titulo) {
-    guardar(url, { ate: Date.now() + VIDA_DA_FALHA_MS, previa: null, thumb: null });
+    guardar(url, { ate: Date.now() + VIDA_DA_FALHA_MS, previa: null, thumb: null, idDoThumb: null });
     return null;
   }
 
   const thumb = await miniatura(meta['og:image'] ?? meta['twitter:image'], pagina.url);
+  const idDoThumb = thumb ? idDaMiniatura() : null;
 
   const previa: LinkPreview = {
     url,
     title: cortar(titulo, 160),
     description: descricao ? cortar(descricao, 320) : null,
     siteName: meta['og:site_name'] ? cortar(meta['og:site_name'], 64) : new URL(url).hostname,
-    thumbUrl: thumb ? `/api/link-preview/thumb/${idDaUrl(url)}` : null,
+    thumbUrl: idDoThumb ? `/api/link-preview/thumb/${idDoThumb}` : null,
     thumbWidth: thumb?.width ?? null,
     thumbHeight: thumb?.height ?? null,
+    /* O identificador sai da **URL**, não do HTML: o que a página diz sobre si
+       mesma é metadado de terceiro, e isto vira `src` de um iframe. */
+    video: idDeVideo
+      ? { provider: 'youtube', id: idDeVideo, startAt: segundosDoYoutube(url) }
+      : null,
   };
 
   guardar(url, {
     ate: Date.now() + VIDA_MS,
     previa,
     thumb: thumb ? { bytes: thumb.bytes, contentType: thumb.contentType } : null,
+    idDoThumb,
   });
   return previa;
 }

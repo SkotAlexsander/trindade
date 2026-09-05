@@ -46,9 +46,12 @@
    Aparecer no `:focus-within` é o que o mantém alcançável pelo teclado. */
 .acoes {
   position: absolute;
-  right: var(--s-3);
+  right: var(--s-2);
   opacity: 0;
   pointer-events: none;
+  /* Acima do que está na linha, mas o conteúdo sai da frente em vez de ficar
+     coberto — ver `.linha:hover` abaixo. */
+  z-index: 1;
 }
 
 .linha:hover .acoes,
@@ -79,10 +82,25 @@
   text-decoration: none;
 }
 
-/* Com o menu à direita, o nome não pode passar por baixo dele. */
-.linha:hover .nome,
-.linha:focus-within .nome {
-  padding-right: var(--s-5);
+/*
+ * O que está no fim da linha **sai da frente**, em vez de ficar coberto.
+ *
+ * A primeira versão só afastava o nome, e não era o nome que estava embaixo:
+ * eram o contador de menções, o sino de silenciado e — num canal de voz — os
+ * avatares de quem está na chamada. O botão de reticências caía em cima dos
+ * três. Perder de vista quem está na chamada porque o mouse passou por ali é
+ * o oposto do que a faixa de presença existe para fazer.
+ *
+ * A folga é a largura do botão pequeno mais um respiro, e a transição é a
+ * mesma do resto: o conteúdo desliza, não pisca.
+ */
+.item {
+  transition: padding-right var(--dur-quick) var(--ease-out);
+}
+
+.linha:hover .item,
+.linha:focus-within .item {
+  padding-right: calc(var(--control-h-sm) + var(--s-2) + var(--s-1));
 }
 
 .item:hover {

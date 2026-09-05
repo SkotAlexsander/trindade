@@ -118,7 +118,10 @@ function GrupoCategoria({
           {/* O menu é irmão do item, e não filho: o item é um `<a>`, e um
               botão dentro de uma âncora é HTML inválido — o clique no botão
               navegaria junto. */}
-          <div className={styles.linha}>
+          {/* `data-linha` porque `voz.module.css` precisa reagir ao hover desta
+              linha, e o nome de classe do módulo tem escopo — de lá, ele não
+              existe. O atributo é o único gancho que atravessa. */}
+          <div className={styles.linha} data-linha="">
             <ItemCanal
               canal={canal}
               podeGerenciar={podeGerenciar}

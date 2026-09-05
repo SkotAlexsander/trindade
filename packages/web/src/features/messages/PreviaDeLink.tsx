@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { LinkPreview } from '@trindade/shared';
 import { api } from '../../lib/http';
+import { Video } from './Video';
 import styles from './anexos.module.css';
 
 /**
@@ -32,6 +33,10 @@ export function PreviaDeLink({ url }: { url: string }) {
   // Sem cartão não há espaço reservado: um esqueleto que às vezes vira nada
   // faz a conversa pular. O cartão entra quando existe, e só então.
   if (!previa) return null;
+
+  /* Vídeo tem cartão próprio: um link que dá para assistir aqui não deve
+     parecer um link que abre outra aba. Ver `Video.tsx`. */
+  if (previa.video) return <Video previa={previa} />;
 
   return (
     <a

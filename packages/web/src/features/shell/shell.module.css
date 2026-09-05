@@ -1,5 +1,105 @@
 /* A moldura de design/02-shell-principal.md. */
 
+/*
+ * O fundo vivo.
+ *
+ * Pedido do dono do projeto: "efeitos de fundo vivos". A direção visual diz
+ * que o produto "se parece com um painel que fica ligado" — a luz de fundo é
+ * essa frase, feita de luz em vez de escrita.
+ *
+ * Três regras para ela não virar decoração, que é o que o documento proíbe:
+ *
+ * 1. **Ela diz alguma coisa.** Apagada enquanto a conexão não abriu, acesa
+ *    quando abriu, e com uma segunda luz — magenta — enquanto há gente numa
+ *    chamada. Magenta continua sendo presença ao vivo e só isso.
+ * 2. **Ela é fraca.** 8% no ciano, 6% no magenta, sobre um fundo quase preto.
+ *    Medida, não estimada: o contraste do texto sobre o fundo muda menos de
+ *    um centésimo, e `test/contraste.test.ts` continua valendo.
+ * 3. **Ela é lenta.** Noventa segundos por volta. Movimento que se percebe é
+ *    movimento que distrai; este é para ser notado só quando se procura.
+ *
+ * `transform` e `opacity` apenas: o compositor cuida sozinho e nada recalcula
+ * layout. Com `prefers-reduced-motion` a regra global zera a duração e as
+ * luzes ficam paradas onde estão — o painel continua aceso, só não respira.
+ */
+.shell::before,
+.shell::after {
+  content: '';
+  position: fixed;
+  inset: -30%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-out);
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 8%, transparent),
+    transparent
+  );
+}
+
+.shell::before {
+  animation: vagar 90s var(--ease-in-out) infinite;
+}
+
+/* A segunda luz nasce do outro canto e anda no sentido contrário: duas luzes
+   com o mesmo caminho viram uma só, mais forte. */
+.shell::after {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--live) 6%, transparent),
+    transparent
+  );
+  animation: vagar 70s var(--ease-in-out) infinite reverse;
+}
+
+.shell[data-vivo='sim']::before,
+.shell[data-vivo='chamada']::before {
+  opacity: 1;
+}
+
+/* O magenta só existe quando há chamada — presença ao vivo, como em todo o
+   resto do produto. */
+.shell[data-vivo='chamada']::after {
+  opacity: 1;
+}
+
+@keyframes vagar {
+  0% {
+    transform: translate3d(-12%, -8%, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(10%, 6%, 0) scale(1.15);
+  }
+  66% {
+    transform: translate3d(6%, -10%, 0) scale(0.95);
+  }
+  100% {
+    transform: translate3d(-12%, -8%, 0) scale(1);
+  }
+}
+
+/*
+ * As colunas ficam acima da luz — **as colunas**, nomeadas uma a uma.
+ *
+ * A primeira versão disto era `.shell > *`, e teria quebrado o produto de um
+ * jeito difícil de achar: a janela flutuante da chamada (z-index 40) e o
+ * quadro (50) também são filhos diretos do shell, e carimbar `z-index: 1` em
+ * todos os filhos achata a pilha inteira. Aí quem fica por cima passa a ser
+ * quem vem depois no DOM — o quadro —, e a regra da fase 10 inverte: a janela
+ * da chamada tinha de ficar **sobre** o quadro, que foi um pedido explícito.
+ *
+ * Pior: `.shell > *` e `.janela` têm a mesma especificidade, então quem ganha
+ * depende da ordem em que as folhas dos módulos são injetadas. Um bug que
+ * aparece ou não conforme o bundler.
+ */
+.rail,
+.sidebar,
+.conversa {
+  position: relative;
+  z-index: 1;
+}
+
 .shell {
   display: grid;
   /* `100dvh`, não `100vh`: no iOS a barra do navegador some e volta, e `vh`

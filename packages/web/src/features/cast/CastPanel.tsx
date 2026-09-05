@@ -5,6 +5,8 @@ import { Headphones, Mark, Mic, MicOff, HeadphonesOff, Settings } from '../../co
 import { useAuth } from '../auth/store';
 import { CartaoDePerfil } from '../profile/CartaoDePerfil';
 import { useDialogoDePerfil } from '../profile/DialogoDePerfil';
+import { useConexao } from '../realtime/store';
+import { useVoz } from '../voice/store';
 import styles from './cast.module.css';
 
 /**
@@ -118,8 +120,20 @@ export function SeuCanto({ onGuardadas }: { onGuardadas?: () => void }) {
   const [microfone, setMicrofone] = useState(true);
   const [fone, setFone] = useState(true);
 
+  /*
+   * A luz que atravessa a borda de cima diz **em que estado o painel está**.
+   *
+   * Ciano devagar quando a conexão está aberta; magenta e mais rápido quando
+   * você está numa chamada — que é presença ao vivo, e magenta é isso e só
+   * isso. Sem conexão não há luz nenhuma: um painel que brilha igual estando
+   * caído seria decoração, e decoração que mente é pior que decoração.
+   */
+  const conexao = useConexao((s) => s.estado);
+  const naChamada = useVoz((s) => s.fase === 'conectado');
+  const vivo = naChamada ? 'chamada' : conexao === 'aberto' ? 'conectado' : 'nao';
+
   return (
-    <div className={styles.painel}>
+    <div className={styles.painel} data-vivo={vivo}>
       {eu ? (
         <div className={styles.voce}>
           <Avatar id={eu.id} name={eu.displayName} src={eu.avatarUrl} size="sm" status={eu.status} />
