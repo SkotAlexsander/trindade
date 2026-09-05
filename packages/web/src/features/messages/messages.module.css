@@ -359,6 +359,18 @@ button.citacaoTexto:hover > span:last-child {
  * opacidade a cada movimento do mouse cintila numa lista longa: a barra pisca
  * dezenas de vezes enquanto o ponteiro atravessa a tela. */
 
+/*
+ * A barra fica na borda direita da **linha**, não da coluna de leitura.
+ *
+ * Ancorá-la no fim da faixa parecia melhor — as ações de uma mensagem a
+ * quinhentos pixels dela, numa tela larga, ficam soltas no vazio. Mas a barra
+ * é opaca e mora 14px acima da própria linha: dentro da coluna de leitura ela
+ * cobre o fim da mensagem de cima, e o que estava embaixo deixa de ser
+ * clicável enquanto o vizinho está sob o mouse. Foi `fase-05-conteudo.py` que
+ * mostrou, tentando clicar num spoiler coberto.
+ *
+ * No vazio à direita ela não cobre nada. A distância é o preço.
+ */
 .acoes {
   position: absolute;
   top: -14px;
