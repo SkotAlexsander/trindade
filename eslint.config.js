@@ -10,10 +10,40 @@ export default tseslint.config(
       // Artefato do cargo: 1,5 GB, com JavaScript gerado pelo Tauri dentro. O
       // git já o ignora; o eslint precisa ouvir a mesma coisa em separado.
       'packages/desktop/src-tauri/target/**',
+      // O bundle temporário do `wrangler dev`, pelo mesmo motivo.
+      '**/.wrangler/**',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  // A sala roda no runtime de Workers, que não é navegador nem Node: tem
+  // `Request` e `Response` como o primeiro, e nada do segundo. O TypeScript já
+  // sabe disso por `@cloudflare/workers-types`; o eslint precisa ouvir à parte.
+  {
+    files: ['packages/sala/src/**/*.ts'],
+    languageOptions: {
+      globals: {
+        crypto: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
+        Headers: 'readonly',
+        fetch: 'readonly',
+        WebSocket: 'readonly',
+        WebSocketPair: 'readonly',
+        DurableObjectNamespace: 'readonly',
+        DurableObjectState: 'readonly',
+        Fetcher: 'readonly',
+        ExportedHandler: 'readonly',
+      },
+    },
+    rules: {
+      // `catch {}` com comentário dentro é resposta deliberada a um erro que
+      // não tem tratamento — e nesta base o comentário diz por quê.
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
   // Dois ambientes que o TypeScript não cobre: o script de operação, que roda em
   // Node solto, e o carimbo de tema, que roda no navegador antes de tudo.
   {

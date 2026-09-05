@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sala — Trindade</title>
+    <!--
+      Fatia 1: entrar numa sala e ver quem está nela.
+
+      Sem mídia ainda, e sem framework: enquanto a sala é uma tela só, um
+      arquivo é mais fácil de ler que uma árvore de componentes. A fatia 5 traz
+      os tokens e os primitivos do `packages/web`, e aí isto vira React.
+      Ver prompts/fase-12-sala-sem-servidor.md.
+    -->
+    <style>
+      :root {
+        --void: #05070e;
+        --superficie: #0b1020;
+        --borda: #1c2740;
+        --texto: #e8edf7;
+        --texto-2: #93a1bd;
+        --ciano: #22d3ee;
+        --magenta: #e879f9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--void);
+        color: var(--texto);
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+      }
+      main { width: 100%; max-width: 420px; display: grid; gap: 20px; }
+      h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+      p.sub { margin: 0; color: var(--texto-2); font-size: 14px; }
+      form { display: grid; gap: 10px; }
+      label { display: grid; gap: 6px; font-size: 13px; color: var(--texto-2); }
+      input {
+        width: 100%; height: 40px; padding: 0 12px;
+        border: 1px solid var(--borda); border-radius: 8px;
+        background: var(--superficie); color: var(--texto);
+        font: inherit; font-size: 14px;
+      }
+      input:focus {
+        outline: none; border-color: var(--ciano);
+        box-shadow: 0 0 0 3px rgb(34 211 238 / 0.16);
+      }
+      button {
+        height: 40px; border: 0; border-radius: 8px;
+        background: var(--ciano); color: #04121a;
+        font: inherit; font-weight: 600; cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+      .lista { display: grid; gap: 8px; }
+      .pessoa {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--borda); border-radius: 10px;
+        background: var(--superficie);
+      }
+      .pessoa[data-voce='true'] { border-color: var(--ciano); }
+      .bolinha {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--texto-2); flex: none;
+      }
+      .pessoa[data-falando='true'] .bolinha { background: var(--magenta); }
+      .quem { font-weight: 500; }
+      .eu { color: var(--texto-2); font-size: 12px; font-weight: 400; }
+      .estado { margin: 0; color: var(--texto-2); font-size: 13px; min-height: 20px; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div>
+        <h1 id="titulo">Entrar numa sala</h1>
+        <p class="sub" id="subtitulo">
+          Quem digitar o mesmo nome de sala cai no mesmo lugar.
+        </p>
+      </div>
+
+      <form id="form">
+        <label>
+          Sala
+          <input id="sala" value="trindade" autocomplete="off" spellcheck="false" />
+        </label>
+        <label>
+          Seu nome
+          <input id="nome" autocomplete="off" spellcheck="false" />
+        </label>
+        <button id="entrar" type="submit">Entrar</button>
+      </form>
+
+      <div class="lista" id="lista" hidden></div>
+      <p class="estado" id="estado"></p>
+    </main>
+
+    <script type="module">
+      const form = document.getElementById('form');
+      const campoSala = document.getElementById('sala');
+      const campoNome = document.getElementById('nome');
+      const botao = document.getElementById('entrar');
+      const lista = document.getElementById('lista');
+      const estado = document.getElementById('estado');
+      const titulo = document.getElementById('titulo');
+      const subtitulo = document.getElementById('subtitulo');
+
+      // `/sala/trindade` entra direto naquela sala.
+      const daUrl = /^\/sala\/([^/]+)/.exec(location.pathname);
+      if (daUrl) campoSala.value = decodeURIComponent(daUrl[1]);
+
+      let socket = null;
+      let euSou = null;
+
+      function desenhar(participantes) {
+        lista.hidden = participantes.length === 0;
+        lista.replaceChildren(
+          ...participantes.map((p) => {
+            const linha = document.createElement('div');
+            linha.className = 'pessoa';
+            linha.dataset.voce = String(p.id === euSou);
+            linha.dataset.falando = String(p.falando);
+
+            const bolinha = document.createElement('span');
+            bolinha.className = 'bolinha';
+
+            const quem = document.createElement('span');
+            quem.className = 'quem';
+            quem.textContent = p.nome;
+
+            linha.append(bolinha, quem);
+            if (p.id === euSou) {
+              const eu = document.createElement('span');
+              eu.className = 'eu';
+              eu.textContent = 'você';
+              linha.append(eu);
+            }
+            return linha;
+          }),
+        );
+      }
+
+      form.addEventListener('submit', (evento) => {
+        evento.preventDefault();
+        const sala = campoSala.value.trim().toLowerCase();
+        const nome = campoNome.value.trim();
+        if (!sala || !nome || socket) return;
+
+        botao.disabled = true;
+        estado.textContent = 'conectando…';
+
+        const esquema = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(
+          `${esquema}//${location.host}/sala/${encodeURIComponent(sala)}/ws`,
+        );
+
+        socket.addEventListener('open', () => {
+          socket.send(JSON.stringify({ tipo: 'entrar', nome }));
+          form.hidden = true;
+          titulo.textContent = `Sala ${sala}`;
+          subtitulo.textContent = 'Quem está aqui agora.';
+          estado.textContent = '';
+          history.replaceState({}, '', `/sala/${encodeURIComponent(sala)}`);
+        });
+
+        socket.addEventListener('message', (evento) => {
+          const recado = JSON.parse(evento.data);
+          if (recado.tipo === 'voce') euSou = recado.id;
+          else if (recado.tipo === 'sala') desenhar(recado.participantes);
+          else if (recado.tipo === 'erro') estado.textContent = recado.motivo;
+        });
+
+        const caiu = () => {
+          socket = null;
+          botao.disabled = false;
+          form.hidden = false;
+          lista.hidden = true;
+          titulo.textContent = 'Entrar numa sala';
+          subtitulo.textContent = 'Quem digitar o mesmo nome de sala cai no mesmo lugar.';
+          estado.textContent = 'a conexão caiu.';
+        };
+        socket.addEventListener('close', caiu);
+        socket.addEventListener('error', caiu);
+      });
+    </script>
+  </body>
+</html>

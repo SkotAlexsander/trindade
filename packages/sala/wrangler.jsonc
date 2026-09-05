@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "trindade-sala",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // O front estático. Nada aqui é gerado em tempo de execução.
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+
+  "durable_objects": {
+    "bindings": [{ "name": "SALA", "class_name": "Sala" }]
+  },
+
+  // SQLite é o backend novo de Durable Object, e o único disponível no plano
+  // grátis. A sala não guarda nada em disco — mas a classe precisa declarar.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Sala"] }],
+
+  "observability": { "enabled": true }
+}
