@@ -29,7 +29,11 @@ def check(nome, ok, detalhe=''):
 
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome', headless=True)
-    ctx = b.new_context(viewport={'width': 1440, 'height': 950}, color_scheme='dark')
+    # A área de transferência precisa de permissão: sem ela o `writeText` é
+    # recusado, o botão nunca vira "Copiado", e o roteiro acusa um defeito que é
+    # dele, não do produto. No navegador de verdade quem concede é a pessoa.
+    ctx = b.new_context(viewport={'width': 1440, 'height': 950}, color_scheme='dark',
+                        permissions=['clipboard-read', 'clipboard-write'])
     pg = ctx.new_page()
     erros = []
     pg.on('pageerror', lambda e: erros.append(str(e)))
@@ -156,8 +160,13 @@ with sync_playwright() as p:
     copiar = ultima().locator('button[class*="blocoCopiar"]').first
     copiar.click()
     pg.wait_for_timeout(200)
+    # `[data-kind]` é o toast de verdade — o mesmo seletor da fase 3. A região
+    # `[role="status"]` existe sempre, com um `div` vazio dentro, e contar esse
+    # `div` acusava um toast que nunca houve.
+    toasts = pg.locator('[role="status"] [data-kind]').count()
     check('copiar vira "Copiado", sem toast',
-          copiar.inner_text() == 'Copiado' and pg.locator('[role="status"] div').count() == 0)
+          copiar.inner_text() == 'Copiado' and toasts == 0,
+          f'botão={copiar.inner_text()!r} toasts={toasts}')
     pg.wait_for_timeout(1700)
     check('e volta sozinho depois de 1,5s', copiar.inner_text() == 'Copiar')
 
