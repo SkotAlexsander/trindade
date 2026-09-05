@@ -82,6 +82,46 @@ código é deles.
 
 ---
 
+## Preparo — o que precisa da conta da Cloudflare
+
+Uma vez só, e só quem tiver a conta consegue fazer. **A fatia 1 não precisa
+disto** — ela roda inteira no `wrangler dev`, local.
+
+**1. Autenticar o wrangler.**
+
+```bash
+cd "caminho/para/PROJETO TRINDADE"
+npx wrangler login
+```
+
+Abre o navegador, você autoriza, e o token fica na sua máquina.
+
+**2. Criar o app do Realtime.**
+
+No painel: <https://dash.cloudflare.com> → **Realtime** → **SFU** → **Create**.
+Dê um nome (`trindade` serve). Ele devolve um **App ID** e um **App Secret**.
+
+**3. Guardar as duas coisas onde elas devem ficar.**
+
+```bash
+cd packages/sala
+npx wrangler secret put REALTIME_APP_SECRET   # cole o secret quando ele pedir
+```
+
+O **App ID** não é segredo e vai no `wrangler.jsonc`, em `vars`. O **secret**
+nunca entra no repositório e nunca chega ao navegador: quem fala com o SFU é o
+Worker.
+
+**4. Conferir que funcionou.**
+
+```bash
+npx wrangler secret list
+```
+
+Deve listar `REALTIME_APP_SECRET`.
+
+---
+
 ## O que já está feito
 
 `packages/sala/src/sala.ts` — o Durable Object da sala, com presença, chat que
@@ -102,16 +142,22 @@ diferença entre custo zero e uma conta no fim do mês.
 
 ## O que entregar
 
-### Fatia 1 — O Worker e a sala vazia
+### ~~Fatia 1 — O Worker e a sala vazia~~ — **feita**
 
-`packages/sala/src/index.ts`: serve o front estático, e encaminha
-`/sala/:nome/ws` para o Durable Object correspondente.
+`packages/sala/src/index.ts` serve o front e encaminha `/sala/:nome/ws` para o
+Durable Object. Duas pessoas digitam o mesmo nome de sala e se veem.
 
-Duas pessoas abrem o mesmo endereço, digitam um nome, e **veem uma à outra na
-lista**. Sem mídia ainda.
+Verificada com dois navegadores contra o `wrangler dev`:
+`python e2e/fase-12-sala.py`, 10 de 10.
 
-Testável inteiro com `wrangler dev`, que roda Worker e Durable Object na sua
-máquina — não precisa de conta na Cloudflare para esta fatia.
+```bash
+pnpm --filter @trindade/sala dev     # sobe em http://127.0.0.1:8788
+```
+
+Um defeito que o roteiro pegou e que vale saber, porque a mesma armadilha
+aparece em qualquer coisa que você acrescentar: dentro de `webSocketClose`, o
+socket que está fechando **ainda aparece** em `getWebSockets()`. Excluí-lo de
+receber o aviso não basta — é preciso excluí-lo da lista que vai dentro dele.
 
 ### Fatia 2 — Rosto e voz
 

@@ -11,14 +11,33 @@ quem lê nunca chega a quem manda o link, a mídia da chamada passa sempre por
 relay, nenhuma imagem chega ao disco sem ser re-encodada, e o registro de acesso
 não guarda endereço de ninguém.
 
-**Estado: as dez fases estão prontas**, e o aplicativo de Windows já abre e
-instala. Falta a casca ganhar bandeja, atalho global, notificação nativa e
-atualização automática — e falta publicar o servidor. Ver
-`prompts/fase-11-desktop-e-publicacao.md`.
+**Estado: as dez fases estão prontas**, o aplicativo de Windows já abre e
+instala, e existe um segundo caminho em construção que não precisa de servidor
+nenhum — ver "Dois caminhos" abaixo.
 
 ---
 
-## As duas formas de usar
+## Dois caminhos
+
+O produto existe hoje em duas formas, e elas resolvem coisas diferentes.
+
+**O Trindade completo** — canais, histórico, notas, tarefas, enquetes, quadro,
+conversas privadas, cargos, 2FA, anexos. É o que as dez fases construíram, está
+testado, e precisa de um servidor: **de R$ 30 a R$ 200 por mês**, porque o
+gateway não pode dormir e a mídia dos cinco passa por ele.
+
+**A sala** (`packages/sala`, em construção) — só rosto, tela, voz e um chat que
+não fica. Vive num Durable Object da Cloudflare e usa o Realtime para a mídia:
+**custo zero, permanente**, sem máquina para ligar e sem banco de dados. Quem
+quiser guardar a conversa baixa um arquivo.
+
+A escolha entre os dois está explicada em `design/15-sem-servidor-alugado.md`, e
+o passo a passo em `prompts/fase-12-sala-sem-servidor.md`. **Decida antes de
+alugar máquina.**
+
+---
+
+## As duas formas de usar o Trindade completo
 
 **No navegador**, de qualquer computador: é o caminho normal, e não exige
 instalar nada. O front é estático e o Caddy o serve.
@@ -91,6 +110,7 @@ packages/
   web/       React 18 + Vite, CSS Modules, TanStack Query, Zustand
   shared/    tipos e schemas que os dois lados compartilham
   desktop/   a casca nativa em Tauri (Rust) — Windows por enquanto
+  sala/      o caminho sem servidor: Worker + Durable Object + Realtime
 infra/       Caddyfile, cabeçalhos, LiveKit, coturn
 scripts/     implantar, backup, restaurar, vigia, verificar segredos
 e2e/         roteiros Playwright em Python — um por assunto
@@ -148,6 +168,7 @@ novo.
 - `design/12-compartilhamento-de-tela.md` — presets, simulcast, assistir
 - `design/13-dispositivos-e-audio.md` — microfone, alto-falante, câmera, medidor
 - `design/14-aplicativo-de-mesa.md` — a casca nativa e por que ela carrega o servidor
+- `design/15-sem-servidor-alugado.md` — de onde vem a conta mensal, e as duas formas de não tê-la
 
 ### As fases
 
@@ -163,4 +184,5 @@ novo.
 | 8 | Endurecimento | rate limit, logs, cabeçalhos, backup, alertas |
 | 9 | Projeto e notificações | notas, tarefas, enquetes, avisos |
 | 10 | Privadas e quadro | mensagem direta, grupos, quadro com apresentação |
-| 11 | Desktop e publicação | Tauri e o servidor no ar — **a fazer** |
+| 11 | Desktop e publicação | Tauri e o servidor no ar — app de Windows feito, publicação pendente |
+| 12 | A sala sem servidor | Durable Object + Realtime — presença feita, mídia pendente |

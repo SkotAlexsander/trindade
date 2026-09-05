@@ -108,6 +108,20 @@ passar a servir conteúdo local, aí sim as duas precisam ser iguais, incluindo 
 
 ## Parte B — Publicar
 
+> **Leia isto antes de alugar qualquer coisa.**
+>
+> Em 5 de setembro de 2026 o dono do projeto escolheu um caminho que **não usa
+> servidor alugado**: a sala vive num Durable Object e a mídia passa pelo
+> Cloudflare Realtime, que dá 1.000 GB por mês de graça. Ver
+> `prompts/fase-12-sala-sem-servidor.md` e `design/15-sem-servidor-alugado.md`.
+>
+> Esta parte B continua válida e continua correta — ela é o caminho para ter o
+> **Trindade inteiro**, com histórico, tarefas, cargos e anexos. Mas ela custa
+> de R$ 30 a R$ 200 por mês, para sempre, e a fase 12 entrega o objetivo
+> principal — rosto, tela e voz — por zero.
+>
+> **Decida qual dos dois antes de gastar dinheiro**, não depois.
+
 ### O que o projeto assume
 
 Um servidor Linux com Docker, disco cifrado com LUKS, acesso por Tailscale e o
