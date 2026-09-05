@@ -267,6 +267,26 @@ O primeiro defeito que ele pegou foi nosso: o `index.html` carimbava o tema com
 um `<script>` inline, que `script-src 'self'` recusa. A correção foi mover o
 bloco para `/tema.js` — corrigir o código, não relaxar a política.
 
+**`fase-08-vigia.py`** — 9 verificações do alerta que a API não consegue mandar:
+a própria morte. Não precisa de navegador, de banco nem da aplicação de pé.
+
+    python e2e/fase-08-vigia.py
+
+Sobe um servidor de saúde falso e um webhook de verdade, e roda o
+`scripts/vigia.sh` volta a volta: com o servidor de pé ninguém é incomodado; uma
+falha só não avisa (isso é implantação); duas seguidas avisam **uma** vez; e
+quando a saúde volta, chega o "voltou". O webhook é um servidor HTTP mesmo, e
+não um `fetch` trocado por engano — o que se quer saber é se sai uma requisição
+com o corpo certo.
+
+Foi ele que pegou o corpo do aviso indo como **argumento** de `curl`: o acento
+de "não responde" chegava quebrado do outro lado, porque argumento atravessa a
+conversão de codificação do sistema. Agora vai por stdin.
+
+Os limites do alerta que moram dentro da API — disco acima de 85% e 5xx em série
+— são unitários (`packages/api/test/alerta.test.ts`), com o espaço em disco
+injetado: não dá para encher um disco de verdade num teste, e não é preciso.
+
 **`fase-09-notas.py`** — 12 verificações das notas colaborativas, com dois
 navegadores no mesmo documento: o que um escreve aparece no outro, as duas
 edições sobrevivem, os documentos convergem, o cursor de quem está junto

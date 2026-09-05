@@ -7,10 +7,24 @@
 #
 # Ver docs/08-operacao.md para o procedimento completo.
 
+# Rotação de log, em todo serviço.
+#
+# O padrão do Docker é `json-file` **sem limite**: o arquivo cresce até o disco
+# acabar, e aí para o banco, o backup e as chamadas de uma vez. O Docker
+# rotaciona por tamanho, não por idade — 3 arquivos de 10 MB dão de sobra a
+# semana de retenção que `docs/04-seguranca.md` pede, no volume de cinco
+# pessoas, e o teto é o que importa.
+x-log: &log
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
 services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *log
     # As duas únicas portas abertas ao mundo — e o firewall ainda as limita aos
     # endereços da Cloudflare. Ver docs/08-operacao.md.
     ports:
@@ -32,6 +46,7 @@ services:
   api:
     image: ${IMAGEM_API:-trindade/api:latest}
     restart: unless-stopped
+    logging: *log
     # Sem `ports`: só o Caddy fala com ela, pela rede interna do compose. Uma
     # porta publicada aqui seria um caminho que ignora todos os cabeçalhos.
     env_file: .env
@@ -55,6 +70,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *log
     # Sem porta publicada. O acesso para manutenção é por `docker compose exec`,
     # e o caminho até o servidor é Tailscale.
     environment:
@@ -74,6 +90,7 @@ services:
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped
+    logging: *log
     command: --config /etc/livekit.yaml
     volumes:
       - ./infra/livekit.prod.yaml:/etc/livekit.yaml:ro
@@ -86,6 +103,7 @@ services:
   coturn:
     image: coturn/coturn:latest
     restart: unless-stopped
+    logging: *log
     command: -c /etc/coturn/turnserver.conf
     volumes:
       # O arquivo de **produção**, com a lista de negados inteira e sem a

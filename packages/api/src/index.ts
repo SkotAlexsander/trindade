@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { config } from './config.js';
 import { closePool } from './db/index.js';
 import { garantirBalde, storageConfigurado } from './lib/storage.js';
+import { agendarVigia } from './services/alerta.js';
 import { agendarFaxina } from './services/faxina.js';
 import { agendarLembretes } from './services/lembretes.js';
 import { gravarTudo } from './services/notas.js';
@@ -26,6 +27,11 @@ const pararFaxina = agendarFaxina(app.log);
 // Todo dia às 9h, quem tem tarefa vencendo hoje é lembrado uma vez.
 const pararLembretes = agendarLembretes(app.log);
 
+// Disco cheio e 5xx em série avisam sozinhos. A terceira vigilância — a API
+// fora do ar — não pode morar aqui: processo caído não manda webhook. Ela é o
+// `infra/vigia.sh`, fora do contêiner. Ver docs/08-operacao.md.
+const pararVigia = agendarVigia(app.log);
+
 try {
   await app.listen({ port: config.PORT, host: config.API_HOST });
 } catch (err) {
@@ -44,6 +50,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
       try {
         pararFaxina();
         pararLembretes();
+        pararVigia();
         await app.close();
         // As notas e os quadros em memória vão para o banco antes do processo
         // morrer: o debounce de 2s não sobrevive a um `docker compose up -d` no

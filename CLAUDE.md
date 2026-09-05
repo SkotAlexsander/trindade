@@ -129,7 +129,8 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 5 — mensagens em tempo real
 - [x] Fase 6 — perfil e cargos
 - [x] Fase 7 — voz e tela
-- [ ] Fase 8 — endurecimento
+- [x] Fase 8 — endurecimento (os quatro itens que dependem do servidor real
+      ficam desmarcados em `docs/04-seguranca.md`, de propósito)
 - [x] Fase 9 — ferramentas de projeto e notificações
 - [x] Fase 10 — conversas privadas e quadro
 
@@ -587,7 +588,7 @@ O apontador vai por mensagem de dados **não confiável**, em posição relativa
 0 a 1: é um gesto que some em 2s, não precisa chegar duas vezes, e tem de cair
 no mesmo lugar da imagem em qualquer tamanho de janela.
 
-### Fase 8 — em andamento
+### Fase 8 — concluída
 
 **Fatia 1: faxina, saúde e métricas.**
 
@@ -670,6 +671,48 @@ acumula dívida que ninguém revisita.
 dizendo onde se verifica. Os quatro que dependem do servidor real — firewall,
 LUKS, 2FA das cinco contas — ficaram **desmarcados de propósito**: marcar item
 não verificado é pior que não ter checklist.
+
+**Fatia 4: o alerta, e o que ele não consegue dizer sozinho.**
+
+Métrica só serve para quem está olhando, e às três da manhã ninguém está. Três
+avisos cobrem o que estraga o dia — disco cheio, 5xx em série, API fora — e
+**nenhum deles precisa de Prometheus**: subir Prometheus e Alertmanager para
+cinco pessoas é uma segunda pilha para manter, atualizar e auditar.
+
+**O terceiro alerta não pode morar dentro da API.** Processo caído não manda
+webhook, e servidor em silêncio é indistinguível de servidor tranquilo. Ele é o
+`scripts/vigia.sh`, que roda fora do contêiner por um timer do systemd, só
+precisa de `curl`, e avisa na **segunda** falha seguida — uma só é implantação
+ou rede piscando, e alerta que dispara em toda implantação vira ruído numa
+semana.
+
+**Fala uma vez, repete de 6 em 6 horas, e diz quando passa.** Repetir a cada
+volta é como se treina uma equipe a ignorar o canal de alertas; nunca dizer
+"voltou ao normal" obriga alguém a conferir na mão se ainda dói.
+
+**O uso do disco é contado como o `df` conta** — `(blocks - bfree) / (usados +
+bavail)`, respeitando os blocos reservados para o root. Alerta que discorda da
+ferramenta que a pessoa vai rodar no servidor é alerta em que ninguém acredita.
+
+**A janela de 5xx é minha, não do Prometheus.** O contador do `prom-client` só
+cresce: "40 erros desde que o processo subiu" não diz se foram agora ou na
+terça. Dez em cinco minutos, com cinco pessoas, nunca é ruído — e comparar com
+uma linha de base seria a sofisticação que só serve para o alerta chegar tarde.
+
+**O corpo do webhook vai por stdin.** A primeira versão passava o JSON como
+argumento de `curl`, e o "não" do aviso chegava quebrado do outro lado —
+argumento atravessa a conversão de codificação do sistema, além de aparecer
+inteiro na lista de processos. Quem pegou foi `e2e/fase-08-vigia.py`, que
+levanta um webhook de verdade e lê os bytes.
+
+**`VARIAVEL=` no `.env` é "não configurada".** O `.env.example` traz as
+opcionais em branco; sem tratar isso, copiar o exemplo e não preencher a URL do
+webhook faria a API **recusar-se a subir** — string vazia não passa por
+`.url()` —, e o erro apareceria na primeira implantação.
+
+**O log tinha teto nenhum.** `json-file` sem `max-size` cresce até o disco
+acabar, que é justamente o que o alerta de disco iria anunciar. Agora são 3
+arquivos de 10 MB por serviço, no compose de produção.
 
 ### Fase 9 — concluída
 
@@ -790,7 +833,7 @@ só num lugar.
 manipuladores pararem no tooltip, e o menu de silenciar simplesmente não abria.
 O `label` do `IconButton` já é o texto acessível.
 
-### Fase 10 — em andamento
+### Fase 10 — concluída
 
 **Fatia 1: conversas privadas.** A mensagem de conversa é a **mesma mensagem**
 de canal, na mesma tabela, com `conversation_id` no lugar de `channel_id` e um

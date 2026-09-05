@@ -167,8 +167,11 @@ de pedir para reinstalar qualquer coisa, olhe as três barras.
   na chamada se o proxy grava tudo.
 - **API**: `docker compose -f docker-compose.prod.yml logs -f api`. Sem IP, sem
   cabeçalho, sem user-agent — os serializadores em `app.ts` cuidam disso.
-- **Retenção**: o Docker rotaciona com `max-size`/`max-file` do daemon; ajuste
-  em `/etc/docker/daemon.json` para 7 dias de equivalente.
+- **Retenção**: o `docker-compose.prod.yml` fixa `max-size: 10m` e
+  `max-file: 3` em **todos** os serviços. O padrão do Docker é ilimitado, e um
+  log ilimitado é a maneira mais boba de encher o disco e derrubar banco,
+  backup e chamadas de uma vez. A rotação é por tamanho, não por idade: no
+  volume de cinco pessoas, 30 MB cobrem bem mais que a semana pedida.
 
 Se precisar depurar algo que **exige** IP, ligue o log de acesso do Caddy
 temporariamente, resolva, e desligue de novo. Deixar ligado "por enquanto" é
@@ -186,14 +189,92 @@ mensagens por minuto, latência por rota e erros por código. Nenhum rótulo
 identifica ninguém: a rota vira o padrão (`/api/channels/:id/messages`), nunca a
 URL com id.
 
-Alertas que valem a pena, nesta ordem:
+Se um dia entrar um Prometheus, o que vale a pena olhar além dos três alertas
+que já existem: `trindade_http_duracao_segundos` acima de 1s no p95 é o banco
+pedindo socorro.
 
-| Alerta | Regra |
-|---|---|
-| API fora | `/api/health` não responde 200 por 2 minutos |
-| Disco | acima de 85% |
-| Erro 5xx | `trindade_erros_total{status=~"5.."}` subindo mais de 10/min |
-| Banco | `trindade_http_duracao_segundos` acima de 1s no p95 |
+---
+
+## Alertas
+
+Três avisos, e nenhum deles precisa de Prometheus — subir Prometheus e
+Alertmanager para cinco pessoas é uma segunda pilha para manter, atualizar e
+auditar.
+
+| Alerta | Quem manda | Quando |
+|---|---|---|
+| Disco acima de 85% | a própria API (`services/alerta.ts`) | de 5 em 5 minutos |
+| 5xx em série | a própria API | 10 ou mais em 5 minutos |
+| API fora do ar | `scripts/vigia.sh`, **fora** do contêiner | 2 falhas seguidas em `/api/health` |
+
+O terceiro mora fora de propósito: **processo caído não manda webhook**, e um
+servidor em silêncio é indistinguível de um servidor tranquilo.
+
+Cada aviso é dito **uma vez**, repetido de 6 em 6 horas se o problema continuar,
+e seguido de um "voltou ao normal" quando passa. Alerta que se repete a cada
+volta é como se treina uma equipe a ignorar o canal; alerta que nunca diz que
+acabou obriga alguém a conferir na mão.
+
+**Configuração**: `ALERTA_WEBHOOK` no `.env` — Discord, Slack, Mattermost ou
+Rocket.Chat; o corpo traz `content` e `text`, e cada um lê o que entende. Vazio
+desliga tudo. O que sai são números e nomes de subsistema: nunca mensagem,
+usuário ou endereço, porque o destino é um serviço de fora.
+
+### Instalar o vigia no servidor
+
+```bash
+sudo install -m 755 scripts/vigia.sh /usr/local/bin/trindade-vigia
+sudo mkdir -p /var/lib/trindade
+```
+
+`/etc/systemd/system/trindade-vigia.service`:
+
+```ini
+[Unit]
+Description=Vigia da API do Trindade
+
+[Service]
+Type=oneshot
+# O systemd lê o .env direito; `. .env` no shell quebra com valor entre aspas.
+EnvironmentFile=/opt/trindade/.env
+Environment=SAUDE_URL=https://exemplo.com/api/health
+ExecStart=/usr/local/bin/trindade-vigia
+```
+
+`/etc/systemd/system/trindade-vigia.timer`:
+
+```ini
+[Unit]
+Description=Vigia da API do Trindade, de minuto em minuto
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl enable --now trindade-vigia.timer
+```
+
+O timer é de minuto em minuto, e o script só avisa na **segunda** falha
+seguida: uma falha isolada é implantação, reinício ou rede piscando, e alerta
+que dispara em toda implantação vira ruído em uma semana.
+
+### Conferir que o alerta funciona
+
+`python e2e/fase-08-vigia.py` sobe um servidor de saúde falso, derruba, levanta
+de novo, e conta o que chegou no webhook. Não precisa de nada de pé. Foi ele que
+pegou o corpo indo como argumento de linha de comando — o acento chegava
+quebrado do outro lado.
+
+Para provar contra o webhook de verdade, uma vez:
+
+```bash
+ALERTA_WEBHOOK='...' SAUDE_URL=http://127.0.0.1:1 VIGIA_FALHAS=1 scripts/vigia.sh
+```
 
 ---
 

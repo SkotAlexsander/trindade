@@ -217,6 +217,18 @@ Não adianta esconder IP na chamada se o nginx grava tudo em `access.log`.
 O rate limit precisa de alguma noção de origem — use o hash do IP com uma chave
 que rotaciona diariamente, não o IP em claro.
 
+### O alerta sai do prédio
+
+O webhook de alerta é a única coisa deste servidor que fala com um serviço de
+fora por vontade própria, e o que ele diz fica registrado lá — no Discord, no
+Slack, em quem for. Por isso o que sai é número e nome de subsistema: "disco em
+91%", "12 respostas 5xx nos últimos 5 minutos", "a API não responde". Nunca
+mensagem, nunca usuário, nunca endereço.
+
+Vale a mesma regra das métricas, e pelo mesmo motivo: um alerta que dissesse
+*quem* estava conectado quando o servidor caiu seria um histórico de presença
+hospedado por terceiros. Ver `packages/api/src/services/alerta.ts`.
+
 ---
 
 ## Upload de arquivo
@@ -408,7 +420,9 @@ que não foi verificado é pior que não ter checklist.
       — o Caddy vai com `output discard` (`infra/Caddyfile`) e a API redige
       `req.ip`, `req.ips`, `req.headers` e `remoteAddress` nos serializadores
       (`packages/api/src/app.ts`). O rate limit usa HMAC do IP com sal que
-      troca todo dia, e nunca o endereço.
+      troca todo dia, e nunca o endereço. O `docker-compose.prod.yml` limita o
+      log de todo serviço a 3 arquivos de 10 MB: sem teto, o padrão do Docker
+      guarda tudo para sempre.
 - [x] **Nenhuma imagem servida sem passar pelo `sharp`**
       — `packages/api/test/perfil.test.ts` e `e2e/fase-05-anexos.py`: o
       EXIF de GPS some, o formato é re-encodado e nenhum byte original chega ao
@@ -428,7 +442,7 @@ que não foi verificado é pior que não ter checklist.
 - [ ] **Disco criptografado**
       — LUKS, no provisionamento da máquina.
 
-### E mais três que o documento não previa
+### E mais quatro que o documento não previa
 
 - [x] **`/metrics` fechada por token**, comparado em tempo constante, e sem
       rótulo que identifique ninguém — `packages/api/test/operacao.test.ts`.
@@ -438,5 +452,13 @@ que não foi verificado é pior que não ter checklist.
 - [x] **Dependências sem vulnerabilidade conhecida** — `pnpm audit` limpo. As
       três que apareceram foram corrigidas subindo `react-router` para 7 e
       `node-pg-migrate` para 9, e não argumentando que não eram exploráveis.
-- [ ] Backup do Postgres automatizado, com restauração testada de verdade
-- [ ] `gitleaks` no histórico inteiro do repositório
+- [x] **Backup automatizado e restauração testada de verdade** — `scripts/backup.sh`
+      e `scripts/restaurar.sh`; a restauração foi executada, não descrita: 104 KB
+      com 8 pessoas, 4 canais e 267 mensagens voltaram em 1 segundo. O número
+      está em `docs/08-operacao.md`.
+- [x] **Alerta que não depende de ninguém estar olhando** — disco acima de 85% e
+      5xx em série saem da própria API (`packages/api/test/alerta.test.ts`); a
+      API fora do ar sai de `scripts/vigia.sh`, fora do contêiner, porque
+      processo caído não manda webhook (`e2e/fase-08-vigia.py`). O webhook vai
+      para um serviço de fora, e por isso o que sai são números e nomes de
+      subsistema — nunca mensagem, usuário ou endereço.

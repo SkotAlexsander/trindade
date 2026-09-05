@@ -1,0 +1,4 @@
+# Os scripts rodam no servidor, que é Linux. Um `\r` no fim do shebang vira
+# "bash\r: not found" — e o `core.autocrlf` do Windows mete CRLF em tudo que
+# considera texto. Aqui não.
+*.sh text eol=lf

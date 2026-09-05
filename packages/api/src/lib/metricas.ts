@@ -50,6 +50,36 @@ export const errosPorCodigo = new Counter({
 });
 
 /**
+ * Os 5xx dos últimos minutos.
+ *
+ * O contador do Prometheus só cresce: "40 erros desde que o processo subiu" não
+ * diz se foram agora ou na terça, e alerta precisa de agora. Guardamos os
+ * instantes — nada além do relógio, nenhum rótulo — e contamos a janela.
+ */
+export const JANELA_DE_ERROS_MS = 5 * 60_000;
+
+/** Um pico de erro não pode virar um vazamento de memória. */
+const TETO = 500;
+
+let quandoDeuErro: number[] = [];
+
+export function registrarErroDeServidor(agora = Date.now()): void {
+  quandoDeuErro.push(agora);
+  if (quandoDeuErro.length > TETO) quandoDeuErro = quandoDeuErro.slice(-TETO);
+}
+
+export function errosDeServidorRecentes(agora = Date.now()): number {
+  const corte = agora - JANELA_DE_ERROS_MS;
+  quandoDeuErro = quandoDeuErro.filter((quando) => quando >= corte);
+  return quandoDeuErro.length;
+}
+
+/** Só para os testes. */
+export function esquecerErros(): void {
+  quandoDeuErro = [];
+}
+
+/**
  * Mede toda requisição, sem tocar em nada que identifique.
  *
  * `routeOptions.url` é o padrão da rota; quando não há rota (404), o rótulo
@@ -65,6 +95,9 @@ export function medirRequisicoes(app: FastifyInstance): void {
       reply.elapsedTime / 1000,
     );
     if (reply.statusCode >= 400) errosPorCodigo.inc({ status });
+    // 4xx é o cliente pedindo errado, e acontece o tempo todo; 5xx é a gente
+    // errando, e é o que o alerta vigia.
+    if (reply.statusCode >= 500) registrarErroDeServidor();
     feito();
   });
 }

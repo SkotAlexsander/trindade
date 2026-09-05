@@ -6,6 +6,18 @@ import { resolve } from 'node:path';
 dotenv.config({ path: resolve(process.cwd(), '../../.env'), quiet: true });
 dotenv.config({ quiet: true });
 
+/**
+ * `VARIAVEL=` no `.env` é "não configurada", não uma string vazia.
+ *
+ * O `.env.example` traz as opcionais com o valor em branco para dizer que
+ * existem. Sem isto, copiar o exemplo e não preencher uma URL faz a API
+ * **recusar-se a subir** — o valor vazio não passa por `.url()`, e o erro
+ * aparece na hora mais cara: a primeira implantação.
+ */
+function semValor<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess((valor) => (valor === '' ? undefined : valor), schema);
+}
+
 // Nesta fase só o que o health check e o bootstrap precisam é obrigatório. As
 // chaves de mídia e storage existem no .env.example desde já — ver
 // docs/04-seguranca.md — mas só viram obrigatórias na fase em que são usadas.
@@ -61,6 +73,25 @@ const envSchema = z.object({
    * ocupado — um mapa de uso para quem estiver olhando de fora.
    */
   METRICS_TOKEN: z.string().optional(),
+
+  /**
+   * Para onde vão os três alertas: disco cheio, 5xx em série e API fora.
+   *
+   * Vazia desliga a vigilância inteira — nada é medido para não ser contado a
+   * ninguém. O destino é um serviço de fora, então o que sai por aqui é só
+   * número e nome de subsistema: nunca mensagem, usuário ou endereço.
+   * Ver `services/alerta.ts`.
+   */
+  ALERTA_WEBHOOK: semValor(z.string().url().optional()),
+
+  /**
+   * Qual disco vigiar.
+   *
+   * O padrão é onde a aplicação está. Num servidor único isso é o mesmo
+   * dispositivo dos volumes do Docker — banco, backup e anexos —, que é o que
+   * enche e derruba tudo junto.
+   */
+  DISCO_VIGIADO: semValor(z.string().default(process.cwd())),
 });
 
 const parsed = envSchema.safeParse(process.env);
