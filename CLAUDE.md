@@ -129,8 +129,9 @@ Atualizar esta seção ao fim de cada fase.
 - [x] Fase 5 — mensagens em tempo real
 - [x] Fase 6 — perfil e cargos
 - [x] Fase 7 — voz e tela
-- [x] Fase 8 — endurecimento (os quatro itens que dependem do servidor real
-      ficam desmarcados em `docs/04-seguranca.md`, de propósito)
+- [x] Fase 8 — endurecimento (os três itens que dependem do servidor real
+      ficam desmarcados em `docs/04-seguranca.md`, de propósito; o SSL Labs é
+      o quarto, e só existe com o domínio de verdade no ar)
 - [x] Fase 9 — ferramentas de projeto e notificações
 - [x] Fase 10 — conversas privadas e quadro
 
