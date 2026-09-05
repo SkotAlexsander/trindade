@@ -41,12 +41,27 @@
 
 /* --- mensagem ------------------------------------------------------------- */
 
+/*
+ * A **pintura** da linha para onde o texto para; a linha não.
+ *
+ * O corpo já parava em 72 caracteres desde a fase 5, mas o fundo ia até a
+ * borda da janela: numa tela de 1600px, uma menção de trinta caracteres
+ * pintava uma faixa de três mil pixels, e o realce parecia defeito.
+ *
+ * A largura da faixa sai de `background-size`, e não de um `max-width` na
+ * linha. Foi a primeira tentativa, e ela quebrou outra coisa: a barra de ações
+ * é `position: absolute` colada na direita da linha, e encolher a linha jogou
+ * a barra para cima do texto da mensagem de cima. A linha continua larga —
+ * quem tem largura limitada é a tinta.
+ */
 .mensagem {
   display: grid;
   grid-template-columns: var(--gutter-w) minmax(0, 1fr);
   padding: 2px var(--s-5) 2px 0;
   position: relative;
-  max-width: calc(var(--gutter-w) + var(--measure) + var(--s-5));
+  --faixa: calc(var(--gutter-w) + var(--measure) + var(--s-5));
+  background-repeat: no-repeat;
+  background-size: min(100%, var(--faixa)) 100%;
 }
 
 /* 2px dentro do bloco, 12px entre blocos. Esse ritmo é o que faz a leitura
@@ -56,14 +71,12 @@
 }
 
 .mensagem:hover {
-  background: var(--bg-hover);
-  border-radius: 0 var(--r-control) var(--r-control) 0;
+  background-image: linear-gradient(var(--bg-hover), var(--bg-hover));
 }
 
 .mensagem[data-mencionado='true'] {
-  background: var(--cyan-wash);
-  box-shadow: inset 2px 0 0 var(--accent), var(--luz-topo);
-  border-radius: 0 var(--r-control) var(--r-control) 0;
+  background-image: linear-gradient(var(--cyan-wash), var(--cyan-wash));
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .mensagem[data-local='enviando'] .corpo,
@@ -116,7 +129,7 @@
   display: flex;
   align-items: center;
   margin-left: calc(var(--gutter-w) - 20px);
-  padding-left: 20px;
+  padding-left: var(--s-5);
   min-width: 0;
   position: relative;
 }
@@ -269,16 +282,16 @@ button.citacaoTexto:hover > span:last-child {
 .reacoes {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--s-1);
   margin-top: 4px;
 }
 
 .reacao {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s-1);
   height: 22px;
-  padding: 0 7px;
+  padding: 0 var(--s-2);
   border-radius: var(--r-full);
   border: 1px solid var(--border-soft);
   background: transparent;
@@ -720,7 +733,7 @@ button.mencao:hover {
 }
 
 .codigoEmLinha {
-  padding: 1px 5px;
+  padding: 1px var(--s-1);
   border-radius: 3px;
   /* Este acompanha o tema: é uma palavra no meio da frase, não uma
      superfície. Só o bloco vira terminal. */
@@ -820,7 +833,7 @@ button.mencao:hover {
 
 .blocoCodigo {
   margin: 0;
-  padding: 12px;
+  padding: var(--s-3);
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: var(--text-label);
@@ -1014,7 +1027,7 @@ button.mencao:hover {
   min-width: 0;
   min-height: 36px;
   max-height: 140px;
-  padding: 8px 0;
+  padding: var(--s-2) 0;
   border: none;
   background: none;
   resize: none;
@@ -1089,7 +1102,7 @@ button.mencao:hover {
   border-radius: var(--r-control);
   color: var(--text-secondary);
   font-size: var(--text-meta);
-  padding: 2px 4px;
+  padding: 2px var(--s-1);
 }
 
 .buscaTotal {

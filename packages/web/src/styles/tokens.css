@@ -125,6 +125,10 @@
   /* O fundo do visualizador em tela cheia: quase opaco, para a imagem ser a
      única coisa na tela. */
   --media-veil: rgba(0, 0, 0, 0.86);
+  /* A tarja atrás de um vídeo que não preenche a caixa. Preto de verdade nos
+     dois temas: barra de letterbox cinza-claro no tema claro é a coisa mais
+     parecida com defeito que existe num player. */
+  --media-fundo: #000000;
   --media-control: rgba(255, 255, 255, 0.1);
   --media-control-hover: rgba(255, 255, 255, 0.2);
 
@@ -258,6 +262,10 @@
      esta fecha o degrau que a luz do topo abriu. */
   --sombra-linha: rgba(0, 0, 0, 0.35);
   --e-coluna: 6px 0 24px -12px rgba(0, 0, 0, 0.8);
+  /* A mesma coluna, projetando para o outro lado: a de canais empurra a sombra
+     para a direita, a de contexto para a esquerda, e as duas caem sobre a
+     conversa, que é o plano mais fundo. */
+  --e-coluna-invertida: -6px 0 24px -12px rgba(0, 0, 0, 0.8);
   --e-rodape: 0 -6px 20px -8px rgba(0, 0, 0, 0.7);
   --e-arrasto: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
 
@@ -384,6 +392,7 @@
 
   --sombra-linha: rgba(10, 24, 38, 0.08);
   --e-coluna: 6px 0 24px -12px rgba(10, 24, 38, 0.16);
+  --e-coluna-invertida: -6px 0 24px -12px rgba(10, 24, 38, 0.16);
   --e-rodape: 0 -6px 20px -8px rgba(10, 24, 38, 0.12);
   --e-arrasto: 0 40px 80px -20px rgba(10, 24, 38, 0.24);
 
@@ -391,8 +400,13 @@
   --shadow-modal: var(--e-modal);
 
   /* No claro o rebaixado é papel um tom mais frio que a superfície, não um
-     buraco preto: `--bg-app` já é o papel de baixo. */
-  --bg-inset: #dfe7ee;
+     buraco preto: `--bg-app` já é o papel de baixo.
+
+     O valor foi **medido**, não escolhido: em `#dfe7ee` o texto terciário dava
+     4,44:1 e reprovava em AA por seis centésimos. Aqui dá 4,57:1, e continua
+     mais escuro que o painel — que é o que faz o campo parecer escavado.
+     `packages/web/test/contraste.test.ts` mede a paleta inteira. */
+  --bg-inset: #e3eaf0;
   --bg-float: #ffffff;
 
   --veil: rgba(10, 24, 38, 0.4);

@@ -187,6 +187,24 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape')
     pg.wait_for_timeout(400)
 
+    # --- 9. arquiva o que criou -------------------------------------------
+    # Não apaga: o produto não tem exclusão de canal de propósito — arquiva-se,
+    # e o histórico fica. Arquivar é também a última ação do menu, então isto
+    # verifica a nona.
+    linha = pg.locator(f'[class*=linha]:has-text("Teste {marca}")').first
+    linha.hover()
+    pg.wait_for_timeout(300)
+    linha.locator(f'button[aria-label="Ações de Teste {marca}"]').click()
+    pg.wait_for_timeout(600)
+    menu = pg.locator('[role="menu"]')
+    if menu.count() and 'Arquivar canal' in menu.inner_text():
+        menu.get_by_text('Arquivar canal').click()
+        pg.wait_for_timeout(1800)
+        check('arquivar tira o canal da coluna',
+              pg.locator(f'[class*=item]:has-text("Teste {marca}")').count() == 0)
+    else:
+        check('arquivar tira o canal da coluna', False, 'sem item no menu')
+
     check('nenhum erro de página', not erros, '; '.join(erros[:2]))
 
     ctx.close()

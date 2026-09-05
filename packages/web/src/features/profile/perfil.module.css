@@ -29,7 +29,7 @@
 }
 
 .corpo {
-  padding: 10px 16px 16px;
+  padding: var(--s-3) var(--s-4) var(--s-4);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -54,16 +54,16 @@
 .cargos {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--s-1);
   margin-top: 10px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--s-1);
   height: 20px;
-  padding: 0 8px;
+  padding: 0 var(--s-2);
   border-radius: var(--r-full);
   font-family: var(--font-ui);
   font-size: var(--text-meta);
@@ -106,7 +106,7 @@
 .linhaStatus {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--s-2);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: var(--weight-normal);
@@ -154,7 +154,7 @@
 }
 
 .abaBotao {
-  padding: 8px 12px;
+  padding: var(--s-2) var(--s-3);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: var(--weight-medium);
@@ -200,7 +200,7 @@
 .fotoTexto {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--s-2);
   min-width: 0;
 }
 
@@ -214,7 +214,7 @@
 
 .fotoBotoes {
   display: flex;
-  gap: 6px;
+  gap: var(--s-2);
 }
 
 .fotoDica {
@@ -281,7 +281,7 @@
 .zoom {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--s-3);
   width: 100%;
   max-width: 264px;
 }
@@ -300,7 +300,7 @@
 
 .acoesFoto {
   display: flex;
-  gap: 8px;
+  gap: var(--s-2);
   justify-content: flex-end;
   align-items: center;
 }
@@ -361,7 +361,7 @@
 .cores {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s-2);
   flex-wrap: wrap;
   margin: 4px 0 2px;
 }
@@ -380,7 +380,7 @@
 .hex {
   width: 92px;
   height: 26px;
-  padding: 0 8px;
+  padding: 0 var(--s-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-field);
   background: var(--bg-inset);
@@ -444,8 +444,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
   background: var(--bg-inset);
@@ -462,7 +462,7 @@
   color: var(--text-primary);
   background: var(--cyan-wash);
   border-left: 2px solid var(--accent);
-  padding: 10px 12px;
+  padding: var(--s-3) var(--s-3);
   border-radius: 0 var(--r-control) var(--r-control) 0;
   margin: 0;
 }
@@ -470,9 +470,9 @@
 .codigos {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px 12px;
+  gap: var(--s-1) var(--s-3);
   list-style: none;
-  padding: 10px 12px;
+  padding: var(--s-3) var(--s-3);
   margin: 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
@@ -485,7 +485,7 @@
 .confirmacao {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: var(--weight-normal);
@@ -508,7 +508,7 @@
 .sessao {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--s-3);
   min-height: 32px;
   font-family: var(--font-ui);
   font-size: var(--text-label);
@@ -540,13 +540,13 @@
   position: sticky;
   bottom: 0;
   margin-top: var(--s-4);
-  padding: 12px;
+  padding: var(--s-3);
   border: 1px solid var(--danger);
   border-radius: var(--r-control);
   background: var(--bg-raised);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-2);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: var(--weight-normal);

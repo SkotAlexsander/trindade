@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   AA_TEXT,
@@ -96,5 +98,71 @@ describe('o chip de cargo', () => {
     const { fundo } = chip('#0b1d5c', ESCURO);
     expect(razao(cru, ESCURO)).toBeLessThan(1.1);
     expect(razao(fundo, ESCURO)).toBeGreaterThan(1.1);
+  });
+});
+
+/**
+ * A paleta inteira, medida — não escolhida no olho.
+ *
+ * `design/00-direcao-visual.md` promete "contraste AA em todo texto" e diz que
+ * os valores foram medidos. Isso era verdade quando foram escolhidos, e nada
+ * garantia que continuasse sendo: a fatia de profundidade acrescentou duas
+ * superfícies novas (`--bg-inset` e `--bg-float`), e superfície nova é
+ * exatamente onde um texto secundário deixa de passar sem ninguém notar.
+ *
+ * Os valores vêm do arquivo de tokens, lidos na hora. Trocar um hex lá e
+ * quebrar aqui é o comportamento desejado.
+ */
+describe('a paleta passa em AA', () => {
+  const css = readFileSync(
+    fileURLToPath(new URL('../src/styles/tokens.css', import.meta.url)),
+    'utf8',
+  );
+
+  /** Resolve `--x: #hex` e `--x: var(--y)`, um nível de indireção por vez. */
+  function tokens(bloco: string): Record<string, string> {
+    const achados: Record<string, string> = {};
+    for (const [, nome, valor] of bloco.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)) {
+      achados[nome!] = valor!.trim();
+    }
+    for (let volta = 0; volta < 4; volta += 1) {
+      for (const [nome, valor] of Object.entries(achados)) {
+        const m = /^var\((--[a-z0-9-]+)\)$/.exec(valor);
+        if (m && achados[m[1]!]) achados[nome] = achados[m[1]!]!;
+      }
+    }
+    return achados;
+  }
+
+  const raiz = tokens(css.slice(css.indexOf(':root {'), css.indexOf("[data-theme='light']")));
+  const claro = { ...raiz, ...tokens(css.slice(css.indexOf("[data-theme='light']"))) };
+
+  const TEXTOS = ['--text-primary', '--text-secondary', '--text-tertiary'];
+  const SUPERFICIES = ['--bg-app', '--bg-panel', '--bg-raised', '--bg-live', '--bg-inset'];
+
+  for (const [tema, valores] of [
+    ['escuro', raiz],
+    ['claro', claro],
+  ] as const) {
+    it(`todo texto sobre toda superfície, no tema ${tema}`, () => {
+      const falhas: string[] = [];
+      for (const texto of TEXTOS) {
+        for (const superficie of SUPERFICIES) {
+          const r = razao(valores[texto]!, valores[superficie]!);
+          if (r < AA_TEXT) falhas.push(`${texto} sobre ${superficie}: ${r.toFixed(2)}:1`);
+        }
+      }
+      expect(falhas).toEqual([]);
+    });
+  }
+
+  it('o texto sobre o acento passa — é o botão primário', () => {
+    for (const [tema, valores] of [
+      ['escuro', raiz],
+      ['claro', claro],
+    ] as const) {
+      const r = razao(valores['--text-on-accent']!, valores['--accent']!);
+      expect(r, `tema ${tema}`).toBeGreaterThanOrEqual(AA_TEXT);
+    }
   });
 });

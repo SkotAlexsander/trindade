@@ -16,7 +16,12 @@
   font-weight: var(--weight-medium);
   line-height: 1;
   user-select: none;
+  /* Um disco, não um adesivo: a luz de borda dá volume a uma forma redonda
+     com quase nada — é o mesmo 1px de todo o resto. Só na versão sem anel de
+     status; com anel, o anel já é a borda e as duas coisas competiriam. */
+  box-shadow: var(--luz-topo);
 }
+
 
 .xs {
   width: var(--avatar-xs);
@@ -51,7 +56,10 @@
 /* Status como anel em volta do avatar, não como bolinha colada num canto:
    o anel sobrevive a qualquer fundo e não some no avatar pequeno. */
 .root[data-status] .face {
-  box-shadow: 0 0 0 var(--avatar-ring) var(--bg-app), 0 0 0 calc(var(--avatar-ring) * 2) currentColor;
+  box-shadow:
+    var(--luz-topo),
+    0 0 0 var(--avatar-ring) var(--bg-app),
+    0 0 0 calc(var(--avatar-ring) * 2) currentColor;
 }
 
 .root[data-status='online'] {

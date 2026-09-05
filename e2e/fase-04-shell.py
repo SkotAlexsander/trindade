@@ -103,6 +103,41 @@ with sync_playwright() as p:
           }"""), f'{len(online)} online')
 
     # --- 3. não lido é distinguível sem cor ------------------------------
+    #
+    # O roteiro **fabrica** o não lido em vez de contar com o do semeador: a
+    # primeira execução consumia o estado semeado — abrir o canal marca como
+    # lido — e todas as seguintes falhavam por falta de dado, não por defeito.
+    # Um teste que só passa em base recém-semeada é um teste que mente na
+    # segunda vez.
+    def mandar_de_outra_janela(usuario, slug, texto):
+        """Mensagem **não** se manda por REST: ela sai pelo WebSocket.
+
+        Por isso outra janela, e não uma chamada de API — que é também o
+        caminho real. A janela fecha em seguida; o que fica é o não lido.
+        """
+        outro = b.new_context(color_scheme='dark')
+        try:
+            outra = outro.new_page()
+            entrar(outra, usuario, SENHA)
+            outra.goto(f'{BASE}/c/{slug}', wait_until='networkidle')
+            outra.wait_for_selector('#compositor', timeout=15000)
+            outra.fill('#compositor', texto)
+            outra.press('#compositor', 'Enter')
+            outra.wait_for_timeout(1200)
+            return True
+        except Exception as erro:  # noqa: BLE001
+            print(f'  (não consegui fabricar o não lido: {erro})')
+            return False
+        finally:
+            outro.close()
+
+    # Nunca o canal aberto: ler o que está na tela marca como lido na hora, e o
+    # não lido morreria antes de ser verificado.
+    aberto = pg.url.rsplit('/c/', 1)[-1]
+    outro_canal = 'produto' if aberto != 'produto' else 'bugs'
+    fabricou = mandar_de_outra_janela('carla', outro_canal, f'@{USUARIO} olha isto')
+    pg.wait_for_timeout(2000)
+
     itens = pg.evaluate("""() => [...document.querySelectorAll('nav[aria-label="Canais"] a')]
         .map(a => ({ nome: a.textContent.trim(), unread: a.dataset.unread,
                      peso: getComputedStyle(a).fontWeight,

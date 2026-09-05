@@ -518,3 +518,40 @@ atenção.
 
 Este é o único ponto do projeto onde `·` aparece como separador de meta — porque
 aqui são dois fatos da mesma coisa e não uma cadeia de rótulos.
+
+---
+
+## A linha tem largura, não só o texto
+
+> 5 de setembro de 2026.
+
+O corpo da mensagem para em 72 caracteres desde a fase 5. O **fundo da linha**
+não parava: ia até a borda da janela. Numa tela de 1600px, uma menção de trinta
+caracteres pintava uma faixa de três mil pixels, e o realce parecia defeito.
+
+Agora a linha inteira tem `max-width: gutter + medida + folga`. O hover e o
+realce de menção terminam onde o texto termina, e ganharam canto arredondado do
+lado direito — uma faixa que corta reto no meio do vazio lê como recorte, não
+como destaque.
+
+## `@todos` é ciano, não magenta
+
+Era magenta desde a fase 10, e isso quebrava a regra da direção visual: magenta
+é presença ao vivo e **só isso**. No instante em que ele significa duas coisas,
+deixa de significar qualquer uma — e numa paleta neon essa regra é o que impede
+a tela de virar sopa luminosa.
+
+Uma menção é comando, e comando é ciano. O que diferencia `@todos` de uma menção
+pessoal não é a cor, é o **peso**: fundo cheio em vez de lavado, que é o token
+mais forte que uma linha de texto tem. Ele acorda cinco pessoas; é justo que
+seja o mais alto da frase.
+
+### A mesma menção contava de dois jeitos
+
+`useGateway` sabia que `@todos` cita todo mundo — é o que faz o contador subir e
+o aviso aparecer. A linha da mensagem não sabia: ela procurava só o seu nome de
+usuário. O resultado era um `@todos` que te chamava, marcava o canal com o
+número, e **não pintava a mensagem** quando você finalmente chegava nela.
+
+Virou uma função só, `citaVoce`, com a regra do servidor: cita quem for
+nomeado, e cita todo mundo quando o nome é `todos` — menos quem escreveu.

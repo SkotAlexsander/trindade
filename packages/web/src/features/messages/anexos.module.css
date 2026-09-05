@@ -7,7 +7,7 @@
 
 .grade {
   display: grid;
-  gap: 4px;
+  gap: var(--s-1);
   margin-top: 6px;
   width: fit-content;
   max-width: 100%;
@@ -78,11 +78,11 @@
 .arquivo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--s-3);
   height: 56px;
   max-width: 400px;
   margin-top: 6px;
-  padding: 0 12px;
+  padding: 0 var(--s-3);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
   background: var(--bg-raised);
@@ -158,8 +158,8 @@
   height: 48px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 12px;
+  gap: var(--s-3);
+  padding: 0 var(--s-3);
   color: var(--media-ink);
 }
 
@@ -220,11 +220,11 @@
 
 .previa {
   display: flex;
-  gap: 12px;
+  gap: var(--s-3);
   width: 380px;
   max-width: 100%;
   margin-top: 6px;
-  padding: 10px 12px;
+  padding: var(--s-3) var(--s-3);
   border: 1px solid var(--border-soft);
   /* A guia à esquerda é o que diz "isto pertence à mensagem acima" sem
      precisar de rótulo. */
@@ -289,8 +289,8 @@
 .faixa {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--border-soft);
   border-bottom: none;
   border-radius: var(--r-control) var(--r-control) 0 0;

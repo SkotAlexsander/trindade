@@ -95,19 +95,34 @@
 
 .cartao {
   display: grid;
-  gap: var(--s-2);
+  gap: var(--s-1);
   padding: var(--s-2) var(--s-3);
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
+  box-shadow: var(--e-raised);
   cursor: grab;
   touch-action: none;
+  translate: 0 0;
+  transition:
+    box-shadow var(--dur-quick) var(--ease-out),
+    translate var(--dur-instant) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out);
+}
+
+/* Cartão que se arrasta é o objeto mais literal desta interface: ele tem de
+   parecer que dá para pegar antes de a pessoa tentar. */
+.cartao:hover {
+  border-color: var(--border);
+  translate: 0 -1px;
+  box-shadow: var(--e-pop);
 }
 
 /* Sem rearranjo animado dos vizinhos: o cartão original desbota e pronto. */
 .cartao[data-arrastando='true'] {
   opacity: 0.4;
   cursor: grabbing;
+  box-shadow: var(--e-float), var(--e-arrasto);
 }
 
 .linhaTitulo {

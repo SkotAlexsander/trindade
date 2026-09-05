@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Menu, MenuItem, MenuSeparator, useToast } from '../../components';
 import { Sino } from '../../components/icones';
 import { api } from '../../lib/http';
@@ -12,7 +14,6 @@ export interface ChannelMenuProps {
   canal: ChannelWithState;
   trigger: ReactElement;
   podeGerenciar: boolean;
-  onArquivar?: (canal: ChannelWithState) => void;
 }
 
 /**
@@ -21,15 +22,36 @@ export interface ChannelMenuProps {
  * **Arquivar, não excluir**: um canal com histórico não deve sumir por um
  * clique. Ver design/03-menu-e-navegacao.md.
  *
- * Três destes itens não faziam nada até 5 de setembro de 2026 — eram
- * `onSelect={() => undefined}`. Marcar como lido, silenciar e editar existiam
- * no servidor desde as fases 4 e 9; o menu só nunca os chamou.
+ * Quatro destes itens não faziam nada até 5 de setembro de 2026: três eram
+ * `onSelect={() => undefined}` e o quarto chamava uma prop opcional que
+ * nenhum chamador passava. Marcar como lido, silenciar, editar e arquivar
+ * existiam no servidor desde as fases 4 e 9; o menu só nunca os chamou — e
+ * não os chamava porque **o menu inteiro nunca era montado**.
  */
-export function ChannelMenu({ canal, trigger, podeGerenciar, onArquivar }: ChannelMenuProps) {
+export function ChannelMenu({ canal, trigger, podeGerenciar }: ChannelMenuProps) {
   const { show } = useToast();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const zerar = useLeitura((s) => s.zerar);
   const editar = useDialogoDeCanal((s) => s.editar);
   const { estaMudo, silenciar, reativar } = useSilenciar(alvoDoCanal(canal.id));
+
+  /* Arquivar era um `onArquivar?.(canal)` com prop opcional que ninguém
+     passava — mais um item que não fazia nada. A ação mora aqui porque toda
+     tela que mostrar este menu vai querer exatamente esta, e uma prop que todo
+     mundo implementaria igual é só um jeito de alguém esquecer. */
+  async function arquivar(): Promise<void> {
+    try {
+      await api(`/channels/${canal.id}/archive`, { method: 'POST' });
+      await qc.invalidateQueries({ queryKey: ['channels'] });
+      // Sair do canal arquivado: continuar dentro de um canal que sumiu da
+      // coluna é um beco sem saída visível.
+      if (location.pathname === `/c/${canal.slug}`) navigate('/');
+      show(`#${canal.slug} foi arquivado. O histórico fica.`);
+    } catch {
+      show('Não consegui arquivar o canal.', 'danger');
+    }
+  }
 
   function marcarComoLido(): void {
     /* Sem corpo: o servidor resolve "até a última que existe agora". Daqui não
@@ -67,7 +89,7 @@ export function ChannelMenu({ canal, trigger, podeGerenciar, onArquivar }: Chann
       {podeGerenciar ? <MenuSeparator /> : <></>}
       {podeGerenciar ? <MenuItem onSelect={() => editar(canal)}>Editar canal</MenuItem> : <></>}
       {podeGerenciar ? (
-        <MenuItem onSelect={() => onArquivar?.(canal)}>Arquivar canal</MenuItem>
+        <MenuItem onSelect={() => void arquivar()}>Arquivar canal</MenuItem>
       ) : (
         <></>
       )}

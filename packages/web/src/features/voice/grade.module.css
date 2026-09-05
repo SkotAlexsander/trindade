@@ -134,13 +134,17 @@
   /* Saindo em 400ms. A borda de quem fala entra em 120ms — a assimetria está
      na regra abaixo, e é ela que evita o estroboscópio com quatro pessoas
      conversando ao mesmo tempo. */
-  box-shadow: inset 0 0 0 2px transparent;
-  transition: box-shadow 400ms ease;
+  box-shadow: inset 0 0 0 2px transparent, var(--e-raised);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
 }
 
+/* Quem fala ganha a borda **e** sobe um degrau: com quatro pessoas na tela, a
+   diferença de altura ajuda o olho a achar quem está falando antes de ler a
+   cor. Entra em `--dur-quick` e sai em `--dur-slow` — a assimetria é o que
+   evita o estroboscópio numa conversa cruzada. */
 .cartao[data-falando='true'] {
-  box-shadow: inset 0 0 0 2px var(--live);
-  transition-duration: 120ms;
+  box-shadow: inset 0 0 0 2px var(--live), var(--glow-live), var(--e-pop);
+  transition-duration: var(--dur-quick);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -153,7 +157,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: var(--void, #000);
+  background: var(--void);
 }
 
 /* Só a sua prévia. O que sai para os outros nunca é espelhado. */
@@ -331,7 +335,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: var(--void, #000);
+  background: var(--media-fundo);
   border-radius: var(--r-media);
   min-height: 0;
 }
@@ -458,7 +462,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: var(--void, #000);
+  background: var(--media-fundo);
 }
 
 .cartao[data-tela='true'] .nome {
@@ -513,7 +517,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: var(--r-media);
-  background: var(--void, #000);
+  background: var(--media-fundo);
   touch-action: none;
 }
 

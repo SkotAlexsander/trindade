@@ -415,6 +415,9 @@
   grid-template-rows: var(--header-h) minmax(0, 1fr);
   background: var(--bg-panel);
   border-left: 1px solid var(--border-soft);
+  /* Espelha a coluna de canais: a sombra sai para a conversa, que é o plano
+     mais fundo. */
+  box-shadow: var(--e-coluna-invertida);
   transform: translateX(100%);
   transition: transform var(--dur-normal) var(--ease-out);
 }
@@ -429,6 +432,7 @@
   gap: var(--s-2);
   padding: 0 var(--s-3);
   border-bottom: 1px solid var(--border-soft);
+  box-shadow: var(--luz-topo), 0 1px 0 var(--sombra-linha);
 }
 
 .painelHead > :last-child {

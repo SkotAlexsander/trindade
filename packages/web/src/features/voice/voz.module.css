@@ -132,7 +132,7 @@
 .avatares {
   display: flex;
   align-items: center;
-  padding-left: 6px;
+  padding-left: var(--s-2);
 }
 
 /* Sobrepostos em -6px: a fileira diz quantos são de relance, sem virar lista. */
@@ -229,7 +229,7 @@
 .noCanal {
   display: flex;
   align-items: center;
-  padding: 2px 0 4px 34px;
+  padding: 2px 0 var(--s-1) 34px;
 }
 
 .noCanal > span {

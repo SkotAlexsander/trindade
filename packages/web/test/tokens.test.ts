@@ -96,11 +96,11 @@ describe('os tokens de CSS', () => {
       if (caminho.endsWith('tokens.css')) continue;
       const css = semComentarios(readFileSync(caminho, 'utf8'));
       css.split('\n').forEach((linha, i) => {
-        if (!cor.test(linha)) return;
-        // Uma cor **dentro** de uma sombra composta continua sendo literal,
-        // mas a sombra composta em si mora no token. Aqui só passa quem já
-        // usa token na mesma linha.
-        if (linha.includes('var(--')) return;
+        // Tira os `var()` antes de procurar: uma cor **dentro** de uma sombra
+        // composta continua sendo literal, e deixar a linha inteira passar por
+        // causa de um token no começo dela é o buraco por onde eles voltam.
+        const resto = linha.replace(/var\(--[a-z0-9-]+\)/g, '');
+        if (!cor.test(resto)) return;
         fugitivos.push(`${caminho.split(/[\\/]/).slice(-2).join('/')}:${i + 1}  ${linha.trim()}`);
       });
     }

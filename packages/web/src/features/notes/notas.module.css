@@ -97,7 +97,7 @@
   font-size: 0.9em;
   background: var(--bg-inset);
   border: 1px solid var(--border-soft);
-  padding: 1px 4px;
+  padding: 1px var(--s-1);
   border-radius: var(--r-field);
 }
 
@@ -117,7 +117,7 @@
   position: absolute;
   top: -1.4em;
   left: -1px;
-  padding: 1px 4px;
+  padding: 1px var(--s-1);
   border-radius: 3px 3px 3px 0;
   font-family: var(--font-ui);
   font-size: 11px;

@@ -27,7 +27,7 @@
 .lista {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--s-2);
   position: sticky;
   top: 0;
 }
@@ -53,10 +53,10 @@
 .item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
   width: 100%;
   min-height: 32px;
-  padding: 0 8px;
+  padding: 0 var(--s-2);
   border-radius: var(--r-control);
   font-family: var(--font-ui);
   font-size: var(--text-label);
@@ -110,7 +110,7 @@
 
 .criar {
   justify-content: flex-start;
-  gap: 6px;
+  gap: var(--s-2);
 }
 
 .avisoDaLista {
@@ -171,7 +171,7 @@
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--s-1);
 }
 
 .rotulo {
@@ -185,7 +185,7 @@
 .cores {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s-2);
   flex-wrap: wrap;
 }
 
@@ -203,7 +203,7 @@
 .hex {
   width: 92px;
   height: 26px;
-  padding: 0 8px;
+  padding: 0 var(--s-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-field);
   background: var(--bg-inset);
@@ -216,7 +216,7 @@
 .previaDaCor {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
   margin: 4px 0 0;
 }
 
@@ -224,7 +224,7 @@
   display: inline-flex;
   align-items: center;
   height: 20px;
-  padding: 0 10px;
+  padding: 0 var(--s-3);
   border-radius: var(--r-full);
   font-family: var(--font-ui);
   font-size: var(--text-meta);
@@ -259,7 +259,7 @@
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0 0 4px;
+  padding: 0 0 var(--s-1);
 }
 
 /* Emoldurado quando ligado: o `ADMINISTRATOR` dispensa a lista inteira, e o
@@ -281,14 +281,14 @@
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--s-2);
 }
 
 .pessoa {
   height: 24px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 var(--s-3);
   border-radius: var(--r-full);
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);

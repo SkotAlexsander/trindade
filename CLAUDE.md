@@ -770,6 +770,23 @@ regra do servidor.
 5, mas o fundo da linha ia até a borda da janela: numa tela de 1600px, uma
 menção de trinta caracteres pintava uma faixa de três mil pixels.
 
+**O espaço voltou para a escala de 4px.** 71 declarações de `padding` e `gap`
+usavam 5, 6, 7, 10 ou 20px — valores intermediários que `design/01-tokens.md`
+proíbe desde a fase 1. Empate sobe: numa caixa apertada, faltar folga incomoda
+mais que sobrar.
+
+**A paleta virou teste.** `contraste.test.ts` mede todo texto contra toda
+superfície, nos dois temas, lendo os valores do arquivo de tokens. Ele pegou o
+primeiro erro no minuto em que nasceu: o `--bg-inset` que eu tinha escolhido
+para o tema claro dava 4,44:1 com o texto terciário e reprovava em AA por seis
+centésimos. O documento sempre disse que os valores foram **medidos**; agora
+eles continuam medidos sozinhos.
+
+**Onze controles, não dez.** Ligar o menu do canal revelou o décimo primeiro:
+"Arquivar canal" chamava uma prop opcional que nenhum chamador passava. A ação
+mora dentro do menu agora — uma prop que todo mundo implementaria igual é só um
+jeito de alguém esquecer.
+
 ### Fase 9 — concluída
 
 **Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte
