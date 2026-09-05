@@ -17,7 +17,7 @@ import { PreviaDeLink } from './PreviaDeLink';
 import { useQuadro } from '../tasks/store';
 import { Enquete } from '../polls/Enquete';
 import { haQuantoTempo, hora } from './linhas';
-import { analisarMarkdown, mencionados, primeiroLink } from './markdown';
+import { analisarMarkdown, citaVoce, primeiroLink } from './markdown';
 import type { MensagemLocal } from './queries';
 import styles from './messages.module.css';
 
@@ -142,8 +142,8 @@ export const Message = memo(function Message({
   // Um cartão por mensagem, e só o primeiro link. Ver `primeiroLink`.
   const link = useMemo(() => primeiroLink(blocos), [blocos]);
   const meCitou = useMemo(
-    () => Boolean(meuUsername) && mencionados(blocos).has(meuUsername),
-    [blocos, meuUsername],
+    () => citaVoce(blocos, meuUsername, souOAutor),
+    [blocos, meuUsername, souOAutor],
   );
 
   useEffect(() => {

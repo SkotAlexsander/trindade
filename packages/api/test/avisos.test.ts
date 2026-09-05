@@ -171,6 +171,93 @@ describe('silenciar canal', () => {
   });
 });
 
+describe('marcar como lido de fora do canal', () => {
+  let cliente: TestClient;
+  let token: string;
+  let canal: string;
+  let outro: { id: string };
+
+  beforeEach(async () => {
+    await resetDatabase();
+    cliente = createClient(app);
+    await createUser({ username: 'ana' });
+    outro = await createUser({ username: 'bento' });
+    token = await entrar(cliente, 'ana');
+    canal = await canalDeTexto(`lido-${Date.now()}`);
+  });
+
+  const auth = () => ({ authorization: `Bearer ${token}` });
+
+  async function estado(): Promise<Estado | undefined> {
+    const res = await cliente.inject({ method: 'GET', url: '/api/read-state', headers: auth() });
+    expect(res.statusCode, res.body).toBe(200);
+    return (res.json() as { states: Estado[] }).states.find((e) => e.channelId === canal);
+  }
+
+  /**
+   * Sem `messageId` é "tudo o que existe agora".
+   *
+   * É o que o menu do canal manda: quem clica em "marcar como lido" de fora do
+   * canal não tem o id de mensagem nenhuma. A alternativa seria o cliente
+   * buscar a última só para devolvê-la ao servidor, que já a conhece.
+   */
+  it('sem messageId, marca até a última que existe', async () => {
+    await sql`
+      insert into messages (channel_id, author_id, content, created_at)
+      values (${canal}, ${outro.id}, 'primeira', now() - interval '2 minutes'),
+             (${canal}, ${outro.id}, 'segunda', now() - interval '1 minute')
+    `;
+    const ultima = await sql<{ id: string }[]>`
+      select id from messages where channel_id = ${canal} order by created_at desc limit 1
+    `;
+
+    const res = await cliente.inject({
+      method: 'PUT',
+      url: `/api/channels/${canal}/read`,
+      headers: auth(),
+      payload: {},
+    });
+    expect(res.statusCode, res.body).toBe(204);
+
+    const depois = await estado();
+    expect(depois?.lastReadMessageId).toBe(ultima[0]?.id);
+    expect(depois?.unreadCount).toBe(0);
+  });
+
+  it('num canal vazio não quebra, só não marca nada', async () => {
+    const res = await cliente.inject({
+      method: 'PUT',
+      url: `/api/channels/${canal}/read`,
+      headers: auth(),
+      payload: {},
+    });
+    expect(res.statusCode, res.body).toBe(204);
+    expect((await estado())?.lastReadMessageId ?? null).toBeNull();
+  });
+
+  it('ler não descala um canal silenciado', async () => {
+    // Ler um canal calado não pode acordá-lo: são duas decisões diferentes, e
+    // uma delas foi tomada de propósito.
+    const ate = new Date(Date.now() + 3_600_000).toISOString();
+    await cliente.inject({
+      method: 'PUT',
+      url: `/api/channels/${canal}/mute`,
+      headers: auth(),
+      payload: { until: ate },
+    });
+    await sql`
+      insert into messages (channel_id, author_id, content) values (${canal}, ${outro.id}, 'oi')
+    `;
+    await cliente.inject({
+      method: 'PUT',
+      url: `/api/channels/${canal}/read`,
+      headers: auth(),
+      payload: {},
+    });
+    expect((await estado())?.mutedUntil).not.toBeNull();
+  });
+});
+
 describe('o relógio do lembrete', () => {
   /*
    * `setTimeout` até a próxima 9h e reagendamento a cada volta, em vez de um

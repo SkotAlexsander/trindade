@@ -177,7 +177,7 @@
   padding: var(--s-2);
   font-size: var(--text-label);
   color: var(--text-primary);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  background: linear-gradient(to top, var(--media-scrim), transparent);
 }
 
 .nome {
@@ -563,7 +563,7 @@
   bottom: var(--s-2);
   padding: 2px var(--s-2);
   border-radius: var(--r-control);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--media-scrim);
   color: var(--text-primary);
   font-size: var(--text-meta);
   pointer-events: none;
@@ -603,7 +603,7 @@
   padding: 0 var(--s-3);
   border: 0;
   border-radius: var(--r-full);
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--media-scrim);
   color: var(--text-primary);
   font: inherit;
   font-size: var(--text-label);

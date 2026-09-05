@@ -1,3 +1,12 @@
+/*
+ * Botão. Ver design/01-tokens.md, "Elevação".
+ *
+ * A profundidade aqui é a de um botão físico: luz de borda no topo, sombra de
+ * contato embaixo, e o par se invertendo quando ele é apertado. O deslocamento
+ * é de **1px** — o suficiente para a mão sentir, pouco o bastante para não
+ * empurrar o texto ao lado.
+ */
+
 .base {
   display: inline-flex;
   align-items: center;
@@ -7,52 +16,79 @@
   border-radius: var(--r-control);
   font-weight: var(--weight-medium);
   white-space: nowrap;
+  /* `translate` como propriedade, não dentro de `transform`: o compositor
+     anima sozinho e nada mais precisa recalcular layout. */
+  translate: 0 0;
   transition:
     background var(--dur-instant) var(--ease-out),
-    border-color var(--dur-instant) var(--ease-out);
+    border-color var(--dur-instant) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    translate var(--dur-instant) var(--ease-out);
 }
 
 .base:disabled {
   opacity: 0.55;
+  /* Desabilitado não flutua: sombra em algo que não responde é uma promessa
+     de clique que não existe. */
+  box-shadow: none;
 }
 
+/* O `md` cresceu de `--s-3` para `--s-4` de folga lateral: com 12px, um rótulo
+   de uma palavra ficava com a caixa colada nas letras, e a proporção entre a
+   altura (36px) e a folga é o que faz o botão parecer desenhado ou espremido. */
 .md {
   height: var(--control-h-md);
-  padding: 0 var(--s-3);
+  padding: 0 var(--s-4);
   font-size: var(--text-ui);
 }
 
 .sm {
   height: var(--control-h-sm);
-  padding: 0 var(--s-2);
+  padding: 0 var(--s-3);
   font-size: var(--text-label);
 }
 
 .primary {
   background: var(--accent);
   color: var(--text-on-accent);
-  box-shadow: var(--glow-accent);
+  /* Brilho **e** relevo: o brilho é a cor da marca, o relevo é a física. Sem o
+     segundo, o botão primário é um retângulo ciano chapado. */
+  box-shadow: var(--glow-accent), var(--e-cheio);
 }
 
 .primary:hover:not(:disabled) {
   background: var(--cyan-hover);
+  translate: 0 -1px;
+  box-shadow: var(--glow-accent), var(--e-cheio), var(--e-pop);
 }
 
 .primary:active:not(:disabled) {
   background: var(--cyan-press);
+  translate: 0 0;
+  box-shadow: var(--e-inset);
 }
 
 .secondary {
   background: var(--bg-raised);
   color: var(--text-primary);
   border-color: var(--border-strong);
+  box-shadow: var(--e-raised);
 }
 
 .secondary:hover:not(:disabled) {
   background: var(--bg-active);
   border-color: var(--border-strong);
+  translate: 0 -1px;
+  box-shadow: var(--e-pop);
 }
 
+.secondary:active:not(:disabled) {
+  translate: 0 0;
+  box-shadow: var(--e-inset);
+}
+
+/* O fantasma não ganha relevo: ele é texto que responde, e um texto em relevo
+   parece um botão que alguém esqueceu de terminar. */
 .ghost {
   background: none;
   color: var(--text-secondary);
@@ -63,9 +99,25 @@
   color: var(--text-primary);
 }
 
+.ghost:active:not(:disabled) {
+  background: var(--bg-active);
+}
+
 .danger {
   background: var(--danger);
   color: var(--text-on-accent);
+  box-shadow: var(--e-cheio);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--crimson-hover);
+  translate: 0 -1px;
+  box-shadow: var(--e-cheio), var(--e-pop);
+}
+
+.danger:active:not(:disabled) {
+  translate: 0 0;
+  box-shadow: var(--e-inset);
 }
 
 /* Presença ao vivo. Não é variante de botão: é o único lugar onde o magenta
@@ -75,10 +127,6 @@
   color: var(--live);
   border-color: var(--live);
   box-shadow: var(--glow-live);
-}
-
-.danger:hover:not(:disabled) {
-  background: var(--crimson-hover);
 }
 
 .full {

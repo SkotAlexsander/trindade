@@ -17,10 +17,10 @@
   left: var(--s-2);
   z-index: var(--z-modal);
   padding: var(--s-2) var(--s-3);
-  background: var(--bg-raised);
+  background: var(--bg-float);
   color: var(--text-primary);
   border-radius: var(--r-control);
-  box-shadow: var(--glow-edge);
+  box-shadow: var(--glow-edge), var(--e-float);
   transform: translateY(-200%);
 }
 
@@ -62,15 +62,31 @@
   color: var(--text-secondary);
 }
 
+.espacoBotao {
+  box-shadow: var(--e-raised);
+  transition:
+    color var(--dur-quick) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    translate var(--dur-instant) var(--ease-out);
+}
+
 .espacoBotao:hover {
   color: var(--text-primary);
   border-color: var(--border-strong);
+  translate: 0 -1px;
+  box-shadow: var(--e-pop);
+}
+
+.espacoBotao:active {
+  translate: 0 0;
+  box-shadow: var(--e-inset);
 }
 
 .espacoBotao[data-ativo='true'] {
   color: var(--accent);
   border-color: var(--border-strong);
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--glow-accent), var(--e-raised);
 }
 
 /* Marcador vertical colado na borda esquerda do rail, arredondado só do lado
@@ -113,11 +129,17 @@
 /* --- coluna 2: canais e elenco ------------------------------------------- */
 
 .sidebar {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-rows: var(--header-h) minmax(0, 1fr) auto;
   min-height: 0;
   background: var(--bg-panel);
   border-right: 1px solid var(--border-soft);
+  /* Só o lado direito projeta: a sombra sai para a conversa, que é o plano
+     mais fundo. Espalhamento negativo para a sombra não vazar por cima nem
+     por baixo — coluna de altura inteira não tem "embaixo". */
+  box-shadow: var(--e-coluna);
 }
 
 .sidebarHead {
@@ -127,6 +149,7 @@
   gap: var(--s-2);
   padding: 0 var(--s-3);
   border-bottom: 1px solid var(--border-soft);
+  box-shadow: var(--luz-topo), 0 1px 0 var(--sombra-linha);
 }
 
 .servidor {

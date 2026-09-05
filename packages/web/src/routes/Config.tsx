@@ -4,19 +4,20 @@ import { ChevronLeft } from '../components/icones';
 import { usePermissions } from '../features/auth/usePermissions';
 import { PaginaDeCargos } from '../features/roles/PaginaDeCargos';
 import { PaginaDePessoas } from '../features/people/PaginaDePessoas';
+import { PaginaDeAparencia } from '../features/settings/PaginaDeAparencia';
+import { PaginaDeAtalhos } from '../features/settings/PaginaDeAtalhos';
 import styles from './config.module.css';
 
 /**
  * Páginas de configuração.
  *
- * Só o que é lista longa ou hierarquia mora aqui. Perfil e convite são
- * diálogos: edição pontual não merece tirar a pessoa da conversa.
+ * Só o que é lista longa, hierarquia ou referência mora aqui. Perfil, convite
+ * e canal são diálogos: edição pontual não merece tirar a pessoa da conversa.
  */
 
 const TITULOS: Record<string, string> = {
   cargos: 'Cargos e permissões',
   pessoas: 'Pessoas',
-  convites: 'Convites',
   aparencia: 'Aparência',
   atalhos: 'Atalhos',
 };
@@ -39,7 +40,20 @@ export function Config() {
       // que exige permissão são as ações, e cada uma se esconde sozinha.
       return <PaginaDePessoas />;
     }
-    return <p className={styles.pendente}>Esta página chega numa fase adiante.</p>;
+    if (secao === 'aparencia') return <PaginaDeAparencia />;
+    if (secao === 'atalhos') return <PaginaDeAtalhos />;
+
+    /* Nenhuma seção conhecida. Antes esta página dizia "chega numa fase
+       adiante" e era o destino real de seis controles do produto — a
+       engrenagem, dois "criar canal", "convidar alguém", "aparência" e
+       "atalhos". Todos foram ligados no que já existia; o que sobra aqui é
+       endereço digitado à mão, e para esse a resposta honesta é que não
+       existe. */
+    return (
+      <p className={styles.pendente}>
+        Não existe uma página de configurações chamada <code>{secao}</code>.
+      </p>
+    );
   })();
 
   return (

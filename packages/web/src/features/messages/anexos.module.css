@@ -65,9 +65,12 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font: var(--weight-semibold) 20px / 1 var(--font-ui);
+  background: var(--media-scrim);
+  color: var(--media-ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-title);
+  font-weight: var(--weight-semi);
+  line-height: 1;
 }
 
 /* --- arquivo em linha ---------------------------------------------------- */
@@ -107,14 +110,18 @@
 }
 
 .arquivoNome {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .arquivoTamanho {
-  font: var(--weight-regular) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -133,7 +140,7 @@
   display: grid;
   place-items: center;
   padding: 64px 72px;
-  background: rgba(0, 0, 0, 0.86);
+  background: var(--media-veil);
 }
 
 .lightboxImagem {
@@ -153,18 +160,22 @@
   align-items: center;
   gap: 12px;
   padding: 0 12px;
-  color: #fff;
+  color: var(--media-ink);
 }
 
 .lightboxNome {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .lightboxContagem {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   opacity: 0.7;
   font-variant-numeric: tabular-nums;
   margin-right: auto;
@@ -175,7 +186,7 @@
 }
 
 .lightboxBaixar {
-  color: #fff;
+  color: var(--media-ink);
   display: grid;
   place-items: center;
 }
@@ -189,12 +200,12 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--media-control);
+  color: var(--media-ink);
 }
 
 .seta:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--media-control-hover);
 }
 
 .seta[data-lado='esquerda'] {
@@ -237,19 +248,26 @@
 }
 
 .previaSite {
-  font: var(--weight-medium) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .previaTitulo {
-  font: var(--weight-semibold) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semi);
   color: var(--accent);
 }
 
 .previaDescricao {
-  font: var(--weight-regular) 12px / 1.45 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-read);
   color: var(--text-secondary);
   /* Duas linhas e para: o cartão é um convite, não o artigo. */
   display: -webkit-box;
@@ -285,7 +303,7 @@
   height: 56px;
   border-radius: var(--r-control);
   border: 1px solid var(--border-soft);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   overflow: hidden;
 }
 
@@ -314,9 +332,11 @@
   right: 0;
   bottom: 0;
   padding: 1px 3px;
-  font: var(--weight-regular) 9px var(--font-ui);
-  color: #fff;
-  background: rgba(0, 0, 0, 0.6);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
+  color: var(--media-ink);
+  background: var(--media-scrim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -331,8 +351,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-full);
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
+  background: var(--media-scrim);
+  color: var(--media-ink);
 }
 
 .pendenteRemover:hover {
@@ -357,6 +377,8 @@
 
 .erroDoAnexo {
   width: 100%;
-  font: var(--weight-regular) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
   color: var(--danger);
 }

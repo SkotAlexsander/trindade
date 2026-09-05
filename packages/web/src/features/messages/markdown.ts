@@ -17,6 +17,8 @@
  * uma hashtag.
  */
 
+import { MENCAO_DE_TODOS } from '@trindade/shared';
+
 export type No =
   | { tipo: 'texto'; valor: string }
   | { tipo: 'negrito'; filhos: No[] }
@@ -311,6 +313,26 @@ export function mencionados(blocos: readonly Bloco[]): Set<string> {
     else if (bloco.tipo !== 'bloco-de-codigo') andar(bloco.filhos);
   }
   return nomes;
+}
+
+/**
+ * Esta mensagem cita **você**?
+ *
+ * Uma pergunta, uma resposta, um lugar. Antes eram dois: o `useGateway` sabia
+ * que `@todos` conta para todo mundo — é o que faz o contador subir e o aviso
+ * aparecer — e a linha da mensagem não sabia. O resultado era um `@todos` que
+ * te chamava, marcava o canal e não pintava a mensagem quando você chegava
+ * nela. A regra é a mesma do servidor, em `db/messages.ts`: `@todos` conta para
+ * todos menos para quem escreveu.
+ */
+export function citaVoce(
+  blocos: readonly Bloco[],
+  meuUsername: string | undefined,
+  souOAutor = false,
+): boolean {
+  const nomes = mencionados(blocos);
+  if (nomes.has(MENCAO_DE_TODOS) && !souOAutor) return true;
+  return Boolean(meuUsername) && nomes.has(meuUsername!);
 }
 
 /**

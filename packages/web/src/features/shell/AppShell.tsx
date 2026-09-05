@@ -8,10 +8,11 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
 import { useHotkeys } from '../../lib/useHotkeys';
 import { useAuth } from '../auth/store';
 import { Elenco, SeuCanto } from '../cast/CastPanel';
-import { DialogoDePerfil } from '../profile/DialogoDePerfil';
+import { DialogoDePerfil, useDialogoDePerfil } from '../profile/DialogoDePerfil';
 import { DialogoDeConvite } from '../people/DialogoDeConvite';
 import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 import { ChannelList } from '../channels/ChannelList';
+import { DialogoDeCanal, useDialogoDeCanal } from '../channels/DialogoDeCanal';
 import { ListaDeConversas } from '../conversations/ListaDeConversas';
 import { nomeDaConversa, useConversas } from '../conversations/queries';
 import { useChannels, useUsers } from '../channels/queries';
@@ -48,6 +49,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const { pathname, search } = useLocation();
+  const criarCanal = useDialogoDeCanal((s) => s.criar);
+  const abrirPerfil = useDialogoDePerfil((s) => s.abrir);
   const conviteAberto = useDialogoDeConvite((s) => s.aberto);
   const fecharConvite = useDialogoDeConvite((s) => s.fechar);
   const permissoes = useAuth((state) => state.permissions);
@@ -313,7 +316,10 @@ export function AppShell() {
 
         <span className={styles.espacador} />
         <Tooltip label="Configurações" placement="right">
-          <IconButton label="Configurações" size="sm" onClick={() => navigate('/config/perfil')}>
+          {/* Abre o diálogo, não uma rota: perfil sempre foi diálogo — ver o
+              comentário no topo de `routes/Config.tsx` —, e `/config/perfil`
+              caía numa página que dizia "chega numa fase adiante". */}
+          <IconButton label="Configurações" size="sm" onClick={() => abrirPerfil('perfil')}>
             <Settings size={20} />
           </IconButton>
         </Tooltip>
@@ -333,7 +339,7 @@ export function AppShell() {
           />
           {podeGerenciar ? (
             <Tooltip label="Criar canal">
-              <IconButton label="Criar canal" size="sm">
+              <IconButton label="Criar canal" size="sm" onClick={criarCanal}>
                 <Plus size={16} />
               </IconButton>
             </Tooltip>
@@ -413,6 +419,7 @@ export function AppShell() {
 
       <DialogoDePerfil />
       <DialogoDeConvite aberto={conviteAberto} onFechar={fecharConvite} />
+      <DialogoDeCanal />
     </div>
   );
 }

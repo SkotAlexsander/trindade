@@ -34,6 +34,16 @@ export const X = (p: IconeProps) => (
   </Base>
 );
 
+/* Três pontos: o gesto universal de "há mais ações aqui". Preenchido, e não
+   contornado — a 16px um círculo vazado de 1,5px vira uma mancha. */
+export const Reticencias = (p: IconeProps) => (
+  <Base {...p} fill="currentColor" stroke="none">
+    <circle cx="5" cy="12" r="1.6" />
+    <circle cx="12" cy="12" r="1.6" />
+    <circle cx="19" cy="12" r="1.6" />
+  </Base>
+);
+
 export const Check = (p: IconeProps) => (
   <Base {...p}>
     <path d="m20 6-11 11-5-5" />

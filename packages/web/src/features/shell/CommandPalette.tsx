@@ -4,6 +4,8 @@ import type { User } from '@trindade/shared';
 import { Avatar } from '../../components';
 import { Hash, Search, Volume } from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
+import { useDialogoDeCanal } from '../channels/DialogoDeCanal';
+import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 import styles from './palette.module.css';
 
 export interface CommandPaletteProps {
@@ -59,6 +61,12 @@ export function CommandPalette({
   onAbrirPainel,
 }: CommandPaletteProps) {
   const navigate = useNavigate();
+  /* As duas ações abrem diálogo. Antes navegavam para `/config/canais` e
+     `/config/convites`, rotas que nunca existiram e caíam na página que
+     dizia "chega numa fase adiante" — com o diálogo de convite pronto e
+     ligado no menu do servidor ao lado. */
+  const criarCanal = useDialogoDeCanal((s) => s.criar);
+  const abrirConvite = useDialogoDeConvite((s) => s.abrir);
   const [termo, setTermo] = useState('');
   const [selecionado, setSelecionado] = useState(0);
   const campoRef = useRef<HTMLInputElement>(null);
@@ -70,13 +78,13 @@ export function CommandPalette({
         id: 'acao-criar-canal',
         grupo: 'Ações',
         rotulo: 'Criar canal',
-        run: () => navigate('/config/canais'),
+        run: criarCanal,
       },
       {
         id: 'acao-convidar',
         grupo: 'Ações',
         rotulo: 'Convidar alguém',
-        run: () => navigate('/config/convites'),
+        run: abrirConvite,
       },
       {
         id: 'acao-guardadas',
@@ -93,7 +101,7 @@ export function CommandPalette({
         run: () => onAbrirPainel('fixadas'),
       },
     ],
-    [navigate, onAbrirPainel],
+    [criarCanal, abrirConvite, onAbrirPainel],
   );
 
   const resultados = useMemo(() => {

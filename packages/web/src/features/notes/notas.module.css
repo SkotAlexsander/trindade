@@ -95,7 +95,8 @@
 .editor :global(code) {
   font-family: var(--font-mono);
   font-size: 0.9em;
-  background: var(--bg-raised);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
   padding: 1px 4px;
   border-radius: var(--r-field);
 }

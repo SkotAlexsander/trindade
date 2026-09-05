@@ -295,3 +295,72 @@ outra aba, permanece — o objetivo é te devolver ao ponto certo quando voltar.
 
 `⇧ Esc` marca tudo como lido, sem confirmação. É reversível na prática: as
 mensagens continuam lá.
+
+---
+
+## Os controles que não faziam nada
+
+> Varredura de 5 de setembro de 2026.
+
+Dez controles prometiam uma ação e não entregavam nenhuma. Sete eram
+`onSelect={() => undefined}` ou um botão sem `onClick`; três navegavam para uma
+rota de configuração que respondia "esta página chega numa fase adiante".
+
+| Controle | O que fazia | O que faz |
+|---|---|---|
+| `+` da coluna de canais | nada | abre "Criar canal" |
+| Menu do servidor → Criar canal | nada | o mesmo diálogo |
+| Paleta → Criar canal | ia para `/config/canais` | o mesmo diálogo |
+| Paleta → Convidar alguém | ia para `/config/convites` | abre o diálogo de convite, o mesmo do menu do servidor |
+| Engrenagem do rail | ia para `/config/perfil` | abre o diálogo de perfil |
+| Menu do servidor → Aparência | ia para `/config/aparencia` | a página de tema |
+| Menu do servidor → Atalhos | ia para `/config/atalhos` | a página de atalhos |
+| Menu do canal → Marcar como lido | nada | marca, e o servidor resolve "até a última" |
+| Menu do canal → Silenciar | nada | 1 hora, 8 horas, até eu ligar |
+| Menu do canal → Editar canal | nada | abre o diálogo de edição |
+
+O último item da lista escondia o maior dos defeitos: **o menu do canal nunca
+era montado.** `ChannelMenu` existia desde a fase 4, completo, e nenhum
+componente o renderizava — por isso ninguém tinha percebido que três dos seus
+itens não faziam nada. Agora ele abre por um botão de reticências que aparece no
+hover e no foco do item.
+
+O servidor sabia fazer tudo isso desde as fases 4 e 9: `POST /channels`,
+`PATCH /channels/:id`, `PUT /channels/:id/mute`, `PUT /channels/:id/read`. O que
+faltava era a interface chamar.
+
+`e2e/fase-11-controles-mortos.py` aperta os dez, um por um, e exige que algo
+aconteça.
+
+### Criar e editar canal
+
+Diálogo, não página: é edição pontual, e tirar a pessoa da conversa para trocar
+um tópico custa mais do que a edição vale.
+
+**O endereço segue o nome até alguém mexer nele.** "Bugs de Produção" vira
+`bugs-de-producao` — o acento sai por decomposição, não por tabela. Depois de
+editado à mão, para de seguir: senão corrigir o endereço é impossível, porque a
+letra seguinte do nome o reescreve.
+
+**O endereço não muda depois de criado.** Links já enviados apontariam para
+lugar nenhum. O diálogo de edição diz isso em vez de omitir o campo — omitir
+deixa a pessoa procurando onde se edita.
+
+**O tipo é escolhido uma vez.** Dois cartões lado a lado, não uma lista
+suspensa: são duas opções que não mudam nunca, e a escolha define o que o canal
+é para sempre. Um canal de texto com histórico não vira canal de voz.
+
+### Aparência e atalhos
+
+Duas páginas, porque as duas são referência que se lê, não ajuste que se faz no
+meio de uma frase.
+
+**Aparência** tem três opções e nada mais. Não há controle de densidade nem de
+tamanho de fonte: densidade é decisão de projeto, e quem quer texto maior tem o
+zoom do navegador, que funciona melhor que qualquer réplica nossa porque também
+aumenta o alvo de clique.
+
+**Atalhos** lista o que **existe**, não o que este documento imaginou. Uma
+página que promete `Alt ⇧ ↑` e não faz nada quando a pessoa aperta é pior que
+página nenhuma: ela ensina a não confiar na lista inteira. Cada linha foi
+conferida contra o `useHotkeys` do `AppShell`, o `Composer` e a `MessageList`.

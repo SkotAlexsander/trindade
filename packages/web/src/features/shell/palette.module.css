@@ -6,6 +6,7 @@
   inset: 0;
   z-index: var(--z-modal);
   background: var(--veil);
+  backdrop-filter: var(--blur-veil);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -19,7 +20,7 @@
   grid-template-rows: auto minmax(0, 1fr);
   background: var(--bg-raised);
   border-radius: var(--r-surface);
-  box-shadow: var(--glow-edge), var(--shadow-modal);
+  box-shadow: var(--glow-edge), var(--e-modal);
   overflow: hidden;
 }
 

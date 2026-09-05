@@ -717,6 +717,59 @@ webhook faria a API **recusar-se a subir** — string vazia não passa por
 acabar, que é justamente o que o alerta de disco iria anunciar. Agora são 3
 arquivos de 10 MB por serviço, no compose de produção.
 
+### Varredura de defeitos e profundidade — 5 de setembro de 2026
+
+Pedido do dono do projeto: procurar defeitos e corrigi-los, e reformular o
+design com mais profundidade, efeitos e proporção.
+
+**Dez controles não faziam nada.** Sete eram `onSelect={() => undefined}` ou
+botão sem `onClick`; três iam para uma rota de configuração que respondia "esta
+página chega numa fase adiante". O servidor sabia fazer tudo desde as fases 4 e
+9 — criar canal, editar, silenciar, marcar como lido —, e a interface só nunca
+chamou. A tabela dos dez está em `design/03-menu-e-navegacao.md`.
+
+O maior deles escondia os outros: **`ChannelMenu` nunca era montado.** O
+componente existia inteiro desde a fase 4 e nenhum arquivo o renderizava — por
+isso ninguém tinha percebido que três dos seus itens eram no-op. Agora abre por
+um botão de reticências no hover e no foco.
+
+**64 usos de token que não existe, e o silêncio é o pior deles.** Seis arquivos
+escreviam `--weight-regular`, `--weight-semibold`, `--bg-base` e `--dur-fast`;
+os nomes certos sempre foram `--weight-normal`, `--weight-semi`, `--bg-inset` e
+`--dur-quick`. Uma `var()` que não resolve deixa a declaração **inválida no
+tempo de cálculo**, e a propriedade cai para o valor herdado — e como quase
+todas estavam num `font:` abreviado, que é herdado, meia dúzia de telas usava a
+tipografia do elemento pai. Nenhum erro no console, nenhum aviso do compilador:
+só tamanhos errados que ninguém sabia que estavam errados. Metade do trabalho de
+"melhorar a proporção" foi isto.
+
+Por isso o `font:` abreviado saiu de todo lugar — `font-family`, `font-size`,
+`font-weight` e `line-height` separados —, e por isso existe
+`packages/web/test/tokens.test.ts`: o CSS não tem compilador, e esse teste é o
+compilador.
+
+**A escada de elevação.** Num fundo quase preto a sombra quase não trabalha; a
+profundidade vem de luz de borda no topo mais um par contato + ambiente. Seis
+degraus, mais três de direção — coluna projeta para o lado, rodapé projeta para
+cima, arrastado está mais alto que tudo. Não é uma quarta intensidade de brilho:
+brilho é cor e continua sendo três; elevação é valor. As duas somam no mesmo
+`box-shadow` sem competir. Ver `design/01-tokens.md`, "Profundidade".
+
+**`@todos` era magenta, e magenta é presença ao vivo.** No instante em que
+magenta significa duas coisas, a regra morre — e ela é o que impede a tela de
+virar sopa luminosa. Agora `@todos` é ciano cheio: o que o diferencia de uma
+menção pessoal não é a cor, é o peso.
+
+**A mesma menção contava de dois jeitos.** `useGateway` sabia que `@todos` cita
+todo mundo — é o que faz o contador subir — e a linha da mensagem não sabia. O
+resultado era um `@todos` que te chamava, marcava o canal e não pintava a
+mensagem quando você chegava nela. Agora é uma função, `citaVoce`, com a mesma
+regra do servidor.
+
+**A largura da linha de mensagem.** O corpo parava em 72 caracteres desde a fase
+5, mas o fundo da linha ia até a borda da janela: numa tela de 1600px, uma
+menção de trinta caracteres pintava uma faixa de três mil pixels.
+
 ### Fase 9 — concluída
 
 **Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte

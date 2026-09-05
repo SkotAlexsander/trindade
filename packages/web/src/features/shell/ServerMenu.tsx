@@ -4,6 +4,7 @@ import { Perm, can } from '@trindade/shared';
 import { Menu, MenuItem, MenuSeparator } from '../../components';
 import { api } from '../../lib/http';
 import { useAuth } from '../auth/store';
+import { useDialogoDeCanal } from '../channels/DialogoDeCanal';
 import { useDialogoDeConvite } from '../people/useDialogoDeConvite';
 
 export interface ServerMenuProps {
@@ -20,6 +21,7 @@ export interface ServerMenuProps {
 export function ServerMenu({ trigger, podeGerenciarCanal }: ServerMenuProps) {
   const navigate = useNavigate();
   const abrirConvite = useDialogoDeConvite((s) => s.abrir);
+  const criarCanal = useDialogoDeCanal((s) => s.criar);
   const permissoes = useAuth((state) => state.permissions);
   const limpar = useAuth((state) => state.clear);
 
@@ -36,7 +38,7 @@ export function ServerMenu({ trigger, podeGerenciarCanal }: ServerMenuProps) {
   return (
     <Menu label="Menu do servidor" trigger={trigger}>
       {podeConvidar ? <MenuItem onSelect={abrirConvite}>Convidar alguém</MenuItem> : <></>}
-      {podeGerenciarCanal ? <MenuItem onSelect={() => undefined}>Criar canal</MenuItem> : <></>}
+      {podeGerenciarCanal ? <MenuItem onSelect={criarCanal}>Criar canal</MenuItem> : <></>}
       {podeConvidar || podeGerenciarCanal ? <MenuSeparator /> : <></>}
 
       {podeCargos ? <MenuItem onSelect={() => navigate('/config/cargos')}>Cargos e permissões</MenuItem> : <></>}

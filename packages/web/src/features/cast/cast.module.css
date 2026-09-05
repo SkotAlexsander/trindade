@@ -1,9 +1,16 @@
 /* Painel do elenco — design/03-menu-e-navegacao.md.
    Fixo no rodapé da coluna, nunca rola com a lista. É o ponto do desenho. */
 
+/* Uma prancha apoiada no rodapé da coluna, e não uma faixa desenhada nela:
+   a luz no topo é a aresta iluminada, e a sombra que sobe separa do que rola
+   por trás. É o elemento memorável da interface — se algum lugar merece o
+   relevo mais claro, é este. */
 .painel {
+  position: relative;
+  z-index: 1;
   background: var(--bg-live);
   border-top: 1px solid var(--border);
+  box-shadow: var(--luz-topo-forte), var(--e-rodape);
 }
 
 .espacos {
@@ -70,8 +77,17 @@
   position: relative;
   transition:
     filter var(--dur-quick) var(--ease-out),
-    box-shadow var(--dur-slow) var(--ease-out);
+    box-shadow var(--dur-slow) var(--ease-out),
+    translate var(--dur-quick) var(--ease-out);
   border-radius: var(--r-full);
+}
+
+/* Passar o mouse levanta a pessoa um pixel. É o gesto mais barato que existe
+   para dizer "isto responde", e num painel de cinco discos iguais ele é o que
+   diferencia um painel vivo de uma fotografia. */
+.espaco:hover .avatarBox,
+.espaco:focus-visible .avatarBox {
+  translate: 0 -2px;
 }
 
 /* O anel é box-shadow de duas camadas: a primeira abre um sulco entre o avatar
@@ -132,7 +148,7 @@
 .pontos {
   display: flex;
   gap: 2px;
-  height: 11px;
+  height: var(--text-meta);
   align-items: center;
 }
 
@@ -169,7 +185,7 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  height: 32px;
+  height: var(--rail-item);
   padding: 0 var(--s-2);
   border-top: 1px solid var(--border-soft);
 }

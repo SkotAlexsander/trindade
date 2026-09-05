@@ -432,6 +432,37 @@ chamado no título.
 frente, a regra de notificação não marca nada — e é o certo, porque a pessoa
 está lendo. O roteiro erra sozinho se esquecer disso.
 
+**`fase-11-controles-mortos.py`** — 15 verificações dos dez controles que
+prometiam e não faziam nada. Cria um canal de verdade, edita o tópico, silencia,
+abre o menu do canal, a engrenagem, as duas páginas de configuração e as duas
+ações da paleta.
+
+    python e2e/fase-11-controles-mortos.py .capturas [conta]
+
+**Precisa de uma conta com `MANAGE_CHANNEL`** — `alex` ou `admin` no elenco de
+desenvolvimento. Metade dos controles daqui só existe para quem pode gerenciar
+canal, e escondê-los de quem não pode é regra de design, não defeito: rodar como
+`bruno` faz o roteiro falhar por motivo certo.
+
+O nome do canal criado leva o horário, e o roteiro **não** apaga o que cria: um
+canal a mais na base de desenvolvimento é barato, e apagar exigiria uma rota de
+exclusão que o produto não tem de propósito — arquiva-se, não se exclui.
+
+**Duas armadilhas do ambiente**, que valem para qualquer roteiro daqui:
+
+- **Entrar tem limite de 5 por 15 minutos, por usuário e IP.** Rotacione a conta
+  entre execuções, ou reinicie a API — o limite é de memória.
+- **Todo `page.goto` depois de entrar é uma renovação de token**, e
+  `/auth/refresh` tem limite de 30 por hora por IP. Um roteiro que navega por
+  dez telas com `goto` estoura isso e as telas seguintes saem todas na tela de
+  entrar, sem erro nenhum. Para andar pelo produto, use a navegação do produto —
+  clique, ou `history.pushState` mais um `popstate`, que é o que o React Router
+  escuta.
+- **Guardar o `storage_state` entre execuções não resolve**, e o motivo é uma
+  proteção de verdade: o token de renovação roda a cada uso, e reapresentar o
+  mesmo cookie duas vezes é exatamente o sinal de roubo que a fase 2 detecta —
+  a sessão inteira cai, corretamente.
+
 **A geolocalização entra no roteiro da CSP** (`fase-08-csp.py`), e não num
 roteiro próprio: é o mesmo servidor que serve o `dist` com os cabeçalhos de
 produção, e é lá que a `Permissions-Policy` existe. Em desenvolvimento o Vite

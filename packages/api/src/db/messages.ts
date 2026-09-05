@@ -365,10 +365,27 @@ export interface ReadStateRow {
  * Zerar aqui, e não numa rota separada, é o que mantém o contador honesto: ler
  * o canal é exatamente o ato que resolve a menção.
  */
+/**
+ * O id da última mensagem do alvo, ou `null` se ele estiver vazio.
+ *
+ * Serve a "marcar como lido" de fora do canal: quem clica no menu não tem o id
+ * de nada, e mandar o cliente buscar a última mensagem só para devolvê-la ao
+ * servidor é uma volta inteira para o servidor descobrir o que já sabe.
+ */
+export async function ultimaMensagemDo(alvo: Alvo): Promise<string | null> {
+  const linhas = await sql<{ id: string }[]>`
+    select m.id from messages m
+     where ${doAlvo(alvo)} and m.deleted_at is null
+     order by m.created_at desc, m.id desc
+     limit 1
+  `;
+  return linhas[0]?.id ?? null;
+}
+
 export async function marcarLido(
   userId: string,
   alvo: Alvo,
-  messageId: string,
+  messageId: string | null,
 ): Promise<{ mutedUntil: string | null }> {
   /* Dois `insert` quase iguais, e não um com `coalesce`: a cláusula de
      conflito precisa nomear o índice parcial certo, e índice parcial não se

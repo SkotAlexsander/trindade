@@ -1,0 +1,195 @@
+/*
+ * Aparência e atalhos. Ver design/03-menu-e-navegacao.md.
+ *
+ * As duas páginas dividem a estrutura de seções porque são a mesma coisa: uma
+ * coluna de leitura com blocos. A largura é a mesma da conversa — texto de
+ * ajuda atravessando 1600px é tão ilegível quanto mensagem atravessando.
+ */
+
+.secoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  max-width: var(--measure);
+}
+
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.secaoTitulo {
+  margin: 0;
+  font-size: var(--text-section);
+  font-weight: var(--weight-semi);
+  color: var(--text-primary);
+}
+
+.secaoDica {
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: var(--leading-read);
+  color: var(--text-secondary);
+}
+
+.secaoDica code {
+  font-family: var(--font-mono);
+  font-size: 0.94em;
+  padding: 1px 5px;
+  border-radius: var(--r-control);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+}
+
+/* --- tema ----------------------------------------------------------------- */
+
+/* Três cartões, não um `select`: a escolha tem três valores fixos e o resultado
+   é visual — esconder isso atrás de uma lista suspensa custa um clique para
+   ver o que já cabe na tela. */
+.opcoes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+/* `align-content: start` mais `margin-top: auto` na última linha: sem isso, o
+   cartão com uma linha a mais empurra o nome para cima e os três títulos
+   deixam de se alinhar — o tipo de desencontro que se vê antes de se
+   entender. */
+.opcao {
+  display: grid;
+  align-content: start;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  box-shadow: var(--e-raised);
+  translate: 0 0;
+  transition:
+    border-color var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    translate var(--dur-instant) var(--ease-out);
+}
+
+.opcao:hover {
+  border-color: var(--border);
+  translate: 0 -1px;
+  box-shadow: var(--e-pop);
+}
+
+.opcao:active {
+  translate: 0 0;
+  box-shadow: var(--e-inset);
+}
+
+.opcao[data-escolhido='true'] {
+  border-color: var(--border-strong);
+  background: var(--bg-selected);
+  box-shadow: var(--glow-accent), var(--e-raised);
+}
+
+.opcaoIcone {
+  display: grid;
+  place-items: center;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
+  margin-bottom: var(--s-1);
+  border-radius: var(--r-control);
+  background: var(--bg-inset);
+  box-shadow: var(--e-inset);
+  color: var(--text-secondary);
+}
+
+.opcao[data-escolhido='true'] .opcaoIcone {
+  color: var(--accent);
+}
+
+.opcaoNome {
+  font-size: var(--text-ui);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+.opcaoDica {
+  font-size: var(--text-meta);
+  line-height: var(--leading-ui);
+  color: var(--text-tertiary);
+}
+
+.opcaoAgora {
+  margin-top: auto;
+  padding-top: var(--s-1);
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- atalhos -------------------------------------------------------------- */
+
+.atalhos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: var(--s-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atalho {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: var(--control-h-md);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-control);
+}
+
+.atalho:hover {
+  background: var(--bg-hover);
+}
+
+.teclas {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+/* A tecla é um objeto físico: alta, com luz em cima e sombra fechando embaixo.
+   É o único lugar da interface em que o relevo é literal — é uma tecla. */
+.tecla {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--s-2);
+  border-radius: var(--r-control);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--luz-topo), 0 1px 0 var(--sombra-linha);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.atalhoTexto {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .opcoes {
+    grid-template-columns: 1fr;
+  }
+
+  .atalho {
+    grid-template-columns: 1fr;
+    gap: var(--s-1);
+    padding: var(--s-2);
+  }
+}

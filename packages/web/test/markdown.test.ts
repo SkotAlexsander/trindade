@@ -3,6 +3,7 @@ import {
   analisarLinha,
   analisarMarkdown,
   hrefSeguro,
+  citaVoce,
   mencionados,
   primeiroLink,
   type Bloco,
@@ -209,6 +210,35 @@ describe('mencionados', () => {
   it('encontra dentro de negrito e de item de lista', () => {
     expect([...mencionados(analisarMarkdown('**@alex**'))]).toEqual(['alex']);
     expect([...mencionados(analisarMarkdown('- pergunte a @carla'))]).toEqual(['carla']);
+  });
+});
+
+describe('citaVoce', () => {
+  const cita = (texto: string, quem = 'alex', autor = false) =>
+    citaVoce(analisarMarkdown(texto), quem, autor);
+
+  it('o seu nome cita você', () => {
+    expect(cita('oi @alex')).toBe(true);
+    expect(cita('oi @bruno')).toBe(false);
+  });
+
+  it('`@todos` cita todo mundo — menos quem escreveu', () => {
+    // Esta é a regra do servidor, em `db/messages.ts`. Ela morava em dois
+    // lugares no cliente e só um deles a conhecia: o contador subia e a
+    // mensagem não ficava marcada quando você chegava nela.
+    expect(cita('@todos reunião agora')).toBe(true);
+    expect(cita('@todos reunião agora', 'alex', true)).toBe(false);
+  });
+
+  it('`@todos` dentro de código não cita ninguém', () => {
+    expect(cita('`@todos`')).toBe(false);
+  });
+
+  it('sem nome de usuário, só `@todos` cita', () => {
+    // Sem o `cita` daqui: passar `undefined` para um parâmetro com valor
+    // padrão devolve o padrão, e o teste testaria 'alex' de novo.
+    expect(citaVoce(analisarMarkdown('oi @alex'), undefined)).toBe(false);
+    expect(citaVoce(analisarMarkdown('@todos'), undefined)).toBe(true);
   });
 });
 

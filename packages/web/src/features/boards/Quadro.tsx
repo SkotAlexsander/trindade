@@ -219,7 +219,11 @@ function QuadroAberto({
 
       enviarMensagem.enviar({
         alvo: canalComoAlvo(channelId),
-        content: link ? `Do quadro **${quadro?.name ?? ''}** — ${link}` : 'Do quadro',
+        /* O nome vira o texto do link, e não uma URL crua ao lado dele: um
+           endereço com uuid ocupa duas linhas, quebra no meio e não diz nada
+           que o nome já não diga. É o mesmo formato da linha de sistema da
+           apresentação, em `services/apresentacao.ts`. */
+        content: link ? `Do quadro [${quadro?.name ?? 'quadro'}](${link})` : 'Do quadro',
         anexos: attachments,
       });
       show('Enviado no canal.');

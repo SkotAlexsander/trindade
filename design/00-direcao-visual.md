@@ -3,6 +3,14 @@
 Leia este arquivo antes de qualquer outro de design. Ele explica de onde vêm as
 decisões dos demais. Sem ele, os tokens parecem arbitrários.
 
+> **Revisão de 5 de setembro de 2026 — profundidade.** A pedido do dono do
+> projeto ("quero mais profundidade, efeitos e melhorar a proporção das
+> coisas"), a linguagem ganhou uma escada de elevação: luz de borda no topo,
+> par de sombras contato + ambiente, superfície escavada para campo e trilho,
+> desfoque atrás do que flutua. A regra de cor não mudou, o brilho continua
+> sendo três intensidades, e nada estático ganhou sombra. A tabela está em
+> `01-tokens.md`, "Profundidade".
+>
 > **Revisão de 4 de setembro de 2026.** A direção anterior era ardósia fria com
 > cobalto e âmbar, deliberadamente quieta. Foi trocada por decisão do dono do
 > projeto a partir de uma referência visual: interface de comando, quase preta,
@@ -230,9 +238,12 @@ regra de presença deixa de comunicar qualquer coisa.
 ## O que não fazer
 
 - Avatar repetido em cada mensagem do mesmo autor em sequência
-- Sombra sob elemento que não flutua
+- Sombra sob elemento que não flutua **nem se apoia** — parágrafo, divisória e
+  rótulo continuam sem nada. Cartão, campo e botão têm elevação porque são
+  objetos; texto não é objeto.
 - Gradiente como decoração de fundo — brilho é de borda, não de área
-- Uma quarta intensidade de brilho
+- Uma quarta intensidade de brilho. A escada de elevação **não** é uma: brilho
+  é cor, elevação é valor, e as duas somam no mesmo `box-shadow` sem competir.
 - Chanfro com valor diferente do token
 - Emoji como ícone de interface
 - Magenta em qualquer coisa que não seja presença humana ao vivo

@@ -4,8 +4,8 @@
   justify-content: space-between;
   gap: var(--s-4);
   width: 100%;
-  min-height: 36px;
-  padding: 6px 8px;
+  min-height: var(--control-h-md);
+  padding: var(--s-1) var(--s-2);
   border-radius: var(--r-control);
   text-align: left;
 }
@@ -27,16 +27,21 @@
 }
 
 .rotulo {
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-primary);
 }
 
 .linha[data-grave] .rotulo {
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-semi);
 }
 
 .dica {
-  font: var(--weight-regular) 11px / 1.4 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-ui);
   color: var(--text-tertiary);
 }
 
@@ -48,10 +53,12 @@
   width: 34px;
   height: 20px;
   border-radius: var(--r-full);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   border: 1px solid var(--border-soft);
-  transition: background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
+  box-shadow: var(--e-inset);
+  transition:
+    background var(--dur-quick) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out);
 }
 
 .botao {
@@ -62,12 +69,16 @@
   height: 14px;
   border-radius: var(--r-full);
   background: var(--text-tertiary);
-  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  box-shadow: var(--e-cheio);
+  transition:
+    transform var(--dur-quick) var(--ease-out),
+    background var(--dur-quick) var(--ease-out);
 }
 
 .linha[aria-checked='true'] .trilho {
   background: var(--cyan-wash);
   border-color: var(--accent);
+  box-shadow: var(--e-inset), var(--glow-accent);
 }
 
 .linha[aria-checked='true'] .botao {
@@ -76,7 +87,7 @@
 }
 
 .linha[data-grave][aria-checked='true'] .trilho {
-  background: rgba(251, 90, 104, 0.16);
+  background: var(--crimson-wash);
   border-color: var(--danger);
 }
 

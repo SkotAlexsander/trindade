@@ -11,7 +11,10 @@
      esquenta. Aqui ela também diz "isto está por cima porque está acontecendo". */
   border-top: 2px solid var(--live);
   border-radius: var(--r-surface);
-  box-shadow: var(--shadow-overlay, 0 12px 32px -8px rgba(0, 0, 0, 0.6));
+  /* `--shadow-overlay` nunca existiu: a `var()` caía sempre no valor de
+     reserva, que é o que de fato desenhava a sombra. Agora é o degrau de
+     quem está na mão — a janela é literalmente arrastável. */
+  box-shadow: var(--e-float);
   overflow: hidden;
 }
 
@@ -29,6 +32,12 @@
 
 .barra:active {
   cursor: grabbing;
+}
+
+/* Arrastando, a sombra cresce: é o mesmo objeto, mais alto. Sem isso, a janela
+   desliza como se estivesse pintada no fundo. */
+.janela:has(.barra:active) {
+  box-shadow: var(--e-float), var(--e-arrasto);
 }
 
 .nome {
@@ -129,7 +138,7 @@
   padding: 2px var(--s-1);
   font-size: var(--text-meta);
   color: var(--text-primary);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  background: linear-gradient(to top, var(--media-scrim), transparent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

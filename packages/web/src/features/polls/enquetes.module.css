@@ -12,6 +12,7 @@
   border: 1px solid var(--border-soft);
   border-radius: var(--r-surface);
   background: var(--bg-raised);
+  box-shadow: var(--e-raised);
 }
 
 .opcoes {

@@ -8,7 +8,7 @@
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-surface);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--glow-edge), var(--e-pop);
   overflow: hidden;
   z-index: 50;
 }
@@ -36,13 +36,17 @@
 }
 
 .nome {
-  font: var(--weight-semibold) 18px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-section);
+  font-weight: var(--weight-semi);
   color: var(--text-primary);
   margin: 0;
 }
 
 .usuario {
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -61,9 +65,11 @@
   height: 20px;
   padding: 0 8px;
   border-radius: var(--r-full);
-  font: var(--weight-medium) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
   color: var(--text-secondary);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -79,7 +85,10 @@
 }
 
 .bio {
-  font: var(--weight-regular) 13px / 1.5 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-read);
   color: var(--text-primary);
   margin: 10px 0 0;
   /* Bio longa não pode fazer o cartão passar da altura da janela. */
@@ -98,7 +107,9 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-primary);
   margin: 0;
 }
@@ -122,7 +133,9 @@
 }
 
 .desde {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
   margin: 4px 0 0;
 }
@@ -142,7 +155,9 @@
 
 .abaBotao {
   padding: 8px 12px;
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -190,7 +205,9 @@
 }
 
 .fotoRotulo {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
   margin: 0;
 }
@@ -201,19 +218,26 @@
 }
 
 .fotoDica {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   margin: 0;
 }
 
 .fotoPrivacidade {
-  font: var(--weight-regular) 12px / 1.4 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-ui);
   color: var(--text-tertiary);
   margin: 0;
 }
 
 .erroFoto {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--danger);
   margin: 2px 0 0;
 }
@@ -231,7 +255,7 @@
   position: relative;
   border-radius: var(--r-media);
   overflow: hidden;
-  background: var(--bg-base);
+  background: var(--bg-inset);
 }
 
 .tela {
@@ -250,7 +274,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 999px var(--media-scrim);
   border-radius: var(--r-full);
 }
 
@@ -268,7 +292,9 @@
 }
 
 .zoomRotulo {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
 }
 
@@ -288,19 +314,25 @@
 }
 
 .rotuloLido {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
   margin: 0;
 }
 
 .valorLido {
-  font: var(--weight-regular) 14px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   margin: 0;
 }
 
 .dicaLida {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
   margin: 0;
 }
@@ -313,7 +345,9 @@
   position: absolute;
   top: 0;
   right: 0;
-  font: var(--weight-regular) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -349,9 +383,11 @@
   padding: 0 8px;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-field);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   color: var(--text-primary);
-  font: var(--weight-regular) 12px var(--font-mono);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
 }
 
 /* --- segurança ------------------------------------------------------------ */
@@ -370,13 +406,18 @@
 }
 
 .blocoTitulo {
-  font: var(--weight-semibold) 14px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semi);
   color: var(--text-primary);
   margin: 0;
 }
 
 .blocoDica {
-  font: var(--weight-regular) 12px / 1.4 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-ui);
   color: var(--text-secondary);
   margin: 2px 0 0;
 }
@@ -391,8 +432,11 @@
   width: 176px;
   height: 176px;
   align-self: center;
-  background: #fff;
-  padding: 8px;
+  /* Branco literal por exigência do leitor: um QR em cinza claro falha em
+     câmera ruim, e no tema claro a superfície do diálogo não é branco puro.
+     `--media-ink` é o mesmo branco que já vale sobre mídia. */
+  background: var(--media-ink);
+  padding: var(--s-2);
   border-radius: var(--r-control);
 }
 
@@ -404,14 +448,17 @@
   padding: 6px 10px;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   font-family: var(--font-mono);
   font-size: 12px;
   word-break: break-all;
 }
 
 .avisoForte {
-  font: var(--weight-medium) 13px / 1.5 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-read);
   color: var(--text-primary);
   background: var(--cyan-wash);
   border-left: 2px solid var(--accent);
@@ -429,7 +476,7 @@
   margin: 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -439,7 +486,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-primary);
 }
 
@@ -461,7 +510,9 @@
   align-items: center;
   gap: 10px;
   min-height: 32px;
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-primary);
 }
 
@@ -496,7 +547,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-primary);
 }
 

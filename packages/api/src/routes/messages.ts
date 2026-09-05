@@ -470,7 +470,12 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: z.object({ id: z.string().uuid() }),
-        body: z.object({ messageId: z.string().uuid() }),
+        /* Sem `messageId` quer dizer "tudo o que existe agora". É o que o menu
+           do canal manda: quem clica em "marcar como lido" de fora do canal
+           não tem o id de mensagem nenhuma, e fazer o cliente buscar a última
+           só para devolvê-la seria uma volta a mais para o servidor descobrir
+           o que ele já sabe. */
+        body: z.object({ messageId: z.string().uuid().optional() }),
         response: { 204: z.null() },
       },
     },
@@ -478,11 +483,9 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
       const me = requireUser(req);
       const canal = await channelsDb.findChannelById(req.params.id);
       if (!canal) throw notFound('CHANNEL_NOT_FOUND', 'este canal não existe');
-      const { mutedUntil } = await messagesDb.marcarLido(
-        me.id,
-        { channelId: canal.id },
-        req.body.messageId,
-      );
+      const ate =
+        req.body.messageId ?? (await messagesDb.ultimaMensagemDo({ channelId: canal.id }));
+      const { mutedUntil } = await messagesDb.marcarLido(me.id, { channelId: canal.id }, ate);
 
       // Só para as suas outras abas: ler num lugar tem de apagar o negrito no
       // outro, e isso não é da conta de mais ninguém. O silêncio vai junto
@@ -492,7 +495,7 @@ export const messageRoutes: FastifyPluginAsyncZod = async (app) => {
         d: {
           channelId: canal.id,
           conversationId: null,
-          lastReadMessageId: req.body.messageId,
+          lastReadMessageId: ate,
           unreadCount: 0,
           mentionCount: 0,
           mutedUntil,

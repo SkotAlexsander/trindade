@@ -136,7 +136,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: var(--weight-semi) var(--text-ui) / 1 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semi);
+  line-height: 1;
   color: var(--text-primary);
 }
 

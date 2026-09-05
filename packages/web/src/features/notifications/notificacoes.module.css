@@ -46,7 +46,8 @@
   padding: var(--s-1) var(--s-2);
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
-  background: var(--bg-raised);
+  background: var(--bg-inset);
+  box-shadow: var(--e-inset);
   color: var(--text-primary);
   font: var(--text-ui) var(--font-ui);
   font-variant-numeric: tabular-nums;

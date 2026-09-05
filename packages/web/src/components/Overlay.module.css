@@ -1,11 +1,25 @@
 /* Superfícies que flutuam sobre outra coisa: diálogo, popover, menu, tooltip.
-   Só elas têm sombra — ver design/00-direcao-visual.md. */
+   Só elas têm sombra — ver design/00-direcao-visual.md.
+
+   O desfoque atrás não é enfeite: um menu de 200px sobre uma conversa densa
+   compete com o texto que passa por baixo dele, e a sombra sozinha não resolve
+   isso. Onde o navegador não suporta `backdrop-filter`, o fundo continua opaco
+   e nada se perde. */
 
 .surface {
   background: var(--bg-raised);
   border-radius: var(--r-surface);
-  box-shadow: var(--glow-edge), var(--shadow-pop);
+  box-shadow: var(--glow-edge), var(--e-pop);
   color: var(--text-primary);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .surface {
+    /* A cor perde opacidade **só** quando há desfoque para compensar: opaca
+       sobre nada é ilegível. */
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+    backdrop-filter: var(--blur-pop);
+  }
 }
 
 /* --- diálogo -------------------------------------------------------------
@@ -25,7 +39,7 @@
   border: none;
   overflow: auto;
   color: var(--text-primary);
-  box-shadow: var(--glow-edge), var(--shadow-modal);
+  box-shadow: var(--glow-edge), var(--e-modal);
 }
 
 .dialog[open] {
@@ -34,12 +48,13 @@
 
 .dialog::backdrop {
   background: var(--veil);
+  backdrop-filter: var(--blur-veil);
 }
 
 @keyframes aparecer {
   from {
     opacity: 0;
-    transform: translateY(var(--s-2));
+    transform: translateY(var(--s-2)) scale(0.98);
   }
 }
 
@@ -103,6 +118,11 @@
 
 .item[data-active='true'] {
   background: var(--bg-active);
+  box-shadow: var(--luz-topo);
+}
+
+.item {
+  transition: background var(--dur-instant) var(--ease-out);
 }
 
 .item:disabled {
@@ -126,9 +146,9 @@
   padding: var(--s-1) var(--s-2);
   font-size: var(--text-label);
   color: var(--text-primary);
-  background: var(--bg-raised);
+  background: var(--bg-float);
   border-radius: var(--r-control);
-  box-shadow: var(--glow-edge), var(--shadow-pop);
+  box-shadow: var(--glow-edge), var(--e-pop);
   max-width: 240px;
 }
 
@@ -147,6 +167,7 @@
 
 .toast {
   width: var(--toast-w);
+  box-shadow: var(--glow-edge), var(--e-float);
   padding: var(--s-3);
   display: flex;
   align-items: flex-start;
@@ -158,7 +179,7 @@
 .toast[data-kind='danger'] {
   box-shadow:
     0 0 0 1px var(--danger),
-    var(--shadow-pop);
+    var(--e-float);
 }
 
 .toastText {
@@ -170,7 +191,7 @@
 @keyframes entrarToast {
   from {
     opacity: 0;
-    transform: translateX(var(--s-4));
+    transform: translateX(var(--s-4)) scale(0.96);
   }
 }
 
@@ -204,7 +225,8 @@
 /* Opacidade pulsando, sem varredura diagonal: a varredura é decoração que
    chama atenção para o que ainda não existe. */
 .skeleton {
-  background: var(--bg-raised);
+  background: var(--bg-inset);
+  box-shadow: var(--e-inset);
   border-radius: var(--r-control);
   animation: pulsar 1400ms var(--ease-in-out) infinite;
 }

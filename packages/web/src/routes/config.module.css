@@ -14,13 +14,22 @@
 }
 
 .titulo {
-  font: var(--weight-semibold) 20px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-title);
+  font-weight: var(--weight-semi);
   color: var(--text-primary);
   margin: 0;
 }
 
+.pendente code {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
 .pendente {
   color: var(--text-secondary);
-  font: var(--weight-regular) 14px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-normal);
   margin: 0;
 }

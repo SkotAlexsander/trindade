@@ -394,7 +394,10 @@ export const conversationRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         params: z.object({ id: z.string().uuid() }),
-        body: z.object({ messageId: z.string().uuid() }),
+        /* Sem `messageId` é "tudo o que existe agora" — a mesma regra do canal,
+           em `routes/messages.ts`. As duas rotas andam juntas: a lista de
+           conversas e a de canais dão o mesmo gesto. */
+        body: z.object({ messageId: z.string().uuid().optional() }),
         response: { 204: z.null() },
       },
     },
@@ -402,17 +405,20 @@ export const conversationRoutes: FastifyPluginAsyncZod = async (app) => {
       const me = requireUser(req);
       await exigirMembro(req.params.id, me.id);
 
+      const ate =
+        req.body.messageId ??
+        (await messagesDb.ultimaMensagemDo({ conversationId: req.params.id }));
       const { mutedUntil } = await messagesDb.marcarLido(
         me.id,
         { conversationId: req.params.id },
-        req.body.messageId,
+        ate,
       );
       gateway.sendToUser(me.id, {
         op: 'READ_STATE_UPDATE',
         d: {
           channelId: null,
           conversationId: req.params.id,
-          lastReadMessageId: req.body.messageId,
+          lastReadMessageId: ate,
           unreadCount: 0,
           mentionCount: 0,
           mutedUntil,

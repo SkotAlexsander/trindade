@@ -1,6 +1,8 @@
 import { useState, type DragEvent } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronDown, Hash, SinoCortado } from '../../components/icones';
+import { IconButton } from '../../components';
+import { ChevronDown, Hash, Reticencias, SinoCortado } from '../../components/icones';
+import { ChannelMenu } from '../shell/ChannelMenu';
 import { ItemDeVoz } from '../voice/ItemDeVoz';
 import { LinhaDeApresentacao } from '../boards/LinhaDeApresentacao';
 import { groupByCategory, type Category, type ChannelWithState } from './canais';
@@ -113,18 +115,36 @@ function GrupoCategoria({
       {visiveis.map((canal) => (
         <div key={canal.id}>
           {destino === canal.id && arrastando ? <div className={styles.destino} /> : null}
-          <ItemCanal
-            canal={canal}
-            podeGerenciar={podeGerenciar}
-            arrastando={arrastando === canal.id}
-            onDragStart={() => setArrastando(canal.id)}
-            onDragOver={() => setDestino(canal.id)}
-            onDrop={() => onSoltar(canal.id)}
-            onDragEnd={() => {
-              setArrastando(null);
-              setDestino(null);
-            }}
-          />
+          {/* O menu é irmão do item, e não filho: o item é um `<a>`, e um
+              botão dentro de uma âncora é HTML inválido — o clique no botão
+              navegaria junto. */}
+          <div className={styles.linha}>
+            <ItemCanal
+              canal={canal}
+              podeGerenciar={podeGerenciar}
+              arrastando={arrastando === canal.id}
+              onDragStart={() => setArrastando(canal.id)}
+              onDragOver={() => setDestino(canal.id)}
+              onDrop={() => onSoltar(canal.id)}
+              onDragEnd={() => {
+                setArrastando(null);
+                setDestino(null);
+              }}
+            />
+            <ChannelMenu
+              canal={canal}
+              podeGerenciar={podeGerenciar}
+              trigger={
+                <IconButton
+                  label={`Ações de ${canal.name}`}
+                  size="sm"
+                  className={styles.acoes}
+                >
+                  <Reticencias size={16} />
+                </IconButton>
+              }
+            />
+          </div>
           {/* Uma apresentação em curso aparece aqui, indentada, como os
               avatares da chamada: quem está olhando a lista precisa ver que
               tem gente ao vivo ali dentro. */}

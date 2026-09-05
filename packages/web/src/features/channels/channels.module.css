@@ -32,6 +32,32 @@
   transform: rotate(-90deg);
 }
 
+/* O item e o seu menu, lado a lado. O `position: relative` é do invólucro
+   porque o botão de ações se apoia nele, e o item continua ocupando a linha
+   inteira — clicar em qualquer lugar dela ainda entra no canal. */
+.linha {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Só aparece no hover ou quando tem o foco: um botão de reticências fixo em
+   cada canal é ruído permanente para uma ação que se usa uma vez por mês.
+   Aparecer no `:focus-within` é o que o mantém alcançável pelo teclado. */
+.acoes {
+  position: absolute;
+  right: var(--s-3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.linha:hover .acoes,
+.linha:focus-within .acoes,
+.acoes[aria-expanded='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .item {
   position: relative;
   display: grid;
@@ -51,6 +77,12 @@
   border: none;
   width: calc(100% - var(--s-4));
   text-decoration: none;
+}
+
+/* Com o menu à direita, o nome não pode passar por baixo dele. */
+.linha:hover .nome,
+.linha:focus-within .nome {
+  padding-right: var(--s-5);
 }
 
 .item:hover {
@@ -159,4 +191,89 @@
 .sino {
   display: inline-flex;
   color: var(--text-tertiary);
+}
+
+/* --- diálogo de canal ---------------------------------------------------- */
+
+/* Dois cartões lado a lado, e não um `select`: são duas opções que não mudam
+   nunca, e a escolha muda o que o canal é para sempre — o peso visual da
+   decisão tem de bater com o peso dela. */
+.tipos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+  padding: 0;
+  border: none;
+}
+
+.tipos legend {
+  margin-bottom: var(--s-2);
+}
+
+.tipo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'icone nome' 'icone dica';
+  align-items: center;
+  gap: 0 var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-surface);
+  background: var(--bg-panel);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-quick) var(--ease-out),
+    background var(--dur-quick) var(--ease-out);
+}
+
+.tipo:hover {
+  border-color: var(--border);
+  background: var(--bg-hover);
+}
+
+.tipo[data-escolhido='true'] {
+  border-color: var(--border-strong);
+  background: var(--bg-selected);
+  box-shadow: var(--glow-accent);
+}
+
+.tipo svg {
+  grid-area: icone;
+  color: var(--text-secondary);
+}
+
+.tipo[data-escolhido='true'] svg {
+  color: var(--accent);
+}
+
+.tipoNome {
+  grid-area: nome;
+  font-size: var(--text-ui);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+.tipoDica {
+  grid-area: dica;
+  font-size: var(--text-meta);
+  color: var(--text-tertiary);
+}
+
+.prefixo {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.enderecoFixo {
+  margin: 0 0 var(--s-4);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  line-height: var(--leading-ui);
+}
+
+.enderecoFixo code {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
 }

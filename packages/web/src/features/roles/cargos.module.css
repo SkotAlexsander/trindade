@@ -33,7 +33,10 @@
 }
 
 .dicaDaLista {
-  font: var(--weight-regular) 11px / 1.4 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-ui);
   color: var(--text-tertiary);
   margin: -2px 0 4px;
 }
@@ -55,7 +58,9 @@
   min-height: 32px;
   padding: 0 8px;
   border-radius: var(--r-control);
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   cursor: grab;
 }
@@ -109,7 +114,10 @@
 }
 
 .avisoDaLista {
-  font: var(--weight-regular) 11px / 1.4 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-ui);
   color: var(--text-tertiary);
   margin: 4px 0 0;
 }
@@ -133,7 +141,9 @@
 }
 
 .titulo {
-  font: var(--weight-semibold) 18px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-section);
+  font-weight: var(--weight-semi);
   color: var(--text-primary);
   margin: 0;
   flex: 1;
@@ -146,7 +156,9 @@
 /* Discreto, e some sozinho: um "Salvo" permanente vira parte do layout e
    deixa de significar que algo acabou de acontecer. */
 .salvo {
-  font: var(--weight-medium) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
   color: var(--accent);
   opacity: 0;
   transition: opacity var(--dur-normal) var(--ease-out);
@@ -163,7 +175,9 @@
 }
 
 .rotulo {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
   margin: 0;
 }
@@ -192,9 +206,11 @@
   padding: 0 8px;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-field);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   color: var(--text-primary);
-  font: var(--weight-regular) 12px var(--font-mono);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
 }
 
 .previaDaCor {
@@ -210,11 +226,15 @@
   height: 20px;
   padding: 0 10px;
   border-radius: var(--r-full);
-  font: var(--weight-medium) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
 }
 
 .notaDaCor {
-  font: var(--weight-regular) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
 }
 
@@ -233,7 +253,9 @@
 }
 
 .tituloDoGrupo {
-  font: var(--weight-medium) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -250,7 +272,7 @@
 
 .administrador[data-ligado='true'] {
   border-color: var(--danger);
-  background: rgba(251, 90, 104, 0.06);
+  background: var(--crimson-wash);
 }
 
 .pessoas {
@@ -270,12 +292,16 @@
   border-radius: var(--r-full);
   background: var(--bg-raised);
   border: 1px solid var(--border-soft);
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
 }
 
 .vazio {
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
   margin: 0;
 }

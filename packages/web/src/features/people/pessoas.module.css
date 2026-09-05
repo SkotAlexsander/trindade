@@ -23,7 +23,9 @@
 }
 
 .contagem {
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -57,18 +59,24 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font: var(--weight-medium) 14px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
   white-space: nowrap;
 }
 
 .voce {
-  font: var(--weight-regular) 11px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-normal);
   color: var(--text-tertiary);
 }
 
 .usuario {
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   white-space: nowrap;
 }
@@ -111,7 +119,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font: var(--weight-medium) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-secondary);
   padding: 4px 0;
 }
@@ -122,11 +132,11 @@
 
 .girado {
   transform: rotate(-90deg);
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-quick) var(--ease-out);
 }
 
 .giradoAberto {
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-quick) var(--ease-out);
 }
 
 /* --- diálogo de cargos ---------------------------------------------------- */
@@ -140,7 +150,10 @@
 /* --- desativar ------------------------------------------------------------ */
 
 .consequencia {
-  font: var(--weight-regular) 13px / 1.55 var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-read);
   color: var(--text-primary);
   margin: 0 0 var(--s-4);
 }
@@ -158,7 +171,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-control);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-primary);
@@ -171,7 +184,9 @@
 }
 
 .dicaDoConvite {
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -181,7 +196,9 @@
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
 }
 
@@ -193,7 +210,9 @@
 }
 
 .rotuloDoPrazo {
-  font: var(--weight-medium) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
 }
 
@@ -202,9 +221,11 @@
   padding: 0 8px;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-field);
-  background: var(--bg-base);
+  background: var(--bg-inset);
   color: var(--text-primary);
-  font: var(--weight-regular) 13px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
 }
 
 .separador {
@@ -227,7 +248,9 @@
   align-items: center;
   gap: 8px;
   min-height: 32px;
-  font: var(--weight-regular) 12px var(--font-ui);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
 }
 

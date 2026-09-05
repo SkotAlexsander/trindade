@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { MENCAO_DE_TODOS, type Channel, type Message, type Task, type User } from '@trindade/shared';
+import type { Channel, Message, Task, User } from '@trindade/shared';
 import { useToast } from '../../components';
 import { irPara } from '../../lib/navegacao';
 import * as ws from '../../lib/ws';
@@ -16,7 +16,7 @@ import {
 } from '../messages/queries';
 import { confirmarNonce } from '../messages/useEnviar';
 import { useLeitura } from '../messages/leitura';
-import { analisarMarkdown, mencionados } from '../messages/markdown';
+import { analisarMarkdown, citaVoce, mencionados } from '../messages/markdown';
 import { alvoDaMensagem, canal, idDoAlvo, type Alvo } from '../messages/alvo';
 import { mensagemNaConversa, receberConversa } from '../conversations/queries';
 import { avisar } from '../notifications/motor';
@@ -133,12 +133,12 @@ export function useGateway(): void {
         if (d.author.id === meuId) return;
 
         const blocos = analisarMarkdown(d.content ?? '');
+        /* A mesma regra que pinta a linha da mensagem, em `Message.tsx`: uma
+           pergunta, uma resposta, um lugar. Quem escreveu já saiu duas linhas
+           acima, então aqui nunca somos o autor. */
+        const citou = citaVoce(blocos, meuUsername);
+        // `@aqui` é outro assunto: ele não chama você, chama quem está online.
         const citados = mencionados(blocos);
-        /* `@todos` conta como menção para todo mundo — menos para quem
-           escreveu, que já saiu duas linhas acima. É a mesma conta que o
-           servidor faz no contador. */
-        const citou =
-          citados.has(MENCAO_DE_TODOS) || Boolean(meuUsername && citados.has(meuUsername));
 
         const canal = qc
           .getQueryData<Channel[]>(['channels'])
