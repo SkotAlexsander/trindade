@@ -448,6 +448,15 @@ O nome do canal criado leva o horário, e o roteiro **não** apaga o que cria: u
 canal a mais na base de desenvolvimento é barato, e apagar exigiria uma rota de
 exclusão que o produto não tem de propósito — arquiva-se, não se exclui.
 
+**A conta sai do ambiente** em `fase-05-conteudo`, `fase-07-grade`,
+`fase-09-notas`, `fase-09-enquetes` e `fase-09-tarefas`:
+
+    TRINDADE_A=carla TRINDADE_B=daniel python e2e/fase-09-tarefas.py .capturas
+
+O padrão continua sendo `alex` e `bruno`. Rotacionar é o que permite repetir um
+roteiro enquanto se conserta algo, em vez de esperar quinze minutos a cada duas
+tentativas.
+
 **Duas armadilhas do ambiente**, que valem para qualquer roteiro daqui:
 
 - **Entrar tem limite de 5 por 15 minutos, por usuário e IP.** Rotacione a conta

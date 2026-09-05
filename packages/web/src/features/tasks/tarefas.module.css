@@ -29,6 +29,25 @@
   align-content: start;
 }
 
+/* A área de pouso de uma coluna vazia. Aparece só durante o arrasto — ver o
+   comentário no `PainelDeTarefas`. */
+.pouso {
+  display: grid;
+  place-items: center;
+  min-height: var(--s-7);
+  margin: 0;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-control);
+  color: var(--text-tertiary);
+  font-size: var(--text-meta);
+}
+
+.coluna[data-sobre='true'] .pouso {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-selected);
+}
+
 .coluna {
   display: grid;
   gap: var(--s-2);

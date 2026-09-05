@@ -6,6 +6,7 @@ desenhado, não como ele viaja.
     pnpm dev:seed
 """
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -17,6 +18,11 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 SHOTS = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 SHOTS.mkdir(parents=True, exist_ok=True)
 BASE = 'http://localhost:5173'
+
+# A conta sai do ambiente: entrar tem limite de 5 por 15 minutos por usuário e
+# IP, e este roteiro se repete muito enquanto se mexe no conteúdo da mensagem.
+CONTA = os.environ.get('TRINDADE_A', 'alex')
+
 
 resultados = []
 
@@ -39,7 +45,7 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: erros.append(str(e)))
 
     pg.goto(f'{BASE}/entrar', wait_until='networkidle')
-    pg.fill('input[autocomplete="username"]', 'alex')
+    pg.fill('input[autocomplete="username"]', CONTA)
     pg.fill('input[autocomplete="current-password"]', 'cavalo-bateria-grampo-9')
     pg.click('button[type="submit"]')
     pg.wait_for_url('**/c/**', timeout=25000)
@@ -105,7 +111,7 @@ with sync_playwright() as p:
           ultima().locator('span[class*="mencao"]').count() == 0)
 
     # A linha só acende para quem foi citado.
-    escrever(f'@alex é você mesmo {marca}')
+    escrever(f'@{CONTA} é você mesmo {marca}')
     check('a linha acende quando citam você',
           ultima().get_attribute('data-mencionado') == 'true')
 

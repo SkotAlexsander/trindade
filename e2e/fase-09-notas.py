@@ -9,6 +9,7 @@ que este roteiro faz, com dois navegadores de verdade contra o mesmo servidor.
     pnpm dev:seed
 """
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -20,6 +21,17 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 SHOTS = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 SHOTS.mkdir(parents=True, exist_ok=True)
 BASE = 'http://localhost:5173'
+
+# As duas contas saem do ambiente, com o padrão de sempre:
+#
+#     TRINDADE_A=carla TRINDADE_B=daniel python e2e/fase-09-notas.py
+#
+# Entrar tem limite de 5 por 15 minutos **por usuário e IP**, e uma sessão de
+# conserto roda o mesmo roteiro muitas vezes. Rotacionar a conta é o que
+# impede a suíte de bloquear a si mesma. Ver e2e/README.md.
+CONTA_A = os.environ.get('TRINDADE_A', 'alex')
+CONTA_B = os.environ.get('TRINDADE_B', 'bruno')
+
 
 resultados = []
 
@@ -67,8 +79,8 @@ marca = str(int(time.time()))[-5:]
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome', headless=True)
 
-    ctxA, pgA, errosA = entrar(b, 'alex')
-    ctxB, pgB, errosB = entrar(b, 'bruno')
+    ctxA, pgA, errosA = entrar(b, CONTA_A)
+    ctxB, pgB, errosB = entrar(b, CONTA_B)
 
     abrir_notas(pgA)
     check('o painel de notas abre com editor', pgA.locator('[aria-label^="Notas de"]').count() == 1)

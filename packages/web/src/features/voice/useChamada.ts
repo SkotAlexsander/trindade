@@ -6,7 +6,10 @@ import {
   CadeiaDeEntrada,
   estadoDaPermissao,
   explicarErroDeMidia,
+  decidirTroca,
   listarDispositivos,
+  observarDispositivos,
+  type ListaDeDispositivos,
   paraSalvar,
   resolverDispositivo,
   type ModoDePortao,
@@ -38,6 +41,12 @@ interface Credenciais {
 
 /** A cadeia vive fora do React: uma chamada de cada vez, e ela sobrevive a re-renders. */
 let cadeia: CadeiaDeEntrada | null = null;
+
+/** Como desligar o ouvinte de `devicechange`. Só existe durante a chamada. */
+let pararDeObservar: (() => void) | null = null;
+
+/** O microfone que está tocando agora, para a cascata saber o que é "em uso". */
+let microfoneEmUso: string | null = null;
 
 export function cadeiaAtual(): CadeiaDeEntrada | null {
   return cadeia;
@@ -126,6 +135,40 @@ function retornosDaSala(show: (mensagem: string, tipo?: ToastKind) => void): sal
   };
 }
 
+/**
+ * Tirar e pôr um aparelho no meio da chamada.
+ *
+ * A tabela é a de `design/13-dispositivos-e-audio.md`: aparelho novo só
+ * atualiza a lista, aparelho em uso que some cai para o próximo da cascata
+ * **com aviso**, e aparelho que sai sem estar em uso não muda nada. Trocar
+ * sozinho para o fone que acabou de ser conectado é o comportamento do sistema
+ * operacional, não o nosso — aqui, quem escolheu escolheu.
+ *
+ * `decidirTroca` e `observarDispositivos` existiam desde a fase 7, com teste, e
+ * nada os chamava: tirar o fone no meio da conversa deixava a chamada num
+ * aparelho que não existe mais.
+ */
+async function aoMudarDispositivos(
+  lista: ListaDeDispositivos,
+  show: (texto: string, tipo?: 'info' | 'danger') => void,
+): Promise<void> {
+  if (!cadeia) return;
+
+  const prefs = lerPreferencias();
+  const decisao = decidirTroca(microfoneEmUso, prefs.microfone, lista.microfones);
+  if (decisao.dispositivo?.deviceId === microfoneEmUso) return;
+
+  try {
+    await cadeia.trocarDispositivo(decisao.dispositivo?.deviceId);
+    microfoneEmUso = decisao.dispositivo?.deviceId ?? null;
+    if (decisao.avisar) {
+      show(`O microfone saiu. Usando ${decisao.dispositivo?.label || 'o padrão'}.`);
+    }
+  } catch {
+    show('O microfone saiu e não consegui trocar. Escolha outro nas configurações.', 'danger');
+  }
+}
+
 export function useChamada(): Chamada {
   const { show } = useToast();
 
@@ -133,6 +176,9 @@ export function useChamada(): Chamada {
     const { fase } = useVoz.getState();
     if (fase === 'fora') return;
     await sala.sair();
+    pararDeObservar?.();
+    pararDeObservar = null;
+    microfoneEmUso = null;
     await cadeia?.fechar();
     cadeia = null;
     useVoz.getState().esquecerChamada();
@@ -188,6 +234,11 @@ export function useChamada(): Chamada {
 
         await sala.entrar(credenciais, cadeia, retornosDaSala(show));
 
+        microfoneEmUso = escolha.dispositivo?.deviceId ?? null;
+        pararDeObservar = observarDispositivos((nova) => {
+          void aoMudarDispositivos(nova, show);
+        });
+
         useVoz.getState().definir({
           fase: 'conectado',
           muted: false,
@@ -204,6 +255,9 @@ export function useChamada(): Chamada {
         tocar('entrar');
       } catch (erro) {
         await sala.sair();
+        pararDeObservar?.();
+        pararDeObservar = null;
+        microfoneEmUso = null;
         await cadeia?.fechar();
         cadeia = null;
 

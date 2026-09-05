@@ -20,6 +20,7 @@ import {
   dbfsDeRms,
   estadoDaPermissao,
   decidirTroca,
+  observarDispositivos,
   devePortaoAbrir,
   ehDoSistema,
   explicarErroDeMidia,
@@ -112,6 +113,49 @@ describe('tirar e pôr no meio da chamada', () => {
     ]);
     expect(t.dispositivo?.deviceId).toBe('bbb');
     expect(t.avisar).toBe(true);
+  });
+});
+
+describe('o ouvinte de `devicechange`', () => {
+  /*
+   * A decisão já era testada; o **ouvinte** não era, e ninguém o chamava.
+   * Tirar o fone no meio da conversa deixava a chamada num aparelho que não
+   * existe mais — a tabela de design/13-dispositivos-e-audio.md descrevia um
+   * comportamento que o produto não tinha.
+   */
+  const original = globalThis.navigator;
+
+  function comMediaDevices(mock: unknown): void {
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { mediaDevices: mock },
+      configurable: true,
+    });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'navigator', { value: original, configurable: true });
+  });
+
+  it('assina e devolve como desassinar', () => {
+    const assinados: string[] = [];
+    const removidos: string[] = [];
+    comMediaDevices({
+      addEventListener: (nome: string) => assinados.push(nome),
+      removeEventListener: (nome: string) => removidos.push(nome),
+      enumerateDevices: () => Promise.resolve([]),
+    });
+
+    const parar = observarDispositivos(() => {});
+    expect(assinados).toEqual(['devicechange']);
+    parar();
+    expect(removidos).toEqual(['devicechange']);
+  });
+
+  it('sem suporte, devolve uma função que não faz nada', () => {
+    // Não é hipótese: `mediaDevices` não existe em contexto inseguro, e um
+    // `undefined` chamado no fim da chamada derrubaria a saída dela.
+    comMediaDevices(undefined);
+    expect(() => observarDispositivos(() => {})()).not.toThrow();
   });
 });
 

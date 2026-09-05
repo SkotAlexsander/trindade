@@ -31,6 +31,16 @@ QUEM_DESENHA, QUEM_OLHA = (
     (sys.argv[2], sys.argv[3]) if len(sys.argv) > 3 else ('alex', 'bruno')
 )
 
+# Um arquivo de fonte de verdade, escolhido do próprio repositório: os nomes
+# carregam hash e não dá para adivinhá-los no navegador.
+_FONTES = sorted(
+    (Path(__file__).resolve().parent.parent / 'packages/web/public/excalidraw/fonts')
+    .glob('*/*.woff2')
+)
+UMA_FONTE = (
+    '/excalidraw/fonts/' + '/'.join(_FONTES[0].parts[-2:]) if _FONTES else '/excalidraw/fonts/'
+)
+
 resultados = []
 
 
@@ -64,7 +74,9 @@ def entrar(b, usuario, senha='cavalo-bateria-grampo-9'):
     ))
     pg.goto(f'{BASE}/entrar', wait_until='networkidle')
     pg.fill('input[autocomplete="username"]', usuario)
-    pg.fill('input[autocomplete="current-password"]', senha)
+    # `admin` é a segunda conta com cargo de administração no elenco de
+    # desenvolvimento, e ter duas dobra a folga do limite de login.
+    pg.fill('input[autocomplete="current-password"]', '010623' if usuario == 'admin' else senha)
     pg.click('button[type="submit"]')
     pg.wait_for_url('**/c/**', timeout=25000)
     pg.wait_for_selector('#compositor', timeout=15000)
@@ -265,12 +277,24 @@ with sync_playwright() as p:
     check('nenhuma fonte buscada fora do nosso domínio', not de_fora,
           '; '.join(de_fora[:2]))
 
+    # A propriedade que importa é **de onde a fonte vem**, e ela se verifica
+    # pedindo o arquivo: contar as buscas do Excalidraw dependia de ele ter
+    # decidido carregar uma fonte naquela sessão — sem texto no desenho, ele
+    # não carrega nenhuma, e o roteiro acusava um defeito que não havia.
+    servida = quem.evaluate(
+        """async (caminho) => {
+            const r = await fetch(caminho).catch(() => null);
+            return r && r.ok ? (r.headers.get('content-type') || 'sem tipo') : 'nao';
+        }""",
+        UMA_FONTE,
+    )
     fontes = quem.evaluate("""() => performance
         .getEntriesByType('resource')
         .map((r) => r.name)
         .filter((n) => n.includes('/excalidraw/fonts/'))""")
-    check('e as fontes do quadro saíram daqui mesmo', len(fontes) > 0,
-          fontes[0].replace(BASE, '') if fontes else 'nenhuma fonte buscada')
+    check('e as fontes do quadro saem daqui mesmo',
+          len(fontes) > 0 or servida != 'nao',
+          f'{len(fontes)} buscadas pelo Excalidraw; servidas por nós: {servida}')
 
     check('nenhum erro de página', not errosA and not errosB,
           '; '.join((errosA + errosB)[:2]))

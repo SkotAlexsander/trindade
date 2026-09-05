@@ -787,6 +787,45 @@ eles continuam medidos sozinhos.
 mora dentro do menu agora — uma prop que todo mundo implementaria igual é só um
 jeito de alguém esquecer.
 
+**Tirar o fone no meio da chamada não fazia nada.** `observarDispositivos` e
+`decidirTroca` existiam desde a fase 7, com teste, e ninguém os chamava: a
+tabela de `design/13-dispositivos-e-audio.md` descrevia um comportamento que o
+produto não tinha. Agora o `useChamada` observa `devicechange` enquanto a
+chamada dura — aparelho novo só atualiza a lista, aparelho em uso que some cai
+para o próximo da cascata **com aviso**. Mesma forma do `ChannelMenu`: peça
+pronta, testada, nunca ligada. Foi uma varredura de exportações que ninguém
+importa que achou as duas.
+
+**Coluna vazia não tinha onde soltar.** O `<section>` do quadro de tarefas
+encolhia até a altura do cabeçalho, e mover o primeiro cartão para "Fazendo" —
+o arrasto mais comum que existe — simplesmente não funcionava. Agora uma área
+de pouso aparece **enquanto há um cartão no ar**, e some depois: em repouso,
+uma caixa em volta de cada coluna é ruído, e essa regra é da fase 9.
+
+**O rótulo do botão de entrar estava à esquerda.** `globals.css` zera o botão
+com `text-align: inherit`, para que item de menu e linha de canal — que são
+botões — herdem o alinhamento do texto em volta. O primitivo `Button` recupera
+o centro; as telas de autenticação têm botão próprio e nunca recuperaram.
+"Entrar" saía colado na borda esquerda de um botão de 400px, na primeira tela
+que qualquer pessoa vê.
+
+**Quatro roteiros do e2e mentiam, cada um do seu jeito**, e todos falhavam
+antes destas mudanças:
+
+- `fase-04-shell` dependia do não lido semeado, que a primeira execução
+  consome — abrir o canal marca como lido. Agora ele fabrica o próprio, numa
+  segunda janela.
+- `fase-09-tarefas` media o cartão sem rolar até ele: no quadro de
+  desenvolvimento a tarefa nova nasce fora da vista, e o mouse ia para um
+  ponto que não existe.
+- `fase-07-grade` clicava para abrir a grade que já abre sozinha desde a fase
+  10 — e portanto a fechava. E exigia que um `Escape` fechasse a grade depois
+  de a câmera ter empilhado um passo, contra a regra de "um passo por vez" que
+  o próprio documento define.
+- `fase-10-quadro` contava as fontes que o Excalidraw buscou; sem texto no
+  desenho ele não busca nenhuma. Agora pede o arquivo e confere de onde ele
+  veio, que é a propriedade que importa.
+
 ### Fase 9 — concluída
 
 **Fatia 1: notas colaborativas.** Yjs com o estado em `notes.ydoc`, transporte

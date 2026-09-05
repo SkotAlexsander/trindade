@@ -275,3 +275,19 @@ certa em vez de acumular.
 
 Cada um desses é uma pergunta que vai aparecer. A resposta é a mesma: com cinco
 pessoas, a ferramenta que exige menos decisões para usar é a que vai ser usada.
+
+---
+
+## A coluna vazia precisa de onde soltar
+
+> 5 de setembro de 2026.
+
+O `<section>` de uma coluna sem cartões encolhia até a altura do cabeçalho —
+dezoito pixels. Mover o primeiro cartão para "Fazendo", que é o arrasto mais
+comum que existe num quadro, simplesmente não funcionava: não havia área para
+soltar.
+
+A área de pouso aparece **enquanto há um cartão no ar** e some depois. É a
+mesma regra da moldura da coluna, que já dizia: em repouso, uma caixa em volta
+de cada coluna é ruído. Durante o arrasto ela deixa de ser ruído e passa a ser
+a única coisa que importa.

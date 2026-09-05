@@ -68,15 +68,24 @@
   display: flex;
   align-items: center;
   height: var(--field-h);
-  background: var(--bg-panel);
+  background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--r-field);
-  transition: border-color var(--dur-instant) var(--ease-out);
+  box-shadow: var(--e-inset);
+  transition:
+    border-color var(--dur-instant) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out);
 }
 
+.inputWrap:hover:not(:focus-within) {
+  border-color: var(--border-strong);
+}
+
+/* Em foco o buraco continua buraco — e acende. Ver components/Field.module.css:
+   é a mesma regra, e as duas telas têm de parecer o mesmo produto. */
 .inputWrap:focus-within {
   border-color: var(--accent);
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--e-inset), var(--glow-accent);
 }
 
 /* O anel vai no campo inteiro, não no <input>.
@@ -181,9 +190,21 @@
   border-left-color: var(--accent);
 }
 
+/*
+ * O rótulo estava **à esquerda** em todos os botões destas telas.
+ *
+ * `globals.css` zera o botão com `text-align: inherit`, para que item de menu
+ * e linha de canal — que são botões — herdem o alinhamento do texto em volta.
+ * O primitivo `Button` recupera o centro com `inline-flex` + `justify-content`;
+ * estas telas têm botão próprio e nunca recuperaram. "Entrar" saía colado na
+ * borda esquerda de um botão de 400px, na primeira tela que alguém vê.
+ */
 .button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
   width: 100%;
-  box-shadow: var(--glow-accent);
   height: var(--field-h);
   background: var(--accent);
   color: var(--text-on-accent);
@@ -192,15 +213,24 @@
   border: none;
   border-radius: var(--r-control);
   cursor: pointer;
-  transition: background var(--dur-instant) var(--ease-out);
+  box-shadow: var(--glow-accent), var(--e-cheio);
+  translate: 0 0;
+  transition:
+    background var(--dur-instant) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    translate var(--dur-instant) var(--ease-out);
 }
 
 .button:hover:not(:disabled) {
   background: var(--cyan-hover);
+  translate: 0 -1px;
+  box-shadow: var(--glow-accent), var(--e-cheio), var(--e-pop);
 }
 
 .button:active:not(:disabled) {
   background: var(--cyan-press);
+  translate: 0 0;
+  box-shadow: var(--e-inset);
 }
 
 .button:disabled {
@@ -289,16 +319,20 @@
   text-align: center;
   font-size: var(--text-title);
   font-family: var(--font-mono);
-  background: var(--bg-panel);
+  background: var(--bg-inset);
   color: var(--text-primary);
   border: 1px solid var(--border);
   border-radius: var(--r-field);
+  box-shadow: var(--e-inset);
+  transition:
+    border-color var(--dur-instant) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out);
 }
 
 .codeBox:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--e-inset), var(--glow-accent);
 }
 
 .codeRow[data-shake='true'] {

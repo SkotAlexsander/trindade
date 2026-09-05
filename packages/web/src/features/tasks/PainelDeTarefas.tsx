@@ -48,6 +48,10 @@ export function PainelDeTarefas({
 
   const [feitoAberto, setFeitoAberto] = useState(false);
   const [titulo, setTitulo] = useState('');
+  /* Se há um cartão no ar. Serve só para as colunas vazias abrirem uma área de
+     pouso enquanto dura o arrasto — em repouso, uma caixa em volta de cada
+     coluna é ruído. Ver design/08-projeto.md. */
+  const [arrastando, setArrastando] = useState(false);
 
   // O ponteiro só começa a arrastar depois de 6px: sem isso, um clique no
   // cartão vira arrasto de um pixel e o link de volta nunca abre.
@@ -107,7 +111,15 @@ export function PainelDeTarefas({
         </form>
       ) : null}
 
-      <DndContext sensors={sensores} onDragEnd={aoSoltar}>
+      <DndContext
+        sensors={sensores}
+        onDragStart={() => setArrastando(true)}
+        onDragCancel={() => setArrastando(false)}
+        onDragEnd={(evento) => {
+          setArrastando(false);
+          aoSoltar(evento);
+        }}
+      >
         <div className={styles.colunas}>
           {COLUNAS.map((coluna) => (
             <Coluna
@@ -116,6 +128,7 @@ export function PainelDeTarefas({
               tarefas={porColuna[coluna]}
               pessoas={pessoas}
               podeMexer={podeMexer}
+              arrastando={arrastando}
               recolhida={coluna === 'done' && !feitoAberto}
               onAlternar={() => coluna === 'done' && setFeitoAberto((v) => !v)}
               onConcluir={(t) => concluir.mutate({ id: t.id, concluida: !t.completedAt })}
@@ -134,6 +147,7 @@ function Coluna({
   tarefas,
   pessoas,
   podeMexer,
+  arrastando,
   recolhida,
   onAlternar,
   onConcluir,
@@ -144,6 +158,7 @@ function Coluna({
   tarefas: Task[];
   pessoas: readonly User[];
   podeMexer: boolean;
+  arrastando: boolean;
   recolhida: boolean;
   onAlternar: () => void;
   onConcluir: (t: Task) => void;
@@ -188,6 +203,14 @@ function Coluna({
           />
         ))
       )}
+
+      {/* Coluna vazia não tinha onde soltar: o `<section>` encolhia até a
+          altura do cabeçalho, e mover o primeiro cartão para "Fazendo" — que é
+          o arrasto mais comum que existe — simplesmente não funcionava. A área
+          só existe enquanto há um cartão no ar. */}
+      {arrastando && !recolhida && tarefas.length === 0 ? (
+        <p className={styles.pouso}>solte aqui</p>
+      ) : null}
     </section>
   );
 }

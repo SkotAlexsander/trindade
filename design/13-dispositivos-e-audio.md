@@ -91,6 +91,13 @@ de dispositivo em silêncio é pior que trocar avisando.
 Trocar sozinho para o fone que acabou de ser conectado é o comportamento do
 sistema operacional, não o nosso. Aqui, quem escolheu escolheu.
 
+> **Ligado em 5 de setembro de 2026.** Esta tabela descrevia, desde a fase 7,
+> um comportamento que o produto não tinha: `observarDispositivos` e
+> `decidirTroca` estavam escritos e testados, e nada os chamava. Tirar o fone
+> no meio da conversa deixava a chamada num aparelho que não existia mais.
+> Agora o `useChamada` assina o `devicechange` enquanto a chamada dura, e
+> desassina ao sair.
+
 ### `default` e `communications` no Windows
 
 O Chrome no Windows expõe dois pseudodispositivos além dos reais. Eles são

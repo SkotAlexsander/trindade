@@ -11,6 +11,7 @@ vídeo é o avatar — não um retângulo preto.
     pnpm dev:seed
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -21,6 +22,17 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 SHOTS = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 SHOTS.mkdir(parents=True, exist_ok=True)
 BASE = 'http://localhost:5173'
+
+# As duas contas saem do ambiente, com o padrão de sempre:
+#
+#     TRINDADE_A=carla TRINDADE_B=daniel python e2e/fase-07-grade.py
+#
+# Entrar tem limite de 5 por 15 minutos **por usuário e IP**, e uma sessão de
+# conserto roda o mesmo roteiro muitas vezes. Rotacionar a conta é o que
+# impede a suíte de bloquear a si mesma. Ver e2e/README.md.
+CONTA_A = os.environ.get('TRINDADE_A', 'alex')
+CONTA_B = os.environ.get('TRINDADE_B', 'bruno')
+
 
 resultados = []
 
@@ -67,8 +79,8 @@ with sync_playwright() as p:
         entrar(pg, nome)
         return ctx, pg, erros
 
-    ctxA, pgA, errosA = abrir('alex')
-    ctxB, pgB, errosB = abrir('bruno')
+    ctxA, pgA, errosA = abrir(CONTA_A)
+    ctxB, pgB, errosB = abrir(CONTA_B)
 
     pgA.locator('button', has_text='sala').first.click()
     check('alex entra na chamada', aparece(pgA, CONECTADO))
@@ -88,8 +100,15 @@ with sync_playwright() as p:
           barra.locator('button[aria-label="Câmera desligada"]').count() == 1)
 
     # --- a grade ------------------------------------------------------------
-    barra.locator('button[aria-label="Grade de participantes"]').click()
-    pgA.wait_for_selector('section[aria-label="Participantes da chamada"]', timeout=5000)
+    # **Garante** a grade aberta em vez de alternar às cegas.
+    #
+    # Entrar numa chamada já mostra a chamada desde a fase 10 — o modo é o
+    # guardado, e a escolha de quem usa vale desde o primeiro instante. Este
+    # roteiro é de antes dessa decisão: ele clicava para abrir e, com a grade
+    # já aberta, fechava. O produto estava certo; o roteiro é que envelheceu.
+    if pgA.locator('section[aria-label="Participantes da chamada"]').count() == 0:
+        barra.locator('button[aria-label="Grade de participantes"]').click()
+    pgA.wait_for_selector('section[aria-label="Participantes da chamada"]', timeout=8000)
     grade = pgA.locator('section[aria-label="Participantes da chamada"]')
 
     # Sobreposição, não outra rota: a URL não muda e o compositor continua
@@ -169,8 +188,17 @@ with sync_playwright() as p:
     pgA.screenshot(path=str(SHOTS / '84-grade-dois.png'))
 
     # --- fechar --------------------------------------------------------------
-    pgA.keyboard.press('Escape')
-    pgA.wait_for_timeout(500)
+    # `Escape` desfaz **um passo por vez**, e essa é a regra escrita em
+    # design/02-shell-principal.md: tela cheia, tela em primeiro plano, sala,
+    # gaveta, painel. Depois de ligar e desligar a câmera há um passo a mais
+    # empilhado, e exigir que a primeira tecla feche a grade era exigir que a
+    # ordem fosse ignorada. Duas teclas é o teto — se precisar de três, aí sim
+    # há algo empilhando o que não devia.
+    for _ in range(2):
+        pgA.keyboard.press('Escape')
+        pgA.wait_for_timeout(500)
+        if pgA.locator('section[aria-label="Participantes da chamada"]').count() == 0:
+            break
     check('Escape fecha a grade',
           pgA.locator('section[aria-label="Participantes da chamada"]').count() == 0)
     check('e não sai da chamada',

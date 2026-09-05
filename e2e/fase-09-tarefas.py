@@ -10,6 +10,7 @@ deixa uma linha no canal, e a mensagem de origem sabe que virou tarefa.
     pnpm dev:seed
 """
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -21,6 +22,17 @@ sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 SHOTS = Path(sys.argv[1] if len(sys.argv) > 1 else '.')
 SHOTS.mkdir(parents=True, exist_ok=True)
 BASE = 'http://localhost:5173'
+
+# As duas contas saem do ambiente, com o padrão de sempre:
+#
+#     TRINDADE_A=carla TRINDADE_B=daniel python e2e/fase-09-tarefas.py
+#
+# Entrar tem limite de 5 por 15 minutos **por usuário e IP**, e uma sessão de
+# conserto roda o mesmo roteiro muitas vezes. Rotacionar a conta é o que
+# impede a suíte de bloquear a si mesma. Ver e2e/README.md.
+CONTA_A = os.environ.get('TRINDADE_A', 'alex')
+CONTA_B = os.environ.get('TRINDADE_B', 'bruno')
+
 
 resultados = []
 
@@ -85,8 +97,15 @@ def arrastar(pg, origem, destino):
     Um `drag_to` direto não move nada: o sensor de ponteiro precisa ver o
     caminho, não o salto.
     """
+    # Rolar antes de medir. O quadro de desenvolvimento acumula tarefas, e o
+    # cartão recém-criado nasce no fim de "A fazer" — fora da vista. Uma caixa
+    # medida fora da tela manda o mouse para um ponto que não existe, e o
+    # arrasto falha sem que nada esteja quebrado no produto.
+    origem.scroll_into_view_if_needed()
+    pg.wait_for_timeout(300)
     a = origem.bounding_box()
     b = destino.bounding_box()
+    assert a and b, 'sem caixa: o cartão ou a coluna não estão na tela'
     pg.mouse.move(a['x'] + a['width'] / 2, a['y'] + a['height'] / 2)
     pg.mouse.down()
     for i in range(1, 11):
@@ -104,8 +123,8 @@ marca = str(int(time.time()))[-5:]
 with sync_playwright() as p:
     b = p.chromium.launch(channel='chrome', headless=True)
 
-    ctxA, pgA, errosA = entrar(b, 'alex')
-    ctxB, pgB, errosB = entrar(b, 'bruno')
+    ctxA, pgA, errosA = entrar(b, CONTA_A)
+    ctxB, pgB, errosB = entrar(b, CONTA_B)
 
     abrir_tarefas(pgA)
     abrir_tarefas(pgB)
