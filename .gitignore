@@ -10,6 +10,11 @@ build/
 coverage/
 PROGRESSO.md
 
+# Capturas dos roteiros de e2e. Elas nascem na pasta que se passa como
+# argumento, e quem esquece o argumento as despeja na raiz — foi assim que
+# quatorze PNGs acabaram versionados sem ninguém decidir isso.
+/*.png
+
 # Fixturas e cache gerados pelos roteiros de e2e.
 e2e/.tmp/
 e2e/__pycache__/
