@@ -270,3 +270,53 @@
   color: var(--text-tertiary);
   white-space: nowrap;
 }
+
+/*
+ * No telefone a linha empilha.
+ *
+ * Em 360px o nome, o @usuário e os chips de cargo não cabem lado a lado: os
+ * chips saíam cortados no meio da palavra — "Membr" —, que é pior que não
+ * mostrá-los. O avatar continua à esquerda, ocupando as duas linhas; o resto
+ * desce.
+ */
+@media (max-width: 599px) {
+  .linha {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'avatar nome acoes'
+      'avatar cargos acoes';
+    align-items: center;
+    row-gap: var(--s-1);
+    padding: var(--s-2);
+  }
+
+  .linha > :first-child {
+    grid-area: avatar;
+  }
+
+  .nome {
+    grid-area: nome;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .usuario {
+    /* O @usuário some: o nome de exibição já identifica, e numa tela estreita
+       ele custa a linha inteira. Continua no cartão de perfil. */
+    display: none;
+  }
+
+  .cargos {
+    grid-area: cargos;
+  }
+
+  .espacador {
+    display: none;
+  }
+
+  .maisAcoes,
+  .linha > button:last-child {
+    grid-area: acoes;
+  }
+}

@@ -1,13 +1,25 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import type { Conversation, User } from '@trindade/shared';
-import { Avatar, IconButton, Tooltip } from '../../components';
+import { Avatar, IconButton, Menu, MenuItem, Tooltip } from '../../components';
 import { FaixaConexao } from '../realtime/FaixaConexao';
 import { MenuDeSilenciar } from '../notifications/MenuDeSilenciar';
 import { MenuDaConversa } from '../conversations/MenuDaConversa';
-import { Board, ChevronLeft, Hash, Notes, Pin, Search, Tasks, Volume } from '../../components/icones';
+import {
+  Board,
+  ChevronLeft,
+  Hash,
+  Notes,
+  Pin,
+  Reticencias,
+  Search,
+  Tasks,
+  Volume,
+} from '../../components/icones';
 import type { ChannelWithState } from '../channels/canais';
 import { canal as canalComoAlvo, conversa as conversaComoAlvo } from '../messages/alvo';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
+import { ATE } from '../../lib/telas';
+import { useMediaQuery } from '../../lib/useMediaQuery';
 import styles from './shell.module.css';
 
 /**
@@ -87,6 +99,11 @@ export function ChannelHeader({
 }: ChannelHeaderProps) {
   const coluna = useRef<HTMLDivElement>(null);
   const [largura, setLargura] = useState(() => lerPreferencias().larguraDaConversa);
+  const noTelefone = useMediaQuery(ATE.telefone);
+
+  /* Numa conversa privada, só busca: fixadas, notas, tarefas e quadros são do
+     canal. Ver design/10-conversas-privadas.md. */
+  const visiveis = conversa ? BOTOES.filter((b) => b.id === 'busca') : BOTOES;
 
   /**
    * Arrastar a divisa entre a chamada e a conversa.
@@ -198,21 +215,69 @@ export function ChannelHeader({
               alvo={conversa ? conversaComoAlvo(conversa.id) : canalComoAlvo(canal?.id ?? '')}
             />
           ) : null}
-          {/* Numa conversa privada, só busca e thread: fixadas, notas, tarefas
-              e quadros são do canal. Ver design/10-conversas-privadas.md. */}
-          {(conversa ? BOTOES.filter((b) => b.id === 'busca') : BOTOES).map((botao) => (
-            <Tooltip key={botao.id} label={botao.rotulo}>
-              <IconButton
-                label={botao.rotulo}
-                size="sm"
-                aria-pressed={painel === botao.id}
-                className={painel === botao.id ? styles.acaoAtiva : undefined}
-                onClick={() => onPainel(botao.id)}
-              >
-                {botao.icone}
-              </IconButton>
-            </Tooltip>
-          ))}
+
+          {/* No telefone os painéis recolhem num menu.
+              Cinco ícones mais o sino ocupavam metade da barra de 360px e
+              espremiam o nome do canal, que é a única coisa ali que diz onde
+              você está. Buscar fica de fora do menu: é o único que se usa no
+              meio de uma conversa, e enterrá-lo custaria dois toques toda vez.
+              A escolha é de **quais controles existem**, e por isso mora no
+              React — layout puro continua no CSS. */}
+          {noTelefone ? (
+            <>
+              {visiveis
+                .filter((b) => b.id === 'busca')
+                .map((botao) => (
+                  <IconButton
+                    key={botao.id}
+                    label={botao.rotulo}
+                    size="sm"
+                    aria-pressed={painel === botao.id}
+                    className={painel === botao.id ? styles.acaoAtiva : undefined}
+                    onClick={() => onPainel(botao.id)}
+                  >
+                    {botao.icone}
+                  </IconButton>
+                ))}
+              {visiveis.length > 1 ? (
+                <Menu
+                  label="Painéis do canal"
+                  placement="bottom-end"
+                  trigger={
+                    <IconButton label="Painéis do canal" size="sm">
+                      <Reticencias size={18} />
+                    </IconButton>
+                  }
+                >
+                  {visiveis
+                    .filter((b) => b.id !== 'busca')
+                    .map((botao) => (
+                      <MenuItem
+                        key={botao.id}
+                        icon={botao.icone}
+                        onSelect={() => onPainel(botao.id)}
+                      >
+                        {botao.rotulo}
+                      </MenuItem>
+                    ))}
+                </Menu>
+              ) : null}
+            </>
+          ) : (
+            visiveis.map((botao) => (
+              <Tooltip key={botao.id} label={botao.rotulo}>
+                <IconButton
+                  label={botao.rotulo}
+                  size="sm"
+                  aria-pressed={painel === botao.id}
+                  className={painel === botao.id ? styles.acaoAtiva : undefined}
+                  onClick={() => onPainel(botao.id)}
+                >
+                  {botao.icone}
+                </IconButton>
+              </Tooltip>
+            ))
+          )}
           {conversa?.completa ? (
             <MenuDaConversa conversa={conversa.completa} pessoas={conversa.todas} />
           ) : null}

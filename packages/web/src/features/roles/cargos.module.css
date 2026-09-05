@@ -8,9 +8,14 @@
   gap: var(--s-6);
   align-items: start;
   max-width: 900px;
+  container: pagina / inline-size;
 }
 
-@media (max-width: 760px) {
+/* `@container`, não `@media`: esta página mora dentro da coluna da conversa, e
+   a largura dela depende do painel de contexto estar aberto. Numa janela de
+   1400px com o painel aberto a página tem 1000px; com ele fechado, 1300. A
+   media query respondia sobre a janela e errava as duas. */
+@container pagina (max-width: 760px) {
   .pagina {
     grid-template-columns: 1fr;
   }

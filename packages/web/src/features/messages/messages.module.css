@@ -1,5 +1,26 @@
 /* A conversa. Ver design/04-mensagens.md. */
 
+/*
+ * A conversa tem uma largura, e **tudo** dentro dela obedece a essa largura.
+ *
+ * Numa tela de 2560px a coluna ficava encostada na de canais com mil e
+ * setecentos pixels de vazio à direita — foi o dono do projeto que apontou,
+ * com um retrato de uma tela muito grande.
+ *
+ * A primeira tentativa centralizou peça por peça, e produziu algo pior: as
+ * mensagens no meio, as linhas de sistema na esquerda e o compositor num
+ * terceiro lugar. Centralizar peça por peça é como um bloco deixa de ser um
+ * bloco.
+ *
+ * Agora a medida é **do container**: uma folga lateral igual dos dois lados,
+ * aplicada uma vez, que todo filho herda por estar dentro dela. Mensagem,
+ * linha de sistema, divisor de dia e compositor ficam alinhados porque não têm
+ * como não ficar.
+ *
+ * `--folga` e `--leitura-w` moram em `features/shell/shell.module.css`, na
+ * coluna da conversa: a lista e o compositor são irmãos, e a medida precisa de
+ * um ancestral comum aos dois.
+ */
 .moldura {
   position: relative;
   display: grid;
@@ -19,7 +40,7 @@
 .rolagem {
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--s-4) 0 var(--s-3);
+  padding: var(--s-4) var(--folga) var(--s-3);
   /* Ancora no fim: quando o conteúdo cresce acima da viewport, o navegador
      mantém o que está visível no lugar. É o mesmo princípio da compensação
      manual da prepend, feito pelo motor. */
@@ -59,7 +80,14 @@
   grid-template-columns: var(--gutter-w) minmax(0, 1fr);
   padding: 2px var(--s-5) 2px 0;
   position: relative;
+
+  /* `--faixa` é onde a **tinta** para: gutter + medida de leitura + folga.
+     `--faixa-com-acoes` é onde a **linha** para, e a diferença entre as duas é
+     a tira em que a barra de ações mora. Reservá-la resolve os dois problemas
+     de uma vez: a barra deixa de voar para a borda de uma janela de 2560px, e
+     deixa de cobrir a mensagem de cima, porque agora tem lugar próprio. */
   --faixa: calc(var(--gutter-w) + var(--measure) + var(--s-5));
+
   background-repeat: no-repeat;
   background-size: min(100%, var(--faixa)) 100%;
 }
@@ -327,6 +355,16 @@ button.citacaoTexto:hover > span:last-child {
   display: block;
 }
 
+/*
+ * Grudado no topo, o divisor precisa ser **opaco inteiro**.
+ *
+ * Só o `span` tinha fundo; as duas réguas de 1px e os vãos entre elas eram
+ * transparentes, e o texto da mensagem de cima passava por trás. Aparecia em
+ * qualquer largura — era só rolar até uma virada de dia.
+ *
+ * A largura acompanha a da linha de mensagem: um traço que atravessa 2560px
+ * para separar uma coluna de 850 não separa nada, anuncia.
+ */
 .divisorDia {
   position: sticky;
   top: 0;
@@ -334,7 +372,9 @@ button.citacaoTexto:hover > span:last-child {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  margin: 20px var(--s-5) 20px var(--s-4);
+  margin: var(--s-5) var(--s-5) var(--s-5) var(--s-4);
+  padding: var(--s-1) 0;
+  background: var(--bg-app);
   font-size: var(--text-meta);
   color: var(--text-tertiary);
 }
@@ -360,21 +400,23 @@ button.citacaoTexto:hover > span:last-child {
  * dezenas de vezes enquanto o ponteiro atravessa a tela. */
 
 /*
- * A barra fica na borda direita da **linha**, não da coluna de leitura.
+ * A barra mora na tira reservada à direita da mensagem.
  *
- * Ancorá-la no fim da faixa parecia melhor — as ações de uma mensagem a
- * quinhentos pixels dela, numa tela larga, ficam soltas no vazio. Mas a barra
- * é opaca e mora 14px acima da própria linha: dentro da coluna de leitura ela
- * cobre o fim da mensagem de cima, e o que estava embaixo deixa de ser
- * clicável enquanto o vizinho está sob o mouse. Foi `fase-05-conteudo.py` que
- * mostrou, tentando clicar num spoiler coberto.
+ * Duas tentativas anteriores, e as duas erradas: colada na borda da linha
+ * cheia, ela aparecia a quinhentos pixels da mensagem numa tela larga; colada
+ * no fim da coluna de leitura, cobria o fim da mensagem de cima e o que estava
+ * embaixo deixava de ser clicável — `fase-05-conteudo.py` mostrou, tentando
+ * clicar num spoiler coberto.
  *
- * No vazio à direita ela não cobre nada. A distância é o preço.
+ * A saída não era escolher entre as duas: era **abrir espaço**. A linha agora
+ * é mais larga que a tinta, e a diferença é esta tira. Onde a janela não tem
+ * essa folga, o `min` a traz de volta para dentro e o comportamento antigo
+ * volta com ela — num telefone não há vazio para ocupar de qualquer jeito.
  */
 .acoes {
   position: absolute;
   top: -14px;
-  right: var(--s-5);
+  right: var(--s-2);
   z-index: 2;
   display: none;
   align-items: center;
@@ -529,8 +571,18 @@ button.citacaoTexto:hover > span:last-child {
 
 /* --- compositor ----------------------------------------------------------- */
 
+/*
+ * O compositor acompanha a largura da conversa.
+ *
+ * A linha de mensagem para na medida de leitura desde a fatia de
+ * profundidade; o compositor continuava indo até a borda. Numa tela de
+ * 2560px isso desenhava uma caixa de 2500px sob uma coluna de 850, e as duas
+ * deixavam de parecer a mesma conversa. O `--s-5` extra é a folga da direita
+ * que a linha também tem.
+ */
+/* A mesma folga da rolagem: o compositor é o pé da mesma coluna. */
 .compositorArea {
-  padding: 0 var(--s-4) var(--s-3);
+  padding: 0 calc(var(--folga) + var(--s-4)) var(--s-3);
 }
 
 .barraContexto {

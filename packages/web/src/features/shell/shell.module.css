@@ -181,6 +181,28 @@
   /* Referência para a grade da chamada, que se sobrepõe a esta coluna
      inteira — cabeçalho incluído. */
   position: relative;
+
+  /*
+   * A largura da conversa, e a folga que a centraliza.
+   *
+   * Mora aqui porque a lista de mensagens e o compositor são **irmãos** — a
+   * medida precisa de um ancestral comum, e a coluna é ele. Quem usa está em
+   * `features/messages/messages.module.css`.
+   *
+   * Gutter do horário + medida de leitura + folga + a tira em que a barra de
+   * ações da mensagem mora. Numa tela de 2560px, sem isto, a conversa ficava
+   * encostada na coluna de canais com mil e setecentos pixels de vazio ao
+   * lado.
+   *
+   * **`--leitura-w`, e não `--conversa-w`.** Este último já existe e é outra
+   * coisa: a largura da faixa de conversa quando há chamada ao lado, escrita
+   * *inline* pela alça de arrastar do cabeçalho. Reaproveitar o nome fez a
+   * coluna inteira herdar os 380px do padrão daquela alça, e a conversa saiu
+   * com um terço da largura sem que nada parecesse errado no CSS.
+   */
+  --acoes-w: 232px;
+  --leitura-w: calc(var(--gutter-w) + var(--measure) + var(--s-5) + var(--acoes-w));
+  --folga: max(0px, calc((100% - var(--leitura-w)) / 2));
   display: grid;
   grid-template-rows: auto var(--header-h) minmax(0, 1fr);
   min-width: 0;

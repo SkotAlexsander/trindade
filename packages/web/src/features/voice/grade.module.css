@@ -373,7 +373,10 @@
   color: var(--text-secondary);
 }
 
-@media (max-width: 900px) {
+/* 899, não 900: é o mesmo pixel em que o shell vira gaveta. Com 900 aqui, na
+   largura exata de 900px a chamada já empilhava enquanto as colunas ainda
+   estavam abertas — uma faixa de um pixel com dois layouts discordando. */
+@media (max-width: 899px) {
   .comFoco {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) 96px;
