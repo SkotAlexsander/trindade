@@ -11,8 +11,10 @@ quem lê nunca chega a quem manda o link, a mídia da chamada passa sempre por
 relay, nenhuma imagem chega ao disco sem ser re-encodada, e o registro de acesso
 não guarda endereço de ninguém.
 
-**Estado: as dez fases estão prontas.** Falta o empacotamento de mesa e a
-publicação — ver `prompts/fase-11-desktop-e-publicacao.md`.
+**Estado: as dez fases estão prontas**, e o aplicativo de Windows já abre e
+instala. Falta a casca ganhar bandeja, atalho global, notificação nativa e
+atualização automática — e falta publicar o servidor. Ver
+`prompts/fase-11-desktop-e-publicacao.md`.
 
 ---
 
@@ -21,10 +23,19 @@ publicação — ver `prompts/fase-11-desktop-e-publicacao.md`.
 **No navegador**, de qualquer computador: é o caminho normal, e não exige
 instalar nada. O front é estático e o Caddy o serve.
 
-**Instalado na máquina**, como o Discord: um binário de 8 a 15 MB via Tauri, com
-notificação nativa, ícone na bandeja e atalho global de mudo. O código do
-produto é o mesmo — muda onde ele roda e o que ele pode fazer a mais. Ainda não
-está empacotado; o passo a passo está no prompt da fase 11.
+**Instalado na máquina**, como o Discord: 3,2 MB de binário, 1,1 MB de
+instalador. A casca é Tauri e carrega o servidor — não é uma segunda cópia do
+produto, é o mesmo, numa janela própria. Na primeira execução ela pergunta o
+endereço do seu espaço.
+
+```bash
+pnpm desktop:build
+# packages/desktop/src-tauri/target/release/bundle/nsis/Trindade_0.1.0_x64-setup.exe
+```
+
+Instala para o usuário atual, sem pedir administrador. Bandeja, atalho global de
+mudo, notificação nativa e atualização automática são as próximas fatias — ver
+`prompts/fase-11-desktop-e-publicacao.md` e `design/14-aplicativo-de-mesa.md`.
 
 ---
 
@@ -79,6 +90,7 @@ packages/
   api/       Fastify 5, WebSocket, Postgres, sharp, LiveKit — um processo só
   web/       React 18 + Vite, CSS Modules, TanStack Query, Zustand
   shared/    tipos e schemas que os dois lados compartilham
+  desktop/   a casca nativa em Tauri (Rust) — Windows por enquanto
 infra/       Caddyfile, cabeçalhos, LiveKit, coturn
 scripts/     implantar, backup, restaurar, vigia, verificar segredos
 e2e/         roteiros Playwright em Python — um por assunto
@@ -135,6 +147,7 @@ novo.
 - `design/11-quadro.md` — quadro colaborativo e modo apresentação
 - `design/12-compartilhamento-de-tela.md` — presets, simulcast, assistir
 - `design/13-dispositivos-e-audio.md` — microfone, alto-falante, câmera, medidor
+- `design/14-aplicativo-de-mesa.md` — a casca nativa e por que ela carrega o servidor
 
 ### As fases
 

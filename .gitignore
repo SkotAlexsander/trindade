@@ -25,3 +25,7 @@ backups/
 # Fontes do Excalidraw, copiadas do pacote instalado por
 # packages/web/scripts/fontes-do-quadro.mjs antes de `dev` e de `build`.
 packages/web/public/excalidraw/
+
+# Compilação do Rust. 1,5 GB de artefato que se refaz com `cargo build`.
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/gen/

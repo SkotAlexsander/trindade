@@ -134,6 +134,9 @@ Atualizar esta seção ao fim de cada fase.
       o quarto, e só existe com o domínio de verdade no ar)
 - [x] Fase 9 — ferramentas de projeto e notificações
 - [x] Fase 10 — conversas privadas e quadro
+- [ ] Fase 11 — aplicativo de mesa e publicação (fatia 1 do desktop feita;
+      bandeja, atalho global, notificação nativa, atualização e a publicação
+      ficaram — ver `prompts/fase-11-desktop-e-publicacao.md`)
 
 ---
 
@@ -825,6 +828,35 @@ antes destas mudanças:
 - `fase-10-quadro` contava as fontes que o Excalidraw buscou; sem texto no
   desenho ele não busca nenhuma. Agora pede o arquivo e confere de onde ele
   veio, que é a propriedade que importa.
+
+### Aplicativo de mesa — 5 de setembro de 2026
+
+Pedido do dono do projeto: as duas possibilidades, navegador e instalado no
+Windows. Fatia 1 entregue — ver `design/14-aplicativo-de-mesa.md`.
+
+**A casca carrega o servidor; ela não embrulha o front.** Embrulhar quebraria a
+sessão: o token de atualização mora num cookie `httpOnly; SameSite=Strict` preso
+à origem da API, e com o front em `tauri://localhost` toda chamada viraria
+cross-site — o cookie não iria junto e a sessão morreria no primeiro vencimento
+do token de acesso, quinze minutos depois de entrar, sem mensagem nenhuma. As
+alternativas eram piores: afrouxar o cookie enfraquece o navegador para
+consertar o desktop, e guardar o token no cofre do sistema contraria "nenhuma
+credencial em disco". Carregando o servidor direto, a autenticação inteira segue
+valendo sem uma linha de exceção.
+
+**O endereço do servidor não está gravado no binário.** O mesmo instalador serve
+para qualquer espaço. Uma tela na primeira execução pergunta, e é a única tela
+que este aplicativo desenha.
+
+**3,2 MB de binário, 1,1 MB de instalador.** É a razão de ser Tauri: a WebView é
+a do sistema, e o Electron carregaria um Chromium inteiro — cerca de 150 MB —
+para exibir a mesma página.
+
+**A barra de título ciano não é defeito nosso.** A máquina tem "mostrar cor de
+destaque nas barras de título" ligado, e nessa configuração toda janela do
+sistema usa a cor de destaque. O `theme` do Tauri controla a WebView, não a
+moldura. Um programa que força a própria cor de barra é um que decidiu que sabe
+melhor que o dono da máquina.
 
 ### Vídeo do YouTube dentro do app — 5 de setembro de 2026
 

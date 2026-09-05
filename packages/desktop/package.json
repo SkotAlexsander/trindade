@@ -1,0 +1,14 @@
+{
+  "name": "@trindade/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A casca nativa: o mesmo produto, instalado na máquina.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0"
+  }
+}

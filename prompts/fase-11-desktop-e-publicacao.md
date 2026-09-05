@@ -17,25 +17,33 @@ existir.
 
 ### Por que Tauri e não Electron
 
-O front já é estático (`packages/web/dist`, servido pelo Caddy). Tauri embrulha
-esse mesmo `dist` num binário de 8 a 15 MB usando o WebView do sistema; o
-Electron carregaria um Chromium inteiro de 150 MB para exibir a mesma página.
-Para cinco pessoas num programa que fica aberto o dia todo ao lado de uma
-chamada, a diferença é memória que sai do lugar errado.
+Tauri usa a WebView do sistema: o binário saiu com **3,2 MB** e o instalador
+com **1,1 MB**. O Electron carregaria um Chromium inteiro — cerca de 150 MB —
+para exibir a mesma página, num programa que fica aberto o dia todo ao lado de
+uma chamada.
 
 **O código do produto não muda.** O que muda é onde ele roda e o que ele pode
 fazer a mais.
 
+### Já feito — não refaça
+
+A **fatia 1 está entregue** em `packages/desktop`: empacotamento, janela com
+mínimo de 940×600, instância única, tela de escolher o servidor, ícones e
+instalador NSIS. `pnpm desktop` abre, `pnpm desktop:build` gera o instalador.
+
+Leia `design/14-aplicativo-de-mesa.md` antes de tocar em qualquer coisa aqui — a
+decisão de **carregar o servidor em vez de embrulhar o front** é o que sustenta
+a sessão funcionando, e desfazê-la sem perceber quebra o login quinze minutos
+depois de entrar.
+
+Falta: bandeja, fechar-sem-encerrar, atalho global de mudo, notificação nativa e
+atualização automática.
+
 ### O que entregar
 
-**Empacotamento.** `packages/desktop/` com a estrutura do Tauri v2, apontando
-para o `dist` do `@trindade/web`. O `beforeBuildCommand` roda o build do web, e
-o `devUrl` aponta para o servidor de desenvolvimento na 5173 — assim `pnpm
-desktop:dev` recarrega igual ao navegador.
-
-**A janela abre no lugar certo.** Tamanho mínimo de 940×600 — abaixo disso o
-shell vira gaveta e um programa de mesa que abre em modo telefone parece
-quebrado. Lembre posição e tamanho entre execuções.
+**Lembre posição e tamanho da janela** entre execuções. Hoje ela sempre abre
+centralizada em 1280×840; quem move e redimensiona espera encontrar do mesmo
+jeito na próxima vez.
 
 **Notificação nativa.** O produto já pede permissão de notificação do navegador
 e a usa na primeira menção (`docs/07-permissoes-do-navegador.md`). No Tauri, o
@@ -65,12 +73,6 @@ o primeiro bug de protocolo entre elas é impossível de depurar.
 "conectando" que nunca sai. Confira que o caminho de erro continua honesto no
 desktop.
 
-**A CSP vale dentro do Tauri.** Ela vive no `tauri.conf.json`, não no Caddy, e
-precisa ser a mesma de `infra/cabecalhos.caddy` — incluindo o
-`frame-src https://www.youtube-nocookie.com` do cartão de vídeo, senão o player
-não abre e ninguém entende por quê. Uma política que diverge da outra é como o
-desktop passa a ter bugs que o navegador não tem.
-
 **O token de acesso continua só na memória.** Não guarde credencial no store do
 Tauri "porque agora dá". O refresh continua no cookie `httpOnly`, e o WebView
 manda cookie igual ao navegador. Se você precisar mexer nisso, releia
@@ -79,13 +81,21 @@ manda cookie igual ao navegador. Se você precisar mexer nisso, releia
 **`iceTransportPolicy: 'relay'` continua obrigatório.** O WebView não muda essa
 regra, e o Tauri não é desculpa para vazar IP entre membros.
 
-**Uma origem, não `file://`.** Sirva o `dist` pelo protocolo do Tauri e aponte a
-API para o domínio de produção por variável de ambiente. `file://` quebra
-cookie, CSP e WebSocket de uma vez só.
+**Não passe a embrulhar o front.** A casca carrega o servidor de propósito, e
+`design/14-aplicativo-de-mesa.md` explica por quê: o token de atualização mora
+num cookie `SameSite=Strict` preso à origem da API, e com o front rodando em
+`tauri://localhost` toda chamada viraria cross-site — o cookie não iria junto e
+a sessão morreria quinze minutos depois de entrar, sem mensagem nenhuma. É um
+defeito que não aparece em nenhum teste rápido.
+
+**A CSP, por consequência, é a do Caddy.** Como a página vem do servidor, é a
+política dele que vale — não a do `tauri.conf.json`. Se você mudar o desenho e
+passar a servir conteúdo local, aí sim as duas precisam ser iguais, incluindo o
+`frame-src https://www.youtube-nocookie.com` do cartão de vídeo.
 
 ### Aceite da parte A
 
-- O instalador de cada plataforma abre e o produto entra normalmente
+- O instalador abre e o produto entra normalmente *(feito no Windows)*
 - Chamada conecta, e `getStats()` mostra só candidatos de relay
 - Notificação nativa aparece com a janela minimizada
 - `Ctrl/⌘ ⇧ M` muta com o foco em outro programa

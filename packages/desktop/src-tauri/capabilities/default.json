@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "local",
+  "description": "O que a página local — a que pergunta o endereço do servidor — pode chamar. O servidor remoto não entra nesta lista, e por isso não alcança comando nenhum.",
+  "windows": ["principal"],
+  "permissions": ["core:default"]
+}
