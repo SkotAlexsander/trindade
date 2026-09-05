@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Channel, User } from '@trindade/shared';
 import { Avatar, Menu, MenuItem, MenuSeparator, Tooltip } from '../../components';
-import { Check, Expandir, Mic, MicOff, Monitor, X } from '../../components/icones';
+import { Board, Check, Expandir, Mic, MicOff, Monitor, X } from '../../components/icones';
+import { useQuadroAberto } from '../boards/store';
+import { useApresentacoes, apresentacaoNoCanal } from '../boards/apresentacoes';
+import { useQuadros } from '../boards/queries';
 import { lerPreferencias, salvarPreferencias } from '../../lib/preferencias';
 import type { Participante } from './sala';
 import { useVoz } from './store';
@@ -54,8 +57,26 @@ export function JanelaFlutuante({ canais, pessoas }: { canais: Channel[]; pessoa
   }, []);
 
   const canal = canais.find((c) => c.id === channelId);
-  const naSala = canal ? slug === canal.slug && modo !== 'mensagens' : false;
+
+  /* O quadro cobre a tela inteira, inclusive a grade da chamada. Com ele
+     aberto, a chamada **sai da tela** como sai quando você troca de canal — e
+     é por isso que a janela flutuante aparece por cima dele. Sem esta linha,
+     entrar no quadro durante uma chamada apagava todo mundo da vista. */
+  const quadroAberto = useQuadroAberto((s) => s.aberto);
+  const fecharQuadro = useQuadroAberto((s) => s.fechar);
+  const abrirQuadro = useQuadroAberto((s) => s.abrir);
+
+  const naSala = canal ? slug === canal.slug && modo !== 'mensagens' && !quadroAberto : false;
   const visivel = fase !== 'fora' && !naSala && !escondida;
+
+  /* Para onde vai o botão do quadro: o que está sendo apresentado no canal da
+     chamada, ou o mais recente dele. Quem está numa chamada e quer o quadro
+     quase sempre quer **este**. */
+  const apresentacao = useApresentacoes((s) =>
+    canal ? apresentacaoNoCanal(s.porQuadro, canal.id) : undefined,
+  );
+  const { data: quadrosDoCanal } = useQuadros(canal?.id);
+  const quadroParaAbrir = apresentacao?.boardId ?? quadrosDoCanal?.[0]?.id ?? null;
 
   const nomeDe = (p: Participante) =>
     pessoas.find((u) => u.id === p.identity)?.displayName ?? 'Alguém';
@@ -128,6 +149,8 @@ export function JanelaFlutuante({ canais, pessoas }: { canais: Channel[]; pessoa
   if (!visivel) return null;
 
   function voltarParaSala(): void {
+    // Com o quadro aberto, "voltar à sala" é sair dele: a sala está atrás.
+    if (quadroAberto) fecharQuadro();
     if (canal) navigate(`/c/${canal.slug}`);
     definirModo(lerPreferencias().modoDaSala === 'mensagens' ? 'ambos' : lerPreferencias().modoDaSala);
   }
@@ -135,6 +158,10 @@ export function JanelaFlutuante({ canais, pessoas }: { canais: Channel[]; pessoa
   return (
     <aside
       className={styles.janela}
+      /* Sobre o quadro, a janela sobe de camada: o quadro é `fixed` e cobre a
+         tela inteira, e uma chamada escondida atrás dele é uma chamada que
+         some no meio da conversa. */
+      data-sobre-quadro={Boolean(quadroAberto)}
       style={{ left: caixa.x, top: caixa.y, width: caixa.largura }}
       aria-label={`Chamada em ${canal?.name ?? 'andamento'}`}
     >
@@ -167,6 +194,31 @@ export function JanelaFlutuante({ canais, pessoas }: { canais: Channel[]; pessoa
             </>
           ) : null}
         </Menu>
+
+        {/* Ir e voltar do quadro sem sair da chamada: são as duas telas que
+            se usam juntas, e trocar entre elas não pode custar navegação. */}
+        {quadroAberto || (canal && quadroParaAbrir) ? (
+          <Tooltip label={quadroAberto ? 'Sair do quadro' : 'Ir para o quadro'}>
+            <button
+              type="button"
+              className={styles.acao}
+              data-ligado={Boolean(quadroAberto)}
+              aria-label={quadroAberto ? 'Sair do quadro' : 'Ir para o quadro'}
+              onClick={() => {
+                if (quadroAberto) {
+                  fecharQuadro();
+                  return;
+                }
+                if (canal && quadroParaAbrir) {
+                  navigate(`/c/${canal.slug}`);
+                  abrirQuadro(quadroParaAbrir, canal.id);
+                }
+              }}
+            >
+              <Board size={14} />
+            </button>
+          </Tooltip>
+        ) : null}
 
         <Tooltip label="Voltar à sala">
           <button

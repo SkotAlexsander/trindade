@@ -271,3 +271,19 @@ export interface Board {
  */
 export const ELEMENTOS_POR_QUADRO = 2000;
 export const AVISO_DE_ELEMENTOS = Math.floor(ELEMENTOS_POR_QUADRO * 0.9);
+
+/**
+ * Alguém apresentando um quadro agora.
+ *
+ * Vive só em memória no servidor, como o estado de voz: é presença, não
+ * registro. Reiniciar a API encerra as apresentações, e isso é o certo — quem
+ * está conduzindo perdeu a conexão junto.
+ */
+export interface Presentation {
+  boardId: string;
+  channelId: string;
+  /** O nome do quadro, para a linha na lista de canais não pedir a lista toda. */
+  boardName: string;
+  userId: string;
+  startedAt: string;
+}

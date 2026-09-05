@@ -177,3 +177,18 @@
     transparent 60%
   );
 }
+
+/*
+ * Sobre o quadro em tela cheia, a janela sobe de camada.
+ *
+ * O quadro é `fixed` com `z-index: 50` e cobre tudo — inclusive a grade da
+ * chamada. Sem esta regra, entrar no quadro durante uma chamada apagaria todo
+ * mundo da vista, que é o oposto do que se quer quando se desenha junto.
+ */
+.janela[data-sobre-quadro='true'] {
+  z-index: 60;
+}
+
+.acao[data-ligado='true'] {
+  color: var(--live);
+}

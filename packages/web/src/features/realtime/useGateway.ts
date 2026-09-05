@@ -24,6 +24,7 @@ import type { Motivo } from '../notifications/regras';
 import { receberEnquete } from '../polls/queries';
 import { receberTarefa } from '../tasks/queries';
 import { receberQuadro } from '../boards/queries';
+import { useApresentacoes } from '../boards/apresentacoes';
 import { useVoz } from '../voice/store';
 import { tocar } from '../voice/sons';
 import { ATRASO_DA_FAIXA_MS, useConexao, useDigitando, usePresenca } from './store';
@@ -100,6 +101,9 @@ export function useGateway(): void {
         // isto, abrir o aplicativo com gente numa sala mostraria a sala vazia
         // até alguém mexer.
         useVoz.getState().substituirEstados(d.voiceStates);
+        // E as apresentações, pela mesma razão: entrar no meio de uma e não
+        // ver nada seria pior que não ter a funcionalidade.
+        useApresentacoes.getState().substituir(d.presentations);
       }),
 
       ws.on('VOICE_STATE_UPDATE', (d) => {
@@ -243,6 +247,10 @@ export function useGateway(): void {
 
       ws.on('BOARD_LIST_UPDATE', (d) => {
         receberQuadro(qc, d.board, d.removido ?? false);
+      }),
+
+      ws.on('PRESENTATION_UPDATE', (d) => {
+        useApresentacoes.getState().aplicar(d.presentation, d.ativo);
       }),
 
       ws.on('POLL_UPDATE', (d) => {

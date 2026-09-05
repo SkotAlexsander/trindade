@@ -870,6 +870,40 @@ o time no fuso de Brasília, das 21h à meia-noite o lembrete das 9h sairia com 
 dia de erro. Agora o dia é o do servidor, o mesmo que `ateAsNove` usa. O teste
 falhava só nesse intervalo de três horas — foi rodá-lo às 21h para ele aparecer.
 
+**Fatia 3: o modo apresentação.** Quem apresenta conduz o enquadramento de
+quem assiste; soltar e voltar a seguir é decisão de cada um e não interrompe
+ninguém.
+
+**A apresentação passa pelo servidor, e não só pela awareness.** Duas razões: a
+linha de sistema no canal precisa nascer **uma vez só**, e quem não está com o
+quadro aberto também tem de ver que ela começou — é isso que põe a linha ao vivo
+na lista de canais. O estado vive em memória, como o de voz, e a queda da
+conexão encerra: uma aba fechada não pode deixar o quadro travado em "Ana
+apresentando" para sempre.
+
+**Apresentar não exige `MANAGE_NOTES`.** Conduzir não é desenhar. A caneta que
+se passa pelo avatar é combinação de palco, não permissão — quem desenha
+continua passando pelo bitfield no `BOARD_UPDATE`, e está dito no código para
+ninguém confundir as duas coisas depois.
+
+**A linha de sistema virou link.** "◉ Ana está apresentando *Fluxo*" com o nome
+apontando para `?quadro=<id>`; o shell lê o parâmetro, abre o quadro e o tira da
+URL. Sem isso a linha seria um aviso de que algo aconteceu, não um caminho de
+entrada.
+
+**A chamada não some quando o quadro abre** — pedido do dono do projeto em 5 de
+setembro de 2026, depois de ver rodando. O quadro é `fixed` e cobre tudo, então
+a chamada passa a contar como "fora da tela" e vira a janela flutuante, com
+`z-index` acima do quadro. A barra da chamada ganhou o caminho de ida ("Ir para
+o quadro", apontando para o que está sendo apresentado no canal ou o mais
+recente dele) e a janela flutuante ganhou o de volta. Três controles com o mesmo
+rótulo apareceram na primeira versão; agora são "Ir para o quadro", "Sair do
+quadro" e "Voltar para a conversa", cada um com um nome só.
+
+**O zoom é o que o roteiro mede.** É o único pedaço da viewport que aparece
+escrito na tela — o "100%" do rodapé do Excalidraw. Rolagem seguiria pelo mesmo
+caminho e não teria como ser lida sem inventar uma sonda.
+
 ### Numeração das migrations
 
 O pacote previa 001 a 010 e reservava `011_polls` (fase 9), `012_conversations`

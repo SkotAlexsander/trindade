@@ -2,6 +2,7 @@ import { useState, type DragEvent } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronDown, Hash, SinoCortado } from '../../components/icones';
 import { ItemDeVoz } from '../voice/ItemDeVoz';
+import { LinhaDeApresentacao } from '../boards/LinhaDeApresentacao';
 import { groupByCategory, type Category, type ChannelWithState } from './canais';
 import styles from './channels.module.css';
 
@@ -124,6 +125,10 @@ function GrupoCategoria({
               setDestino(null);
             }}
           />
+          {/* Uma apresentação em curso aparece aqui, indentada, como os
+              avatares da chamada: quem está olhando a lista precisa ver que
+              tem gente ao vivo ali dentro. */}
+          <LinhaDeApresentacao channelId={canal.id} slug={canal.slug} />
         </div>
       ))}
     </div>

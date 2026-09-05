@@ -5,6 +5,7 @@ import type {
   Conversation,
   Message,
   Poll,
+  Presentation,
   Reaction,
   Task,
   User,
@@ -132,6 +133,17 @@ export const clientEventSchema = z.discriminatedUnion('op', [
     op: z.literal('BOARD_AWARENESS'),
     d: z.object({ boardId: z.string().uuid(), estado: z.string().max(8_192) }),
   }),
+  /**
+   * Começar e encerrar uma apresentação.
+   *
+   * Passa pelo servidor, e não só pela awareness, por duas razões: a mensagem
+   * de sistema no canal precisa nascer uma vez só, e quem **não** está com o
+   * quadro aberto também tem de ver que ela começou.
+   */
+  z.object({
+    op: z.literal('BOARD_PRESENT'),
+    d: z.object({ boardId: z.string().uuid(), apresentando: z.boolean() }),
+  }),
   z.object({ op: z.literal('HEARTBEAT'), d: z.object({}).passthrough().optional() }),
 ]);
 
@@ -182,6 +194,8 @@ export interface ReadyPayload {
   channels: Channel[];
   readState: ReadStateEntry[];
   voiceStates: VoiceState[];
+  /** Apresentações em curso. Quem entra no meio de uma vê a linha na hora. */
+  presentations: Presentation[];
   /** Verdadeiro só no primeiro READY da sessão — a sequência do elenco. */
   first: boolean;
 }
@@ -247,6 +261,15 @@ export type ServerEvent =
    * painel, e vai para todo mundo.
    */
   | { op: 'BOARD_LIST_UPDATE'; d: { board: Board; removido?: boolean } }
+  /**
+   * Uma apresentação começou ou terminou. Vai para todo mundo.
+   *
+   * Quem está com o quadro aberto passa a seguir a apresentadora; quem não
+   * está vê a linha embaixo do canal. Encerrar é o mesmo evento com
+   * `ativo: false`, como o de voz — quem recebe já tem o quadro para saber de
+   * qual linha se livrar.
+   */
+  | { op: 'PRESENTATION_UPDATE'; d: { presentation: Presentation; ativo: boolean } }
   /**
    * Uma tarefa nasceu, mudou de coluna, de dono ou de prazo.
    *

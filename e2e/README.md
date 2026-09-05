@@ -375,6 +375,26 @@ recebe o `BOARD_STATE` que o faz montar. Quem confere o quadro sob as mesmas
 origens é este roteiro, com a API de verdade. O mesmo vale para qualquer coisa
 que dependa do gateway — notas, presença, digitando.
 
+**`fase-10-apresentacao.py`** — 15 verificações do modo apresentação, com dois
+navegadores: a borda ao vivo dos dois lados, as ferramentas sumindo para quem
+assiste, o espectador seguindo o zoom, soltar sem interromper, voltar a seguir,
+a linha de sistema clicável, a linha indentada na lista de canais, a caneta
+passada pelo avatar, e o encerramento.
+
+```bash
+python e2e/fase-10-apresentacao.py e2e/.tmp/apresentacao carla daniel
+```
+
+**`fase-10-quadro-na-chamada.py`** — 8 verificações do encontro entre as duas
+telas: entrar na chamada, abrir o quadro por dentro dela, a chamada virar janela
+flutuante **por cima** do quadro (com `z-index` comparado de verdade), desenhar
+com a chamada de pé, e voltar pelo mesmo botão. Precisa das flags de mídia
+falsa, como os roteiros da fase 7.
+
+**O quadro é do canal, e a chamada também.** O botão "Ir para o quadro" só
+aparece quando o canal **da chamada** tem quadro — criar um em `#geral` e
+esperá-lo no canal de voz `sala` é o erro que este roteiro cometeu primeiro.
+
 ## Carga: 50 conexões no gateway
 
 Dez vezes o uso real. O objetivo não é provar que aguenta — é saber onde quebra,

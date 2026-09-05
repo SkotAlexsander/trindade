@@ -140,10 +140,54 @@
   color: var(--text-primary);
 }
 
+/*
+ * A borda de 2px em `--live` enquanto alguém apresenta. É a mesma marca da
+ * chamada, e de propósito: as duas dizem a mesma coisa — tem gente ao vivo do
+ * outro lado. Ver design/07-chamada.md e design/11-quadro.md.
+ */
+.barra[data-apresentando='true'] {
+  border-top: 2px solid var(--live);
+  /* Sem o desconto, a barra cresce 2px e o canvas pula quando a apresentação
+     começa. */
+  height: 50px;
+}
+
 .avatares {
   display: flex;
   align-items: center;
   gap: var(--s-1);
+}
+
+/* O avatar vira botão durante a sua apresentação: é onde a mão já está quando
+   se quer passar a vez. Aceso, quem está com a caneta. */
+.caneta {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--r-full);
+  background: none;
+  cursor: pointer;
+}
+
+.caneta[aria-pressed='true'] {
+  border-color: var(--live);
+}
+
+.sugestao {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-1) var(--s-3);
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font: var(--text-label) / var(--leading-ui) var(--font-ui);
+}
+
+.sugestao[data-apresentacao='true'] {
+  background: var(--magenta-wash);
+  color: var(--text-primary);
 }
 
 .aviso {
@@ -189,4 +233,45 @@
   margin: 0;
   color: var(--text-tertiary);
   font: var(--text-label) var(--font-ui);
+}
+
+/* --- a linha da apresentação na lista de canais ---------------------------- */
+
+/*
+ * Indentada sob o canal, no mesmo recuo dos avatares da chamada: são a mesma
+ * ideia — o que está acontecendo ao vivo dentro daquele canal.
+ */
+.linhaAoVivo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: calc(100% - var(--s-4));
+  padding: 2px var(--s-2) 4px 34px;
+  margin: 0 var(--s-2);
+  border: none;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text-secondary);
+  font: var(--text-label) var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.linhaAoVivo:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.pontoAoVivo {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--live);
+}
+
+.nomeAoVivo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

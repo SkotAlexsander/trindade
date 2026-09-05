@@ -28,6 +28,7 @@ import { useLeitura } from '../messages/leitura';
 import { ChannelHeader, type PainelAberto } from './ChannelHeader';
 import { useQuadro } from '../tasks/store';
 import { Quadro } from '../boards/Quadro';
+import { useQuadroAberto } from '../boards/store';
 import { useNotificacoes } from '../notifications/useNotificacoes';
 import { definirNavegador } from '../../lib/navegacao';
 import { CommandPalette } from './CommandPalette';
@@ -45,7 +46,7 @@ import styles from './shell.module.css';
 export function AppShell() {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const conviteAberto = useDialogoDeConvite((s) => s.aberto);
   const fecharConvite = useDialogoDeConvite((s) => s.fechar);
   const permissoes = useAuth((state) => state.permissions);
@@ -189,6 +190,18 @@ export function AppShell() {
   useEffect(() => {
     if (pedidoDeQuadro > 0) setPainel('tarefas');
   }, [pedidoDeQuadro]);
+
+  /* `?quadro=<id>` abre o quadro sobre a conversa. É o que faz a linha de
+     sistema "Ana está apresentando *Fluxo*" ser um caminho de entrada, e não
+     só um aviso de que aconteceu. O parâmetro sai da URL depois de usado:
+     senão, fechar o quadro e recarregar a página o abriria de novo. */
+  const abrirQuadro = useQuadroAberto((s) => s.abrir);
+  useEffect(() => {
+    const id = new URLSearchParams(search).get('quadro');
+    if (!id || !canalAtual) return;
+    abrirQuadro(id, canalAtual.id);
+    navigate(pathname, { replace: true });
+  }, [search, canalAtual, abrirQuadro, navigate, pathname]);
 
   // O clique numa notificação da área de trabalho troca de canal sem recarregar
   // o produto — o que reconectaria o socket e derrubaria a chamada.

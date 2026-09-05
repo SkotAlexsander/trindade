@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import type { Channel, User } from '@trindade/shared';
 import { Avatar, Tooltip } from '../../components';
 import {
+  Board,
   Expandir,
   Monitor,
   Headphones,
@@ -17,6 +18,9 @@ import { lerPreferencias } from '../../lib/preferencias';
 import * as sala from './sala';
 import type { EstatisticasDaTela } from './sala';
 import { naChamada, useVoz } from './store';
+import { useQuadroAberto } from '../boards/store';
+import { useApresentacoes, apresentacaoNoCanal } from '../boards/apresentacoes';
+import { useQuadros } from '../boards/queries';
 import { useChamada } from './useChamada';
 import styles from './voz.module.css';
 
@@ -97,6 +101,18 @@ export function BarraDeChamada({
   }, [fase]);
 
   const canal = canais.find((c) => c.id === channelId);
+
+  /* O quadro a que este botão leva: o que está sendo apresentado no canal da
+     chamada, ou o mais recente dele. */
+  const canalDaChamada = canal;
+  const quadroAberto = useQuadroAberto((s) => s.aberto);
+  const abrirQuadro = useQuadroAberto((s) => s.abrir);
+  const apresentacao = useApresentacoes((s) =>
+    canal ? apresentacaoNoCanal(s.porQuadro, canal.id) : undefined,
+  );
+  const { data: quadrosDoCanal } = useQuadros(canal?.id);
+  const quadroParaAbrir = apresentacao?.boardId ?? quadrosDoCanal?.[0]?.id ?? null;
+
   const dentro = useMemo(
     () => (channelId ? naChamada(estados, channelId) : []),
     [estados, channelId],
@@ -221,6 +237,26 @@ export function BarraDeChamada({
               onClick={() => (transmitindo ? pararDeTransmitir() : escolherTela(true))}
             >
               <Monitor size={18} />
+            </button>
+          </Tooltip>
+        ) : null}
+
+        {/* O quadro fica a um clique de dentro da chamada: desenhar junto e
+            falar junto são a mesma reunião, e trocar entre as duas telas não
+            pode custar navegação. Ver design/11-quadro.md. */}
+        {/* Só o caminho de ida: com o quadro aberto esta barra está atrás
+            dele, e quem volta usa o botão da janela flutuante ou o do próprio
+            quadro. Três controles com o mesmo nome na tela seria pior que
+            dois caminhos. */}
+        {canalDaChamada && quadroParaAbrir && !quadroAberto ? (
+          <Tooltip label="Ir para o quadro">
+            <button
+              type="button"
+              className={styles.controle}
+              aria-label="Ir para o quadro"
+              onClick={() => abrirQuadro(quadroParaAbrir, canalDaChamada.id)}
+            >
+              <Board size={18} />
             </button>
           </Tooltip>
         ) : null}

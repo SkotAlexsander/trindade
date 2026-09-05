@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AVISO_DE_ELEMENTOS, ELEMENTOS_POR_QUADRO, type User } from '@trindade/shared';
-import { Avatar, IconButton, Menu, MenuItem, Tooltip } from '../../components';
+import { Avatar, Button, IconButton, Menu, MenuItem, Tooltip } from '../../components';
 import { ChevronLeft } from '../../components/icones';
 import { colorFromId, ensureContrast } from '../../lib/contraste';
 import { lerToken } from '../../lib/tokens';
@@ -8,6 +8,10 @@ import { useAuth } from '../auth/store';
 import { useQuadros, mandarMiniatura, useArquivarQuadro, useRenomearQuadro } from './queries';
 import { abrirQuadro, type ProvedorDoQuadro } from './provedor';
 import { useQuadroAberto } from './store';
+import { useApresentacoes } from './apresentacoes';
+import * as ws from '../../lib/ws';
+import { naChamada, useVoz } from '../voice/store';
+import { useChamada } from '../voice/useChamada';
 import styles from './quadros.module.css';
 
 /**
@@ -137,6 +141,50 @@ function QuadroAberto({
   const cheio = elementos >= ELEMENTOS_POR_QUADRO;
   const perto = !cheio && elementos >= AVISO_DE_ELEMENTOS;
 
+  // --- apresentação ---------------------------------------------------------
+  const apresentacao = useApresentacoes((s) => s.porQuadro[boardId]);
+  const euApresento = apresentacao?.userId === eu?.id;
+  const souPlateia = Boolean(apresentacao) && !euApresento;
+  const apresentadora = pessoas.find((p) => p.id === apresentacao?.userId);
+
+  /* Seguir é o padrão, e cada espectador solta por conta própria: soltar não
+     interrompe ninguém. Volta a ser verdade quando **outra** apresentação
+     começa — a de antes acabou, e a decisão de soltar era sobre aquela. */
+  const [seguindo, setSeguindo] = useState(true);
+  useEffect(() => {
+    setSeguindo(true);
+  }, [apresentacao?.startedAt]);
+
+  /* Quem ganhou a caneta durante a apresentação. Vem da awareness de quem
+     apresenta: é combinação de palco, não permissão — o servidor continua
+     exigindo `MANAGE_NOTES` de quem manda um traço. */
+  const [desenhistas, setDesenhistas] = useState<string[]>([]);
+  const aoMudarDesenhistas = useCallback((lista: string[]) => setDesenhistas(lista), []);
+
+  function alternarCaneta(userId: string): void {
+    const proximo = desenhistas.includes(userId)
+      ? desenhistas.filter((id) => id !== userId)
+      : [...desenhistas, userId];
+    setDesenhistas(proximo);
+    provedor?.awareness.setLocalStateField('desenhistas', proximo);
+  }
+
+  function apresentar(ligar: boolean): void {
+    ws.enviar({ op: 'BOARD_PRESENT', d: { boardId, apresentando: ligar } });
+    if (!ligar) {
+      setDesenhistas([]);
+      provedor?.awareness.setLocalStateField('desenhistas', []);
+    }
+  }
+
+  /* "Se há chamada ativa no canal, sugerir entrar." Apresentação e chamada são
+     independentes de propósito, mas apresentar em silêncio é quase sempre um
+     esquecimento. */
+  const vozes = useVoz((s) => s.estados);
+  const meuCanalDeVoz = useVoz((s) => (s.fase === 'fora' ? null : s.channelId));
+  const { entrar: entrarNaChamada } = useChamada();
+  const chamadaAqui = naChamada(vozes, channelId).length > 0 && meuCanalDeVoz !== channelId;
+
   return (
     <div
       className={styles.telaCheia}
@@ -147,26 +195,63 @@ function QuadroAberto({
          mesmo tempo" só se verifica olhando dois monitores. */
       data-elementos={elementos}
     >
-      <header className={styles.barra}>
+      <header className={styles.barra} data-apresentando={Boolean(apresentacao)}>
         <IconButton label="Voltar para a conversa" size="sm" onClick={fechar}>
           <ChevronLeft size={18} />
         </IconButton>
         <h2 className={styles.nome}>{quadro?.name ?? 'Quadro'}</h2>
 
+        {souPlateia ? (
+          <Button
+            size="sm"
+            variant={seguindo ? 'ghost' : 'live'}
+            onClick={() => setSeguindo((atual) => !atual)}
+          >
+            {seguindo
+              ? `Seguindo ${apresentadora?.displayName.split(' ')[0] ?? 'a apresentação'}`
+              : 'Voltar a seguir'}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={euApresento ? 'live' : 'ghost'}
+            onClick={() => apresentar(!euApresento)}
+          >
+            {euApresento ? 'Encerrar' : 'Apresentar'}
+          </Button>
+        )}
+
         {/* Quem está com este quadro aberto agora. */}
         <span className={styles.avatares}>
           {outros.map((id) => {
             const quem = pessoas.find((p) => p.id === id);
+            const nome = quem?.displayName ?? 'Alguém';
+            const comCaneta = desenhistas.includes(id);
+            const avatar = <Avatar id={id} name={nome} src={quem?.avatarUrl} size="xs" />;
+
+            /* Durante a **sua** apresentação, o avatar é o botão de dar a
+               caneta: é onde a pessoa já está olhando quando quer passar a
+               vez. Fora da apresentação, é só quem está junto. */
+            if (!euApresento) {
+              return (
+                <Tooltip key={id} label={nome}>
+                  <span>{avatar}</span>
+                </Tooltip>
+              );
+            }
+
+            const rotulo = comCaneta ? `Tirar a caneta de ${nome}` : `Dar a caneta a ${nome}`;
             return (
-              <Tooltip key={id} label={quem?.displayName ?? 'Alguém'}>
-                <span>
-                  <Avatar
-                    id={id}
-                    name={quem?.displayName ?? 'Alguém'}
-                    src={quem?.avatarUrl}
-                    size="xs"
-                  />
-                </span>
+              <Tooltip key={id} label={rotulo}>
+                <button
+                  type="button"
+                  className={styles.caneta}
+                  aria-pressed={comCaneta}
+                  aria-label={rotulo}
+                  onClick={() => alternarCaneta(id)}
+                >
+                  {avatar}
+                </button>
               </Tooltip>
             );
           })}
@@ -207,6 +292,24 @@ function QuadroAberto({
         ) : null}
       </header>
 
+      {euApresento && chamadaAqui ? (
+        <p className={styles.sugestao} role="status">
+          Há uma chamada acontecendo neste canal.
+          <Button size="sm" variant="ghost" onClick={() => void entrarNaChamada(channelId)}>
+            Entrar na chamada
+          </Button>
+        </p>
+      ) : null}
+
+      {souPlateia ? (
+        <p className={styles.sugestao} data-apresentacao="true" role="status">
+          {apresentadora?.displayName.split(' ')[0] ?? 'Alguém'} está apresentando.
+          {desenhistas.includes(eu?.id ?? '')
+            ? ' Você está com a caneta.'
+            : ' Você pode apontar, e desenhar quando receber a caneta.'}
+        </p>
+      ) : null}
+
       {perto || cheio ? (
         <p className={styles.aviso} data-cheio={cheio} role="status">
           {cheio
@@ -225,10 +328,17 @@ function QuadroAberto({
             <TelaDoQuadro
               key={provedor.id}
               provedor={provedor}
-              podeEditar={podeEditar}
+              /* Na plateia, desenhar depende da caneta. Não é permissão — o
+                 servidor continua exigindo `MANAGE_NOTES` de quem manda um
+                 traço — é a combinação de quem está conduzindo. */
+              podeEditar={podeEditar && (!souPlateia || desenhistas.includes(eu?.id ?? ''))}
               cheio={cheio}
               pessoas={pessoas}
               aoMudarCena={aoMudarCena}
+              apresentador={apresentacao?.userId ?? null}
+              euApresento={euApresento}
+              seguindo={seguindo}
+              aoMudarDesenhistas={aoMudarDesenhistas}
             />
           </Suspense>
         ) : (

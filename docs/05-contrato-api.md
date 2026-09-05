@@ -410,6 +410,12 @@ A permissão é `MANAGE_NOTES`, a mesma da nota: quadro e nota são o mesmo tipo
 artefato, e duas permissões para "registrar o que o grupo decidiu" seriam duas
 coisas a manter em dia sem diferença nenhuma.
 
+**Apresentar não exige permissão nenhuma** além de existir: conduzir não é
+desenhar. Quem desenha continua passando pelo bitfield no `BOARD_UPDATE`.
+Apresentação é estado em memória, como a voz — reiniciar a API encerra as que
+estavam em curso, e isso é o certo, porque quem conduzia perdeu a conexão
+junto.
+
 ---
 
 ## Conversas privadas
@@ -497,7 +503,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 
 | op | quando | payload |
 |---|---|---|
-| `READY` | logo após conectar | `{ user, users, channels, readState, voiceStates }` |
+| `READY` | logo após conectar | `{ user, users, channels, readState, voiceStates, presentations }` |
 | `MESSAGE_CREATE` | mensagem nova | `Message & { clientNonce? }` |
 | `MESSAGE_UPDATE` | edição | `Message` |
 | `MESSAGE_DELETE` | exclusão | `{ id, channelId }` |
@@ -522,6 +528,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `BOARD_AWARENESS` | cursor e apontador | `{ boardId, estado, de }` |
 | `BOARD_PRESENCE` | quem está com o quadro aberto | `{ boardId, userIds }` |
 | `BOARD_LIST_UPDATE` | quadro nasceu, renomeou, ganhou miniatura ou foi arquivado | `{ board: Board, removido?: true }` — vai para todo mundo; é a lista do painel, não o desenho |
+| `PRESENTATION_UPDATE` | alguém começou ou encerrou uma apresentação | `{ presentation: Presentation, ativo }` — para todo mundo: quem está no quadro passa a seguir, quem não está vê a linha embaixo do canal |
 | `ERROR` | operação falhou | `{ code, message }` |
 
 ### Cliente → servidor
@@ -539,6 +546,7 @@ Toda mensagem: `{ "op": "NOME", "d": { ... } }`
 | `BOARD_OPEN` / `BOARD_CLOSE` | `{ boardId }` — o alvo é o **quadro**, não o canal: um canal tem vários, e dois abertos não podem trocar traço |
 | `BOARD_UPDATE` | `{ boardId, update }` — até 512 KB, o dobro da nota: colar uma seleção inteira chega a dezenas de KB de uma vez |
 | `BOARD_AWARENESS` | `{ boardId, estado }` |
+| `BOARD_PRESENT` | `{ boardId, apresentando }` — começar e encerrar. Passa pelo servidor porque a linha de sistema nasce uma vez só, e porque quem não está com o quadro aberto também precisa ver |
 | `HEARTBEAT` | `{}` |
 
 `NOTE_UPDATE` e `BOARD_UPDATE` exigem `MANAGE_NOTES` **no servidor**; a

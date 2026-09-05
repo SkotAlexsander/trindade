@@ -13,6 +13,7 @@ import {
 } from './helpers.js';
 import * as quadros from '../src/services/quadro-branco.js';
 import * as boardsDb from '../src/db/boards.js';
+import * as apresentacao from '../src/services/apresentacao.js';
 
 /**
  * Os quadros brancos.
@@ -375,5 +376,99 @@ describe('o quadro vivo', () => {
     const devolta = await quadros.abrirQuadro(id, ana.id);
     expect(quadros.contarElementos(devolta)).toBe(1);
     await quadros.fecharQuadro(id, ana.id);
+  });
+});
+
+describe('apresentar um quadro', () => {
+  let canal: string;
+  let ana: { id: string };
+  let bruno: { id: string };
+  const log = { error: () => undefined } as never;
+
+  beforeEach(async () => {
+    await resetDatabase();
+    await quadros.gravarTudo();
+    apresentacao.limparApresentacoes();
+    ana = await createUser({ username: 'ana' });
+    bruno = await createUser({ username: 'bruno' });
+    canal = await canalDeTexto('palco');
+  });
+
+  async function novoQuadro(nome: string): Promise<string> {
+    const linha = await boardsDb.criar({ channelId: canal, name: nome, createdBy: ana.id });
+    return linha.id;
+  }
+
+  /** As linhas de sistema que o canal recebeu, na ordem. */
+  async function linhasDeSistema(): Promise<string[]> {
+    const linhas = await sql<{ content: string }[]>`
+      select content from messages
+       where channel_id = ${canal} and kind = 'system'
+       order by created_at
+    `;
+    return linhas.map((l) => l.content);
+  }
+
+  it('anuncia no canal, com link para o quadro', async () => {
+    const id = await novoQuadro('Arquitetura');
+    const inicio = await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+    expect(inicio.ok).toBe(true);
+
+    const [comeco] = await linhasDeSistema();
+    expect(comeco).toContain('está apresentando');
+    // O nome do quadro é um link de verdade: quem lê a linha depois quer entrar.
+    expect(comeco).toContain(`?quadro=${id}`);
+    expect(comeco).toContain('[Arquitetura]');
+
+    await apresentacao.terminar(id, ana.id, log);
+    const linhas = await linhasDeSistema();
+    expect(linhas).toHaveLength(2);
+    expect(linhas[1]).toContain('encerrou a apresentação');
+  });
+
+  it('uma apresentação por quadro', async () => {
+    const id = await novoQuadro('Disputado');
+    await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+
+    // Dois conduzindo o mesmo quadro é o mesmo que ninguém conduzir: cada
+    // espectador seguiria uma viewport diferente.
+    const segundo = await apresentacao.comecar({ boardId: id, userId: bruno.id, log });
+    expect(segundo).toEqual({ ok: false, motivo: 'ALREADY_PRESENTING' });
+    expect(apresentacao.apresentacaoDoQuadro(id)?.userId).toBe(ana.id);
+
+    // E quem já está apresentando pode clicar de novo sem duplicar a linha.
+    const denovo = await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+    expect(denovo.ok).toBe(true);
+    expect(await linhasDeSistema()).toHaveLength(1);
+  });
+
+  it('quem não está apresentando não encerra a apresentação de outra pessoa', async () => {
+    const id = await novoQuadro('Meu');
+    await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+
+    await apresentacao.terminar(id, bruno.id, log);
+    expect(apresentacao.apresentacaoDoQuadro(id)?.userId).toBe(ana.id);
+
+    await apresentacao.terminar(id, ana.id, log);
+    expect(apresentacao.apresentacaoDoQuadro(id)).toBeUndefined();
+  });
+
+  it('a queda da conexão encerra o que estava em curso', async () => {
+    const id = await novoQuadro('Abandonado');
+    await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+
+    // Sem isto, uma aba fechada deixaria o quadro travado em "Ana
+    // apresentando" para sempre.
+    await apresentacao.esquecerApresentador(ana.id, log);
+    expect(apresentacao.apresentacoes()).toHaveLength(0);
+    expect(await linhasDeSistema()).toHaveLength(2);
+  });
+
+  it('quadro arquivado não vira palco', async () => {
+    const id = await novoQuadro('Guardado');
+    await boardsDb.arquivar(id);
+
+    const tentativa = await apresentacao.comecar({ boardId: id, userId: ana.id, log });
+    expect(tentativa).toEqual({ ok: false, motivo: 'BOARD_NOT_FOUND' });
   });
 });

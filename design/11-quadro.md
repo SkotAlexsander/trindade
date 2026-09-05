@@ -29,6 +29,50 @@ infraestrutura existente, o modo apresentação, e o elo com a conversa.
 >   vira arquivo local do Excalidraw e não viaja pelo CRDT: apareceria quebrada
 >   para todo mundo menos para quem colou. Ela volta junto com o upload pelo
 >   `sharp`.
+> **Entregue na fatia 3**: o modo apresentação, e o encontro com a chamada.
+> O que mudou em relação ao que está escrito abaixo:
+>
+> - **A apresentação passa pelo servidor**, e não só pela awareness: a linha de
+>   sistema no canal precisa nascer uma vez só, e quem **não** está com o quadro
+>   aberto também tem de ver que ela começou. Uma por quadro; a queda da
+>   conexão encerra.
+> - **Apresentar não exige `MANAGE_NOTES`.** Conduzir não é desenhar, e quem só
+>   vê o quadro pode perfeitamente explicá-lo. A caneta que a apresentadora
+>   passa é combinação de palco, não permissão: quem desenha continua passando
+>   pelo bitfield no `BOARD_UPDATE`.
+> - **O apontador é o cursor de colaboração do próprio Excalidraw**, na cor da
+>   pessoa e com o primeiro nome, e some 1,5s depois de parar. Desenhar um
+>   ponto nosso por cima seria refazer o que ele já posiciona em coordenadas de
+>   cena, com zoom e rolagem corretos.
+> - **A linha de sistema é clicável de verdade**: o nome do quadro é um link
+>   `?quadro=<id>`, e o shell abre o quadro ao ver o parâmetro.
+> - **A chamada não some quando o quadro abre.** O quadro cobre a tela inteira,
+>   então a chamada vira a janela flutuante — **por cima** dele —, e o mesmo
+>   botão leva e traz de volta. Desenhar junto e falar junto são a mesma
+>   reunião. A barra da chamada ganhou o caminho de ida.
+>
+> **Entregue na fatia 3**: o modo apresentação, e o encontro com a chamada.
+> O que mudou em relação ao que está escrito abaixo:
+>
+> - **A apresentação passa pelo servidor**, e não só pela awareness: a linha de
+>   sistema no canal precisa nascer uma vez só, e quem **não** está com o quadro
+>   aberto também tem de ver que ela começou. Uma por quadro; a queda da
+>   conexão encerra.
+> - **Apresentar não exige `MANAGE_NOTES`.** Conduzir não é desenhar, e quem só
+>   vê o quadro pode perfeitamente explicá-lo. A caneta que a apresentadora
+>   passa é combinação de palco, não permissão: quem desenha continua passando
+>   pelo bitfield no `BOARD_UPDATE`.
+> - **O apontador é o cursor de colaboração do próprio Excalidraw**, na cor da
+>   pessoa e com o primeiro nome, e some 1,5s depois de parar. Desenhar um
+>   ponto nosso por cima seria refazer o que ele já posiciona em coordenadas de
+>   cena, com zoom e rolagem corretos.
+> - **A linha de sistema é clicável de verdade**: o nome do quadro é um link
+>   `?quadro=<id>`, e o shell abre o quadro ao ver o parâmetro.
+> - **A chamada não some quando o quadro abre.** O quadro cobre a tela inteira,
+>   então a chamada vira a janela flutuante — **por cima** dele —, e o mesmo
+>   botão leva e traz de volta. Desenhar junto e falar junto são a mesma
+>   reunião. A barra da chamada ganhou o caminho de ida.
+>
 > - **As fontes do Excalidraw são servidas por nós** (`/excalidraw/fonts/`,
 >   copiadas do pacote instalado antes de `dev` e de `build`). Sem isso ele as
 >   busca em `esm.sh` — requisição externa, do navegador de cada pessoa, que a

@@ -27,6 +27,14 @@ import '@excalidraw/excalidraw/index.css';
 
 const ORIGEM_LOCAL = 'local';
 
+/** O que cada pessoa publica na awareness do quadro. */
+interface EstadoDeAlguem {
+  user?: { id?: string; name?: string; color?: string };
+  pointer?: { x: number; y: number } | null;
+  viewport?: { scrollX: number; scrollY: number; zoom: number } | null;
+  desenhistas?: string[];
+}
+
 export interface TelaDoQuadroProps {
   provedor: ProvedorDoQuadro;
   podeEditar: boolean;
@@ -43,6 +51,13 @@ export interface TelaDoQuadroProps {
    * conhecido é o que sobrou de verdade para exportar.
    */
   aoMudarCena: (cena: { elementos: readonly unknown[]; arquivos: unknown }) => void;
+  /** Quem está conduzindo, se alguém estiver. */
+  apresentador: string | null;
+  euApresento: boolean;
+  /** Este espectador está seguindo o enquadramento de quem apresenta? */
+  seguindo: boolean;
+  /** Quem recebeu a caneta, dito pela awareness de quem apresenta. */
+  aoMudarDesenhistas: (lista: string[]) => void;
 }
 
 export function TelaDoQuadro({
@@ -51,6 +66,10 @@ export function TelaDoQuadro({
   cheio,
   pessoas,
   aoMudarCena,
+  apresentador,
+  euApresento,
+  seguindo,
+  aoMudarDesenhistas,
 }: TelaDoQuadroProps) {
   const { resolved } = useTheme();
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -123,19 +142,28 @@ export function TelaDoQuadro({
   // O cursor dos outros vem da awareness, que é efêmera e não passa pelo banco:
   // onde alguém estava com o mouse há dois segundos não é informação para
   // guardar.
+  /* Em refs, e não nas dependências do efeito: a awareness muda a cada
+     movimento de mouse de qualquer pessoa, e reassinar o ouvinte a cada
+     mudança de "seguindo" recomeçaria a conta do zero no meio da apresentação. */
+  const apresentadorRef = useRef(apresentador);
+  apresentadorRef.current = apresentador;
+  const seguindoRef = useRef(seguindo);
+  seguindoRef.current = seguindo;
+  const canetasRef = useRef('');
+
   useEffect(() => {
-    const desenharColegas = () => {
+    const aoMudarAlgoDeAlguem = () => {
       const api = apiRef.current;
       if (!api) return;
 
       const colegas = new Map<string, unknown>();
+      let daApresentadora: EstadoDeAlguem | null = null;
+
       for (const [clientId, estado] of provedor.awareness.getStates()) {
-        if (clientId === provedor.awareness.clientID) continue;
-        const dele = estado as {
-          user?: { id?: string; name?: string; color?: string };
-          pointer?: { x: number; y: number };
-        };
+        const dele = estado as EstadoDeAlguem;
         if (!dele.user?.id) continue;
+        if (dele.user.id === apresentadorRef.current) daApresentadora = dele;
+        if (clientId === provedor.awareness.clientID) continue;
 
         const quem = pessoas.find((p) => p.id === dele.user?.id);
         colegas.set(String(clientId), {
@@ -148,27 +176,89 @@ export function TelaDoQuadro({
       }
 
       api.updateScene({ collaborators: colegas as never });
+
+      /* O enquadramento de quem apresenta, aplicado a cada mudança. O atraso
+         que se vê é o da rede: não há animação nem interpolação aqui, porque
+         o que se quer é "estamos olhando a mesma coisa", não um travelling. */
+      const viewport = daApresentadora?.viewport;
+      if (viewport && seguindoRef.current && apresentadorRef.current) {
+        api.updateScene({
+          appState: {
+            scrollX: viewport.scrollX,
+            scrollY: viewport.scrollY,
+            zoom: { value: viewport.zoom as never },
+          },
+        });
+      }
+
+      // A caneta sobe para a barra só quando a lista muda de verdade: senão
+      // seria um `setState` por movimento de mouse de qualquer pessoa.
+      const canetas = daApresentadora?.desenhistas ?? [];
+      const assinatura = canetas.join(',');
+      if (assinatura !== canetasRef.current) {
+        canetasRef.current = assinatura;
+        aoMudarDesenhistas(canetas);
+      }
     };
 
-    provedor.awareness.on('change', desenharColegas);
-    desenharColegas();
-    return () => provedor.awareness.off('change', desenharColegas);
-  }, [provedor, pessoas]);
+    provedor.awareness.on('change', aoMudarAlgoDeAlguem);
+    aoMudarAlgoDeAlguem();
+    return () => provedor.awareness.off('change', aoMudarAlgoDeAlguem);
+  }, [provedor, pessoas, aoMudarDesenhistas]);
 
   /* O apontador vai com folga de 50ms. Sem ela, um movimento de mouse são
      dezenas de mensagens por segundo, cada uma acordando todo mundo que está
      com o quadro aberto — e ninguém percebe a diferença entre 20 e 60 quadros
-     por segundo num ponto colorido. */
+     por segundo num ponto colorido.
+
+     E ele **some 1,5s depois de parar**: um ponto parado no meio do desenho
+     deixa de ser "olha isso aqui" e vira sujeira na tela de todo mundo. */
   const ultimoEnvio = useRef(0);
+  const sumico = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const aoMoverPonteiro = useCallback(
     ({ pointer }: { pointer: { x: number; y: number } }) => {
       const agora = performance.now();
-      if (agora - ultimoEnvio.current < 50) return;
-      ultimoEnvio.current = agora;
-      provedor.awareness.setLocalStateField('pointer', { x: pointer.x, y: pointer.y });
+      if (agora - ultimoEnvio.current >= 50) {
+        ultimoEnvio.current = agora;
+        provedor.awareness.setLocalStateField('pointer', { x: pointer.x, y: pointer.y });
+      }
+
+      if (sumico.current) clearTimeout(sumico.current);
+      sumico.current = setTimeout(() => {
+        sumico.current = null;
+        provedor.awareness.setLocalStateField('pointer', null);
+      }, 1500);
     },
     [provedor],
   );
+
+  useEffect(() => {
+    return () => {
+      if (sumico.current) clearTimeout(sumico.current);
+    };
+  }, []);
+
+  /* O enquadramento de quem apresenta, publicado a cada rolagem e a cada zoom,
+     com a mesma folga de 50ms. Quem não está apresentando não publica nada —
+     seria dizer aos outros para onde olhar sem ninguém ter pedido. */
+  const ultimaViewport = useRef(0);
+  const aoRolar = useCallback(
+    (scrollX: number, scrollY: number, zoom: { value: number }) => {
+      if (!euApresento) return;
+      const agora = performance.now();
+      if (agora - ultimaViewport.current < 50) return;
+      ultimaViewport.current = agora;
+      provedor.awareness.setLocalStateField('viewport', { scrollX, scrollY, zoom: zoom.value });
+    },
+    [provedor, euApresento],
+  );
+
+  // Deixar de apresentar tira o enquadramento do ar: sem isto, quem voltasse a
+  // seguir depois seria levado ao último quadro de uma apresentação encerrada.
+  useEffect(() => {
+    if (!euApresento) provedor.awareness.setLocalStateField('viewport', null);
+  }, [provedor, euApresento]);
 
   return (
     <Excalidraw
@@ -186,6 +276,7 @@ export function TelaDoQuadro({
       }}
       onChange={aoMudar}
       onPointerUpdate={aoMoverPonteiro}
+      onScrollChange={aoRolar}
       isCollaborating
       viewModeEnabled={!podeEditar}
       theme={resolved}

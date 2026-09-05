@@ -26,6 +26,7 @@ import * as gw from './gateway.js';
 import { mensagensCriadas } from '../lib/metricas.js';
 import * as notas from '../services/notas.js';
 import * as quadros from '../services/quadro-branco.js';
+import * as apresentacao from '../services/apresentacao.js';
 
 const REVALIDACAO_MS = 60_000;
 
@@ -102,6 +103,7 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
       channels: canais.map(toApiChannel),
       readState: leitura,
       voiceStates: estadosDeVoz(),
+      presentations: apresentacao.apresentacoes(),
       first: gw.primeiroReady(userId),
     };
     gw.send(conn, { op: 'READY', d: payload });
@@ -136,6 +138,12 @@ export async function registerGateway(app: FastifyInstance): Promise<void> {
           app.log.error({ err, boardId }, 'não consegui fechar o quadro ao desconectar');
         });
       }
+
+      // Uma aba fechada não pode deixar o quadro travado em "Ana apresentando"
+      // para sempre. A apresentação é presença, e presença acaba com a conexão.
+      void apresentacao.esquecerApresentador(conn.userId, app.log).catch((err: unknown) => {
+        app.log.error({ err }, 'não consegui encerrar a apresentação ao desconectar');
+      });
 
       const saida = gw.unregister(conn.sessionId);
       // Só marque offline quando **todas** as conexões caírem: fechar uma aba
@@ -328,6 +336,35 @@ async function tratar(conn: gw.Connection, bruto: Buffer, app: FastifyInstance):
       }
 
       anunciarContagem(evento.d.boardId, quadros.contarElementos(quadro));
+      return;
+    }
+
+    case 'BOARD_PRESENT': {
+      /* Apresentar não exige `MANAGE_NOTES`: conduzir não é desenhar, e quem
+         só vê o quadro pode perfeitamente explicá-lo. Quem desenha continua
+         passando pela permissão, no `BOARD_UPDATE`. */
+      if (!evento.d.apresentando) {
+        await apresentacao.terminar(evento.d.boardId, conn.userId, app.log);
+        return;
+      }
+
+      const inicio = await apresentacao.comecar({
+        boardId: evento.d.boardId,
+        userId: conn.userId,
+        log: app.log,
+      });
+      if (!inicio.ok) {
+        gw.send(conn, {
+          op: 'ERROR',
+          d: {
+            code: inicio.motivo,
+            message:
+              inicio.motivo === 'ALREADY_PRESENTING'
+                ? 'alguém já está apresentando este quadro'
+                : 'este quadro não existe',
+          },
+        });
+      }
       return;
     }
 
